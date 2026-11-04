@@ -8,17 +8,19 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "preview": "next build && next start",
-    "test:swift": "mkdir -p .build && swiftc -swift-version 6 -O src/content/mobile/*.swift tests/mobile/main.swift -o .build/mobiletests && .build/mobiletests"
+    "test:swift": "mkdir -p .build && swiftc -swift-version 6 -O src/content/mobile/*.swift tests/mobile/main.swift -o .build/mobiletests && .build/mobiletests",
+    "build:static": "STATIC_EXPORT=1 next build"
   },
   "dependencies": {
-    "next": "^16.4.5",
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1"
-  },
-  "devDependencies": {
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "next": "^16.4.5",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=20.9.0"
   }
 }

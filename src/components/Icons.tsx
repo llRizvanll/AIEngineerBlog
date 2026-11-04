@@ -13,6 +13,15 @@ const P: Record<string, ReactNode> = {
   target: <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01" />,
   arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
   clock: <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2" />,
+  code: <path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16" />,
+  phone: <path d="M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM11 18h2" />,
+  chat: <path d="M4 5h16v11H9l-5 4V5zM8 9h8M8 12h5" />,
+  bookmark: <path d="M6 3h12v18l-6-4-6 4V3z" />,
+  menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+  chevron: <path d="M6 9l6 6 6-6" />,
+  close: <path d="M6 6l12 12M18 6L6 18" />,
+  home: <path d="M3 11l9-7 9 7M5 10v10h14V10" />,
+  grid: <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />,
 };
 
 export function Icon({ name, size = 20 }: { name: keyof typeof P | string; size?: number }) {

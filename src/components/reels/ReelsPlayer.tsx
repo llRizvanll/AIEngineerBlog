@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { Reel, ReelCollection } from "@/content/types";
 import { routeFor } from "@/lib/routes";
 import type { CollectionSummary } from "@/lib/reel-summary";
@@ -415,6 +415,47 @@ interface CardProps {
   h: Handlers;
 }
 
+/** Quick-hit reels: shrink (or gently grow) the slide so it always fits the space above the caption. */
+function FitBody({ children, watch }: { children: ReactNode; watch: string }) {
+  const outer = useRef<HTMLDivElement>(null);
+  const inner = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const o = outer.current;
+    const el = inner.current;
+    if (!o || !el) return;
+    const run = () => {
+      const cs = getComputedStyle(o);
+      const have = o.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      if (have <= 0) return;
+      let z = 1;
+      el.style.setProperty("zoom", "1");
+      for (let pass = 0; pass < 4; pass++) {
+        const need = el.getBoundingClientRect().height;
+        const next = Math.min(1.45, Math.max(0.5, z * ((have * 0.97) / need)));
+        if (Math.abs(next - z) < 0.01) break;
+        z = next;
+        el.style.setProperty("zoom", String(z));
+      }
+      // Text rewraps as it scales, so make sure the last step never overflows.
+      const after = el.getBoundingClientRect().height;
+      if (after > have) el.style.setProperty("zoom", String(Math.max(0.5, (z * have * 0.97) / after)));
+    };
+    run();
+    const ro = new ResizeObserver(run);
+    ro.observe(o);
+    ro.observe(el);
+    document.fonts?.ready.then(run);
+    return () => ro.disconnect();
+  }, [watch]);
+  return (
+    <div className="r-body" ref={outer}>
+      <div className="r-fit" ref={inner}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 const ReelCard = memo(function ReelCard({ x, i, total, active, beat, p, paused, liked, saved, pick, near, h }: CardProps) {
   const { r, c } = x;
   // Only reels next to the one on screen render their content; the rest are light shells.
@@ -434,7 +475,7 @@ const ReelCard = memo(function ReelCard({ x, i, total, active, beat, p, paused, 
   const style = { "--rbg": th.bg, "--rfg": th.fg, "--rac": th.accent, "--rmu": th.muted } as CSSProperties;
   return (
     <section
-      className={"reel" + (r.template === "read" ? " is-read" : "") + (r.template === "code" ? " is-code" : "") + (paused ? " paused" : "")}
+      className={"reel" + (r.template === "read" ? " is-read" : r.template === "code" ? " is-code" : " is-quick") + (paused ? " paused" : "")}
       data-i={i}
       aria-roledescription="reel"
       aria-label={r.title}
@@ -455,9 +496,15 @@ const ReelCard = memo(function ReelCard({ x, i, total, active, beat, p, paused, 
           </span>
         </div>
       </div>
-      <div className="r-body">
-        <ReelBody r={r} beat={beat} p={p} pick={pick} onPick={(v) => h.pick(r.id, v)} />
-      </div>
+      {r.template === "read" || r.template === "code" ? (
+        <div className="r-body">
+          <ReelBody r={r} beat={beat} p={p} pick={pick} onPick={(v) => h.pick(r.id, v)} />
+        </div>
+      ) : (
+        <FitBody watch={`${beat}:${pick ?? ""}`}>
+          <ReelBody r={r} beat={beat} p={p} pick={pick} onPick={(v) => h.pick(r.id, v)} />
+        </FitBody>
+      )}
       <div className="r-bottom">
         <div className="r-title">{r.title}</div>
         <div className="r-cap">{captionOf(r, beat)}</div>
@@ -468,11 +515,33 @@ const ReelCard = memo(function ReelCard({ x, i, total, active, beat, p, paused, 
             ))}
           </div>
         )}
-        {r.cta && (
-          <button type="button" className="r-cta" onClick={() => h.act("cta", r)}>
-            {r.cta.label || "Read in post"} →
-          </button>
-        )}
+        <div className="r-row">
+          {r.cta && (
+            <button type="button" className="r-cta" onClick={() => h.act("cta", r)}>
+              {r.cta.label || "Read in post"} →
+            </button>
+          )}
+          <div className="r-rail">
+            <button type="button" aria-pressed={liked} aria-label="Like" onClick={() => h.act("like", r)}>
+              <svg viewBox="0 0 24 24" aria-hidden>
+                {ICON.like}
+              </svg>
+              <span>{120 + (hashNum(r.id) % 880) + (liked ? 1 : 0)}</span>
+            </button>
+            <button type="button" aria-pressed={saved} aria-label="Save" onClick={() => h.act("save", r)}>
+              <svg viewBox="0 0 24 24" aria-hidden>
+                {ICON.save}
+              </svg>
+              <span>Save</span>
+            </button>
+            <button type="button" aria-label="Copy link" onClick={() => h.act("share", r)}>
+              <svg viewBox="0 0 24 24" aria-hidden>
+                {ICON.share}
+              </svg>
+              <span>Share</span>
+            </button>
+          </div>
+        </div>
       </div>
       {active && (
         <div className="reel-tap" aria-hidden>
@@ -481,26 +550,6 @@ const ReelCard = memo(function ReelCard({ x, i, total, active, beat, p, paused, 
           <button type="button" tabIndex={-1} onClick={h.next} />
         </div>
       )}
-      <div className="r-rail">
-        <button type="button" aria-pressed={liked} aria-label="Like" onClick={() => h.act("like", r)}>
-          <svg viewBox="0 0 24 24" aria-hidden>
-            {ICON.like}
-          </svg>
-          <span>{120 + (hashNum(r.id) % 880) + (liked ? 1 : 0)}</span>
-        </button>
-        <button type="button" aria-pressed={saved} aria-label="Save" onClick={() => h.act("save", r)}>
-          <svg viewBox="0 0 24 24" aria-hidden>
-            {ICON.save}
-          </svg>
-          <span>Save</span>
-        </button>
-        <button type="button" aria-label="Copy link" onClick={() => h.act("share", r)}>
-          <svg viewBox="0 0 24 24" aria-hidden>
-            {ICON.share}
-          </svg>
-          <span>Share</span>
-        </button>
-      </div>
       <div className="pp" aria-hidden>
         <span>❚❚</span>
       </div>

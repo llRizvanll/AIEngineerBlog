@@ -1,29 +1,44 @@
 "use client";
 
-import { SearchIcon } from "./SearchIcon";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { isActive, openSearch } from "./Masthead";
-
-const TABS = [
-  { href: "/", label: "Home", icon: "⌂" },
-  { href: "/interview", label: "Rounds", icon: "◧" },
-  { href: "/reels", label: "Reels", icon: "▶" },
-  { href: "/aiengine", label: "Learn", icon: "◎" },
-];
+import { Icon } from "./Icons";
+import { isActive, openMenu, openSearch } from "./Masthead";
+import { SearchIcon } from "./SearchIcon";
 
 export function TabBar() {
   const path = usePathname();
   return (
-    <nav className="tabbar" aria-label="Sections">
-      {TABS.map((t) => (
-        <Link key={t.href} href={t.href} className={isActive(path, t.href) ? "on" : undefined}>
-          <i aria-hidden>{t.icon}</i>
-          {t.label}
-        </Link>
-      ))}
+    <nav className="tabbar" aria-label="Quick navigation">
+      <Link href="/" className={path === "/" ? "on" : undefined}>
+        <i aria-hidden>
+          <Icon name="home" size={19} />
+        </i>
+        Home
+      </Link>
+      <button type="button" onClick={openMenu}>
+        <i aria-hidden>
+          <Icon name="grid" size={19} />
+        </i>
+        Explore
+      </button>
+      <Link href="/reels" className={isActive(path, "/reels") ? "on" : undefined}>
+        <i aria-hidden>
+          <Icon name="play" size={19} />
+        </i>
+        Reels
+      </Link>
+      <Link href="/library" className={isActive(path, "/library") ? "on" : undefined}>
+        <i aria-hidden>
+          <Icon name="bookmark" size={19} />
+        </i>
+        Library
+      </Link>
       <button type="button" onClick={openSearch}>
-        <i aria-hidden><SearchIcon size={18} /></i>Search
+        <i aria-hidden>
+          <SearchIcon size={19} />
+        </i>
+        Search
       </button>
     </nav>
   );

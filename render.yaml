@@ -1,0 +1,32 @@
+# Render Blueprint — New → Blueprint, pick this repo. Choose ONE of the two services below
+# (delete the other) or keep both and use whichever you prefer.
+services:
+  # Option A: Node web service (keeps the cache headers from next.config.ts).
+  - type: web
+    name: ai-engineer
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+
+  # Option B: static site on Render's CDN (free, no server, no cold starts).
+  - type: web
+    name: ai-engineer-static
+    runtime: static
+    buildCommand: npm ci --include=dev && npm run build:static
+    staticPublishPath: out
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+    headers:
+      - path: /_next/static/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable

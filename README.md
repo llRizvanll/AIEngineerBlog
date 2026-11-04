@@ -24,3 +24,18 @@ npm run test:swift  # compile the Swift solutions under Swift 6 and run their te
 - `src/app/theme.css` — the "Aurora" design system (tokens, components, home). `globals.css` is the base layer it overrides.
 
 Reader progress, notes, saves and whiteboards are stored in the browser's localStorage.
+
+## Deploy
+
+Every page is prerendered at build time, so the site runs on any Node host or as plain static files.
+Node 20.9+ is required (`.nvmrc` pins 22).
+
+| Host | Build command | Start / publish |
+| --- | --- | --- |
+| Render web service, Railway, Heroku, Fly (Node) | `npm ci && npm run build` | `npm start` (reads `$PORT`) |
+| Render static site, Cloudflare Pages, Netlify static, GitHub Pages, S3 | `npm ci && npm run build:static` | publish the `out/` folder |
+| Vercel / Netlify (Next.js runtime) | auto-detected | auto-detected |
+| Docker (any container host) | `docker build -t ai-engineer .` | `docker run -p 3000:3000 ai-engineer` |
+
+`render.yaml` is a ready Render Blueprint with both a Node service and a static site; keep the one you want.
+The build downloads Google Fonts through `next/font`, so the build machine needs internet access.

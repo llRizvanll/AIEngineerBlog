@@ -24,6 +24,7 @@ import { SearchPalette } from "@/components/SearchPalette";
 import { TabBar } from "@/components/TabBar";
 import { HashRedirect } from "@/components/HashRedirect";
 import { NavProgress } from "@/components/NavProgress";
+import { siteMap } from "@/lib/sections";
 import { prefsBootScript } from "@/components/Settings";
 import { SITE } from "@/lib/content";
 
@@ -71,7 +72,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a className="skip" href="#main">
           Skip to content
         </a>
-        <Masthead />
+        <Masthead groups={siteMap()} />
         <div id="main">{children}</div>
         <TabBar />
         <SearchPalette />
