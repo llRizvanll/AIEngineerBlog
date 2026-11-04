@@ -45,11 +45,11 @@ const raw: [string, string, string, (Lesson | null)[]][] = [
   ["06", "AI foundations", "LLM internals, inference acceleration, embeddings, adaptation.", [deep("llm-internals"), deep("inference-accel"), deep("embeddings"), deep("adapt-models"), reels("c-aihb")]],
   ["07", "AI systems", "Agents and MCP, integration, team acceleration, and five AI rounds.", [deep("agents-mcp"), deep("llm-integration"), deep("ai-dev-accel"), ...["ai-assistant", "on-device", "rag", "llm-serving", "ai-evals"].map(round)]],
   ["08", "Interview mastery", "How panels score, decision stories, rapid revision.", [post("interview"), revise, reels("c-interview"), reels("c-cases")]],
-  ["09", "Coding round", "Fifteen patterns, 45 worked problems, mobile machine coding in Swift, and the hacks that save minutes.", [
+  ["09", "Coding round", "Fifteen patterns, 45 worked problems, mobile machine coding in Kotlin, and the hacks that save minutes.", [
     { href: "/coding", title: "Coding method, cheat sheets and hacks", kind: "Pattern", meta: "start here" },
     ...PATTERNS.map((p) => ({ href: `/coding/${p.id}`, title: p.name, kind: "Pattern" as const, meta: "" })),
     reels("c-patterns"), reels("q-coding-hacks"),
-    { href: "/mobile-coding", title: "Mobile machine coding (Swift)", kind: "Pattern", meta: `${MOBILE_PROBLEMS.length} problems` },
+    { href: "/mobile-coding", title: "Mobile machine coding (Kotlin)", kind: "Pattern", meta: `${MOBILE_PROBLEMS.length} problems` },
     ...MOBILE_PROBLEMS.map((m) => ({ href: `/mobile-coding/${m.id}`, title: m.title, kind: "Pattern" as const, meta: `${m.minutes} min` })),
     reels("c-mobile"),
   ]],

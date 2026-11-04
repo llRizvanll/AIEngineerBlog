@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { createPortal } from "react-dom";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { emptyLibrary, LIBRARY_KEY, useLocal, type LibraryState } from "@/lib/store";
 
@@ -22,9 +23,13 @@ interface Props {
 export function Reading({ title, kind, articleId = "article", articleClass, railTitle = "On this page", html, children }: Props) {
   const path = usePathname();
   const ref = useRef<HTMLElement>(null);
-  const [toc, setToc] = useState<{ id: string; label: string }[]>([]);
+  const [toc, setToc] = useState<{ id: string; label: string; part?: boolean }[]>([]);
   const [cur, setCur] = useState<string>("");
   const [focus, setFocus] = useState(false);
+  const [sheet, setSheet] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  useEffect(() => setSheet(false), [path]);
   const [lib, updateLib, hydrated] = useLocal<LibraryState>(LIBRARY_KEY, emptyLibrary);
   const saved = !!lib.saved[path];
 
@@ -33,7 +38,9 @@ export function Reading({ title, kind, articleId = "article", articleClass, rail
     const el = ref.current;
     if (!el) return;
     const secs = Array.from(el.querySelectorAll<HTMLElement>(":scope > section[data-toc]"));
-    setToc(secs.map((s) => ({ id: s.id, label: s.dataset.toc || "" })));
+    // Part headers (basics, the question, …) become group labels in the rail.
+    const items = Array.from(el.querySelectorAll<HTMLElement>(":scope > section[data-toc], :scope > .part[data-part-head]"));
+    setToc(items.map((s) => (s.dataset.partHead ? { id: s.id, label: s.dataset.partHead, part: true } : { id: s.id, label: s.dataset.toc || "" })));
 
     // Fade sections in as they enter the viewport.
     const io = new IntersectionObserver(
@@ -141,7 +148,7 @@ export function Reading({ title, kind, articleId = "article", articleClass, rail
             <button
               key={t.id}
               type="button"
-              className={t.id === cur ? "on" : undefined}
+              className={t.part ? "rail-part" : t.id === cur ? "on" : undefined}
               onClick={() => document.getElementById(t.id)?.scrollIntoView({ behavior: "smooth" })}
             >
               {t.label}
@@ -160,6 +167,50 @@ export function Reading({ title, kind, articleId = "article", articleClass, rail
           </button>
         </div>
       </aside>
+      {/* Small screens hide the rail: this dock gives them contents, save and back-to-top. */}
+      <div className="rd-dock" role="toolbar" aria-label="Reading">
+        {toc.length > 0 && (
+          <button type="button" onClick={() => setSheet(true)} aria-haspopup="dialog">
+            <span aria-hidden>☰</span> Contents
+          </button>
+        )}
+        <button type="button" onClick={toggleSave} aria-pressed={saved}>
+          {saved ? "★ Saved" : "☆ Save"}
+        </button>
+        <button type="button" aria-label="Back to top" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+          ↑
+        </button>
+      </div>
+      {mounted &&
+        sheet &&
+        createPortal(
+          <div className="rd-sheet-ov" onMouseDown={(e) => e.target === e.currentTarget && setSheet(false)}>
+            <div className="rd-sheet" role="dialog" aria-modal="true" aria-label={railTitle}>
+              <div className="rd-sheet-h">
+                <b>{railTitle}</b>
+                <button type="button" onClick={() => setSheet(false)} aria-label="Close contents">
+                  ✕
+                </button>
+              </div>
+              <div className="rd-sheet-list">
+                {toc.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={t.part ? "rail-part" : t.id === cur ? "on" : undefined}
+                    onClick={() => {
+                      setSheet(false);
+                      document.getElementById(t.id)?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
       {focus && (
         <button type="button" className="focus-exit" onClick={() => setFocus(false)}>
           Exit focus <kbd>esc</kbd>

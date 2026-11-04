@@ -242,11 +242,14 @@
               <tr><td>Huge files</td><td>Background <code>URLSession</code>, one upload task per part file</td></tr>
               <tr><td>User-started long task</td><td><code>BGContinuedProcessingTask</code> (iOS 26+) with system progress</td></tr>
             </tbody></table></div>
-<pre><code>BGTaskScheduler.shared.register(forTaskWithIdentifier: <span class="s">"com.app.sync"</span>, using: <span class="k">nil</span>) { task <span class="k">in</span>
-  scheduleNextSync()                                  <span class="c">// always re-schedule first</span>
-  <span class="k">let</span> work = Task { <span class="k">await</span> SyncEngine.shared.runOnce(budget: .seconds(25)) }
-  task.expirationHandler = { work.cancel() }          <span class="c">// the OS wants its time back</span>
-  Task { _ = <span class="k">await</span> work.result; task.setTaskCompleted(success: !work.isCancelled) }
+<pre><code>// iosMain (Kotlin Multiplatform): iOS schedules it, the shared Kotlin engine does the work
+fun registerSync(engine: SyncEngine, scope: CoroutineScope) {
+  BGTaskScheduler.sharedScheduler.registerForTaskWithIdentifier("com.app.sync", usingQueue = null) { task -&gt;
+    scheduleNextSync()                                  // always re-schedule first
+    val work = scope.launch { engine.runOnce(budget = 25.seconds) }
+    task?.expirationHandler = { work.cancel() }         // the OS wants its time back
+    work.invokeOnCompletion { task?.setTaskCompletedWithSuccess(!work.isCancelled) }
+  }
 }</code></pre>
             <ul>
               <li>A swipe-kill cancels background URLSession transfers. Resume from your saved parts on next launch.</li>

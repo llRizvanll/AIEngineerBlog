@@ -7,7 +7,7 @@ import { Icon } from "@/components/Icons";
 
 export const metadata: Metadata = {
   title: "Mobile machine coding",
-  description: "Low-level design and coding problems for mobile engineers, with tested Swift solutions and line-by-line explanations.",
+  description: "Low-level design and coding problems for mobile engineers, with tested Kotlin solutions and line-by-line explanations.",
 };
 
 export default function MobileCodingPage() {
@@ -24,8 +24,8 @@ export default function MobileCodingPage() {
           </h1>
           <p>
             The low-level design round for mobile engineers: caches, image loaders, offline sync, retries, pagination and uploads. Each solution is
-            production-style Swift with async/await and actors, compiled under Swift 6 strict concurrency and covered by tests, then explained line
-            by line with the Android equivalent.
+            production-style Kotlin with coroutines, Flow and structured concurrency, compiled with warnings as errors and covered by tests, then
+            explained line by line with the iOS equivalent.
           </p>
           <div className="btns">
             <Link className="btn" href="/reels/c-mobile">
@@ -43,15 +43,15 @@ export default function MobileCodingPage() {
             <span>problems</span>
           </div>
           <div>
-            <b>Swift 6</b>
-            <span>strict concurrency</span>
+            <b>Kotlin 2</b>
+            <span>coroutines and Flow</span>
           </div>
           <div>
-            <b>42</b>
+            <b>68</b>
             <span>passing tests</span>
           </div>
           <div>
-            <b>Android</b>
+            <b>iOS</b>
             <span>equivalents for each</span>
           </div>
         </div>
@@ -102,7 +102,7 @@ export default function MobileCodingPage() {
                 ))}
               </div>
               <span className="pc-foot">
-                {p.file}.swift <Icon name="arrow" size={14} />
+                {p.file}.kt <Icon name="arrow" size={14} />
               </span>
             </Link>
           ))}

@@ -355,9 +355,9 @@
     "data class JobUi(val title: String = \"\", val fields: List<FieldUi> = emptyList(),\n                 val banner: Banner? = null, val loading: Boolean = true)\n\nsealed interface JobIntent { data class SetAnswer(val fieldId: String, val value: String) : JobIntent; data object Retry : JobIntent }\n\nclass JobViewModel(private val jobId: String, private val repo: JobRepo, net: NetworkMonitor) : ViewModel() {\n  val ui: StateFlow<JobUi> = combine(repo.observeJob(jobId), repo.observeFields(jobId), net.online, repo.pendingCount()) { job, fields, online, pending ->\n    JobUi(\n      title = job.title,\n      fields = fields.map { it.toUi() },                                  // each carries its sync badge\n      banner = when { !online && pending > 0 -> Banner.Offline(pending); fields.any { it.conflict } -> Banner.NeedsReview; else -> null },\n      loading = false,\n    )\n  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), JobUi())\n\n  fun onIntent(i: JobIntent) = viewModelScope.launch {\n    when (i) {\n      is JobIntent.SetAnswer -> repo.setAnswer(jobId, i.fieldId, i.value)   // row + outbox, returns fast\n      JobIntent.Retry -> repo.retryFailed(jobId)\n    }\n  }\n}"
    ],
    [
-    "The same screen in SwiftUI with an @Observable model",
-    "swift",
-    "@Observable @MainActor\nfinal class JobModel {\n  var title = \"\"\n  var fields: [FieldUI] = []\n  var banner: Banner?\n  private var task: Task<Void, Never>?\n\n  func start(jobId: String, db: AppDatabase) {\n    task = Task {\n      for try await snapshot in db.observeJob(jobId) {          // GRDB ValueObservation as AsyncSequence\n        title = snapshot.job.title\n        fields = snapshot.fields.map(FieldUI.init)\n        banner = snapshot.fields.contains { $0.syncState == .conflict } ? .needsReview : nil\n      }\n    }\n  }\n\n  func setAnswer(_ fieldId: String, _ value: String) {\n    Task.detached { try? await Repo.shared.setAnswer(fieldId: fieldId, value: value) }   // off the main actor\n  }\n}"
+    "The same state in a Compose screen (Kotlin)",
+    "kotlin",
+    "@Composable\nfun JobScreen(vm: JobViewModel) {\n  val ui by vm.ui.collectAsStateWithLifecycle()                      // stops collecting in the background\n  Scaffold(topBar = { TopAppBar(title = { Text(ui.title) }) }) { pad ->\n    LazyColumn(contentPadding = pad) {\n      ui.banner?.let { b ->\n        item(key = \"banner\") { BannerRow(b, onRetry = { vm.onIntent(JobIntent.Retry) }) }\n      }\n      items(ui.fields, key = { it.id }) { field ->                      // stable keys: rows keep their state\n        FieldRow(field, onChange = { v -> vm.onIntent(JobIntent.SetAnswer(field.id, v)) })\n      }\n    }\n    if (ui.loading) LinearProgressIndicator(Modifier.fillMaxWidth().padding(pad))\n  }\n}"
    ],
    [
     "React web dashboard: cached queries plus live invalidation",
@@ -873,9 +873,9 @@
     "fun backoffMs(attempt: Int, baseMs: Long = 2_000, capMs: Long = 60 * 60_000): Long {\n  val ceiling = min(capMs, baseMs shl min(attempt, 20))\n  return Random.nextLong(0, ceiling + 1)        // spreads a million devices across the window\n}"
    ],
    [
-    "Same engine on iOS (Swift actor)",
-    "swift",
-    "actor SyncEngine {\n  private var running = false\n\n  func run(reason: Reason, budget: Duration) async -> RunResult {\n    guard !config.killSwitch else { return .disabled }\n    guard !running else { return .alreadyRunning }\n    running = true; defer { running = false }\n    let deadline = ContinuousClock.now + budget\n    do {\n      try await pushAll(until: deadline)\n      try await pullAll(until: deadline)\n      return .success\n    } catch is CancellationError {\n      return .expired                       // BGTask expiration handler cancelled us\n    } catch SyncError.authExpired {\n      return .needsLogin\n    } catch {\n      return .retry(after: Backoff.next(attempt: await meta.failedRuns))\n    }\n  }\n\n  private func pullAll(until deadline: ContinuousClock.Instant) async throws {\n    var cursor = try await db.read { try Cursor.current($0) }\n    repeat {\n      try Task.checkCancellation()\n      let page = try await api.pull(cursor: cursor, limit: config.pullPage)\n      try await db.write { db in\n        try page.changes.forEach { try Applier.apply($0, in: db) }\n        try Cursor.save(page.nextCursor, in: db)\n      }\n      cursor = page.nextCursor\n      if !page.hasMore { break }\n    } while ContinuousClock.now < deadline\n  }\n}"
+    "Staying inside the OS time budget (Kotlin)",
+    "kotlin",
+    "// The OS gives background work a fixed window. Stop at a safe point instead of being killed mid-write.\nsuspend fun SyncEngine.runWithin(reason: Reason, budget: Duration): RunResult =\n  withTimeoutOrNull(budget - 2.seconds) {             // keep 2 s to commit and report\n    run(reason, budget)\n  } ?: RunResult.Retry(backoffMs = 0)                  // out of time: resume in the next window\n\nprivate suspend fun SyncEngine.pullPage(cursor: String): String? {\n  currentCoroutineContext().ensureActive()             // cancellation point between pages\n  val page = api.pull(cursor, limit = cfg.pullPage)\n  withContext(NonCancellable) {                        // never stop half way through a page\n    db.withTransaction {\n      page.changes.forEach { applyOne(it) }\n      db.cursors().set(SCOPE_DEFAULT, page.nextCursor)\n    }\n  }\n  return page.nextCursor.takeIf { page.hasMore }\n}"
    ]
   ],
   "platforms": [
@@ -1409,9 +1409,9 @@
     "class FileSliceBody(private val file: File, private val offset: Long, private val length: Long) : RequestBody() {\n  override fun contentType() = \"application/octet-stream\".toMediaType()\n  override fun contentLength() = length\n  override fun writeTo(sink: BufferedSink) {\n    RandomAccessFile(file, \"r\").use { raf ->\n      raf.seek(offset)\n      val buf = ByteArray(64 * 1024); var left = length\n      while (left > 0) {\n        val n = raf.read(buf, 0, minOf(buf.size.toLong(), left).toInt())\n        sink.write(buf, 0, n); left -= n\n      }\n    }\n  }\n}\n\nsuspend fun uploadPart(t: Transfer, p: Part): String {\n  val req = Request.Builder().url(p.url).put(FileSliceBody(t.file, (p.no - 1) * t.partSize, p.length)).build()\n  client.newCall(req).await().use { res ->\n    if (res.code == 403) throw UrlExpired(p.no)                // broker refreshes, then retry\n    if (!res.isSuccessful) throw IOException(\"part \" + p.no + \" failed: \" + res.code)\n    return res.header(\"ETag\") ?: error(\"missing ETag\")\n  }\n}"
    ],
    [
-    "iOS: one background task per part",
-    "swift",
-    "let config = URLSessionConfiguration.background(withIdentifier: \"com.app.transfers\")\nconfig.sessionSendsLaunchEvents = true          // relaunch the app when transfers finish\nconfig.isDiscretionary = false                  // user started this upload\nlazy var session = URLSession(configuration: config, delegate: self, delegateQueue: nil)\n\nfunc enqueue(_ part: Part, url: URL) throws {\n  let slice = try PartSlicer.writeSlice(of: part)          // file containing only this part's bytes\n  var request = URLRequest(url: url); request.httpMethod = \"PUT\"\n  let task = session.uploadTask(with: request, fromFile: slice)\n  task.taskDescription = part.transferId + \":\" + String(part.number)   // survives relaunch\n  task.resume()\n}\n\nfunc urlSession(_ s: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {\n  guard let (id, n) = PartKey.parse(task.taskDescription) else { return }\n  let etag = (task.response as? HTTPURLResponse)?.value(forHTTPHeaderField: \"ETag\")\n  try? db.write { db in try TransferPart.record(id, n, etag: etag, error: error, in: db) }\n  try? FileManager.default.removeItem(at: PartSlicer.url(id, n))\n}"
+    "Android: one WorkManager job per part",
+    "kotlin",
+    "fun enqueuePart(ctx: Context, transferId: String, part: Int) {\n  val req = OneTimeWorkRequestBuilder<PartUploadWorker>()\n    .setInputData(workDataOf(\"transfer\" to transferId, \"part\" to part))\n    .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).setRequiresStorageNotLow(true).build())\n    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.SECONDS)\n    .addTag(\"transfer:$transferId\")                                   // cancel a whole transfer by tag\n    .build()\n  WorkManager.getInstance(ctx).enqueueUniqueWork(\"part:$transferId:$part\", ExistingWorkPolicy.KEEP, req)\n}\n\nclass PartUploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {\n  override suspend fun doWork(): Result {\n    val id = inputData.getString(\"transfer\") ?: return Result.failure()\n    val no = inputData.getInt(\"part\", -1)\n    val (t, p) = transfers.load(id, no) ?: return Result.success()     // transfer was cancelled meanwhile\n    if (p.etag != null) return Result.success()                        // already uploaded: safe to rerun\n    setForeground(foregroundInfo(t))                                   // long upload: visible, not killed\n    return try {\n      transfers.recordPart(id, no, etag = uploadPart(t, p))            // durable before reporting success\n      if (transfers.allPartsDone(id)) TransferTriggers.complete(applicationContext, id)\n      Result.success()\n    } catch (e: UrlExpired) {\n      transfers.refreshUrl(id, no); Result.retry()                     // presigned URL timed out\n    } catch (e: IOException) {\n      if (runAttemptCount < 8) Result.retry() else Result.failure()\n    }\n  }\n}"
    ],
    [
     "Resuming a download",
@@ -1896,9 +1896,9 @@
     "object SyncTriggers {\n  fun request(ctx: Context, reason: Reason, urgent: Boolean = false) {\n    val req = OneTimeWorkRequestBuilder<SyncWorker>()\n      .setInputData(workDataOf(\"reason\" to reason.name))\n      .setConstraints(Constraints(requiredNetworkType = NetworkType.CONNECTED))\n      .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)\n      .apply { if (urgent) setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST) }\n      .build()\n    WorkManager.getInstance(ctx).enqueueUniqueWork(\"sync\", ExistingWorkPolicy.KEEP, req)\n  }\n}\n\nclass SyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {\n  override suspend fun doWork(): Result {\n    val reason = Reason.valueOf(inputData.getString(\"reason\") ?: \"PERIODIC\")\n    return when (val r = engine.run(reason, budget = 8.minutes)) {\n      is RunResult.Success -> { if (r.morePending) SyncTriggers.request(applicationContext, Reason.FOLLOW_UP); Result.success() }\n      is RunResult.Retry -> Result.retry()\n      RunResult.NeedsLogin, RunResult.Disabled, RunResult.AlreadyRunning -> Result.success()\n    }\n  }\n}\n\nclass PushService : FirebaseMessagingService() {\n  override fun onMessageReceived(msg: RemoteMessage) {\n    if (msg.data[\"type\"] == \"changes\") SyncTriggers.request(this, Reason.PUSH, urgent = true)   // enqueue only\n  }\n}"
    ],
    [
-    "iOS: registering and scheduling",
-    "swift",
-    "enum BGIds { static let refresh = \"com.app.sync.refresh\"; static let heavy = \"com.app.sync.heavy\" }\n\nfunc registerBackgroundTasks() {          // call before the app finishes launching\n  BGTaskScheduler.shared.register(forTaskWithIdentifier: BGIds.refresh, using: nil) { task in\n    scheduleRefresh()                                         // always schedule the next one first\n    let work = Task { await SyncEngine.shared.run(reason: .refresh, budget: .seconds(25)) }\n    task.expirationHandler = { work.cancel() }\n    Task { let r = await work.value; task.setTaskCompleted(success: r.isSuccess) }\n  }\n}\n\nfunc scheduleRefresh() {\n  let req = BGAppRefreshTaskRequest(identifier: BGIds.refresh)\n  req.earliestBeginDate = Date(timeIntervalSinceNow: 15 * 60)\n  try? BGTaskScheduler.shared.submit(req)\n}\n\nfunc sceneDidEnterBackground(_ scene: UIScene) {            // finish a write the user just made\n  var id = UIBackgroundTaskIdentifier.invalid\n  id = UIApplication.shared.beginBackgroundTask { UIApplication.shared.endBackgroundTask(id) }\n  Task { _ = await SyncEngine.shared.run(reason: .backgrounded, budget: .seconds(20)); UIApplication.shared.endBackgroundTask(id) }\n}"
+    "Android: periodic safety net and the leave-app trigger",
+    "kotlin",
+    "// Periodic safety net: Android may batch or delay it, so it is never the only trigger.\nfun schedulePeriodicSync(ctx: Context) {\n  val req = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)\n    .setInputData(workDataOf(\"reason\" to Reason.PERIODIC.name))\n    .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).setRequiresBatteryNotLow(true).build())\n    .build()\n  WorkManager.getInstance(ctx).enqueueUniquePeriodicWork(\"sync-periodic\", ExistingPeriodicWorkPolicy.KEEP, req)\n}\n\n// The user just left the app with unsynced edits: ask for expedited work, not a background service.\nclass LeaveAppTrigger(private val ctx: Context, private val outbox: OutboxDao) : DefaultLifecycleObserver {\n  override fun onStop(owner: LifecycleOwner) {\n    owner.lifecycleScope.launch {\n      if (outbox.readyCount() > 0) SyncTriggers.request(ctx, Reason.BACKGROUNDED, urgent = true)\n    }\n  }\n}\n\nclass App : Application() {\n  override fun onCreate() {\n    super.onCreate()\n    schedulePeriodicSync(this)\n    ProcessLifecycleOwner.get().lifecycle.addObserver(LeaveAppTrigger(this, db.outbox()))   // whole app, not one Activity\n  }\n}"
    ],
    [
     "React Native: Turbo Module spec",
@@ -2802,14 +2802,14 @@
   ],
   "code": [
    [
-    "Attention in a few lines (PyTorch)",
-    "python",
-    "import torch, math\n\ndef causal_attention(x, Wq, Wk, Wv, n_heads):\n    B, T, D = x.shape\n    q, k, v = (x @ Wq, x @ Wk, x @ Wv)\n    split = lambda t: t.view(B, T, n_heads, D // n_heads).transpose(1, 2)   # B, H, T, d\n    q, k, v = split(q), split(k), split(v)\n    scores = (q @ k.transpose(-2, -1)) / math.sqrt(q.size(-1))              # B, H, T, T\n    mask = torch.triu(torch.ones(T, T, dtype=torch.bool), diagonal=1)\n    scores = scores.masked_fill(mask, float('-inf'))                         # no peeking ahead\n    return (scores.softmax(-1) @ v).transpose(1, 2).reshape(B, T, D)"
+    "Attention in a few lines (TypeScript, one head)",
+    "ts",
+    "type Matrix = number[][];\n\nconst matmul = (a: Matrix, b: Matrix): Matrix =>\n  a.map((row) => b[0].map((_, j) => row.reduce((s, x, k) => s + x * b[k][j], 0)));\nconst transpose = (m: Matrix): Matrix => m[0].map((_, j) => m.map((row) => row[j]));\n\nfunction softmax(row: number[]): number[] {\n  const max = Math.max(...row);                       // subtract the max: exp() never overflows\n  const e = row.map((x) => Math.exp(x - max));\n  const sum = e.reduce((a, b) => a + b, 0);\n  return e.map((x) => x / sum);\n}\n\n// One causal attention head. x: T tokens × D dims; Wq, Wk, Wv: D × d.\n// Multi-head attention runs H of these with d = D / H and concatenates the outputs.\nfunction causalAttention(x: Matrix, Wq: Matrix, Wk: Matrix, Wv: Matrix): Matrix {\n  const q = matmul(x, Wq), k = matmul(x, Wk), v = matmul(x, Wv);\n  const scale = Math.sqrt(q[0].length);\n  const scores = matmul(q, transpose(k)).map((row, t) =>\n    row.map((s, u) => (u > t ? -Infinity : s / scale)));   // no peeking at later tokens\n  return matmul(scores.map(softmax), v);                     // T × d\n}"
    ],
    [
-    "Sampling with temperature and top-p",
-    "python",
-    "def sample(logits, temperature=0.7, top_p=0.9):\n    probs = (logits / max(temperature, 1e-5)).softmax(-1)\n    sorted_p, idx = probs.sort(descending=True)\n    keep = sorted_p.cumsum(-1) - sorted_p < top_p          # smallest set reaching top_p\n    sorted_p = sorted_p * keep\n    choice = torch.multinomial(sorted_p / sorted_p.sum(), 1)\n    return idx[choice]"
+    "Sampling with temperature and top-p (TypeScript)",
+    "ts",
+    "// Temperature reshapes the distribution; top-p keeps the smallest set of tokens\n// whose probability reaches p. Uses softmax from the attention example.\nfunction sample(logits: number[], temperature = 0.7, topP = 0.9, rand = Math.random): number {\n  const probs = softmax(logits.map((l) => l / Math.max(temperature, 1e-5)));\n  const ranked = probs.map((p, i) => [p, i] as const).sort((a, b) => b[0] - a[0]);\n  const keep: (readonly [number, number])[] = [];\n  let mass = 0;\n  for (const pair of ranked) {\n    keep.push(pair);\n    mass += pair[0];\n    if (mass >= topP) break;                        // nucleus reached\n  }\n  let r = rand() * mass;                            // sample within the kept tokens only\n  for (const [p, i] of keep) if ((r -= p) <= 0) return i;\n  return keep[keep.length - 1][1];\n}"
    ],
    [
     "KV cache size for any model",
@@ -3608,14 +3608,14 @@
     "CREATE EXTENSION IF NOT EXISTS vector;\nCREATE TABLE service_vec (\n  service_id uuid PRIMARY KEY, city text NOT NULL, price int,\n  model_version text NOT NULL,\n  embedding vector(768) NOT NULL\n);\nCREATE INDEX ON service_vec USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);\n-- query time\nSET hnsw.ef_search = 80;\nSELECT service_id FROM service_vec\nWHERE city = $2 ORDER BY embedding <=> $1 LIMIT 50;"
    ],
    [
-    "Reciprocal rank fusion",
-    "python",
-    "def rrf(*ranked_lists, k=60):\n    scores = {}\n    for lst in ranked_lists:\n        for rank, doc_id in enumerate(lst, start=1):\n            scores[doc_id] = scores.get(doc_id, 0) + 1 / (k + rank)\n    return sorted(scores, key=scores.get, reverse=True)"
+    "Reciprocal rank fusion (TypeScript)",
+    "ts",
+    "// Merge rankings from different retrievers (BM25, vectors, …) without calibrating their scores:\n// each list contributes 1 / (k + rank) for every document it returns.\nfunction rrf(rankings: string[][], k = 60): string[] {\n  const scores = new Map<string, number>();\n  for (const list of rankings) {\n    list.forEach((id, i) => scores.set(id, (scores.get(id) ?? 0) + 1 / (k + i + 1)));\n  }\n  return [...scores].sort((a, b) => b[1] - a[1]).map(([id]) => id);\n}"
    ],
    [
-    "Recall at k for your own test set",
-    "python",
-    "def recall_at_k(results: dict, labels: dict, k=10):\n    hits = [len(set(results[q][:k]) & labels[q]) / len(labels[q]) for q in labels]\n    return sum(hits) / len(hits)"
+    "Recall at k for your own test set (TypeScript)",
+    "ts",
+    "// results: query -> ranked document ids; labels: query -> ids a person marked relevant.\nfunction recallAtK(results: Map<string, string[]>, labels: Map<string, Set<string>>, k = 10): number {\n  let total = 0;\n  for (const [query, relevant] of labels) {\n    const top = (results.get(query) ?? []).slice(0, k);\n    total += top.filter((id) => relevant.has(id)).length / relevant.size;\n  }\n  return total / labels.size;\n}"
    ]
   ],
   "platforms": [
@@ -3908,9 +3908,9 @@
   ],
   "code": [
    [
-    "LoRA fine-tune (Hugging Face PEFT)",
-    "python",
-    "from peft import LoraConfig, get_peft_model\nfrom transformers import AutoModelForCausalLM\n\nbase = AutoModelForCausalLM.from_pretrained(\"meta-llama/Llama-3.1-8B-Instruct\", torch_dtype=\"bfloat16\")\ncfg = LoraConfig(r=16, lora_alpha=32, lora_dropout=0.05,\n                 target_modules=[\"q_proj\", \"k_proj\", \"v_proj\", \"o_proj\"], task_type=\"CAUSAL_LM\")\nmodel = get_peft_model(base, cfg)\nmodel.print_trainable_parameters()     # a small fraction of the 8B weights\n# train with your SFT trainer on {\"messages\": [...]} examples, then save the adapter only"
+    "LoRA in numbers: what you actually train (TypeScript)",
+    "ts",
+    "// LoRA freezes W (dOut × dIn) and trains two thin matrices: W' = W + (alpha / r) · B·A,\n// with B: dOut × r and A: r × dIn. Only B and A are saved, as a small adapter file.\nconst loraParams = (dIn: number, dOut: number, r: number) => r * (dIn + dOut);   // full: dIn × dOut\n\n// Llama 3.1 8B: 32 layers, hidden size 4096, grouped-query attention (k and v project to 1024).\nconst layers = 32, hidden = 4096, kv = 1024, r = 16;\nconst perLayer =\n  loraParams(hidden, hidden, r) +     // q_proj\n  loraParams(hidden, kv, r) +         // k_proj\n  loraParams(hidden, kv, r) +         // v_proj\n  loraParams(hidden, hidden, r);      // o_proj\nconst trainable = layers * perLayer;  // 13,631,488\nconsole.log(trainable.toLocaleString(), ((trainable / 8.03e9) * 100).toFixed(2) + \"% of the weights\");   // ≈ 0.17%"
    ],
    [
     "Training example format",

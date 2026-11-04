@@ -85,11 +85,11 @@ export default function CodingPage() {
         </div>
 
         <Link href="/mobile-coding" className="prep-card mc-band" style={{ "--c1": "#0ea5e9", "--c2": "#ec4899" } as CSSProperties}>
-          <span className="eyebrow">Mobile machine coding · Swift 6 · tested</span>
+          <span className="eyebrow">Mobile machine coding · Kotlin · tested</span>
           <h3>Build the components apps run on</h3>
           <p>
-            {MOBILE_PROBLEMS.length} low-level design problems with production-style Swift, a line-by-line walkthrough, edge cases, follow-ups and the
-            Android equivalent.
+            {MOBILE_PROBLEMS.length} low-level design problems with production-style Kotlin, a line-by-line walkthrough, edge cases, follow-ups and the
+            iOS equivalent.
           </p>
           <div className="pc-chips">
             {MOBILE_PROBLEMS.map((m) => (

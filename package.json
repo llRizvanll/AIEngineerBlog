@@ -8,8 +8,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "preview": "next build && next start",
-    "test:swift": "mkdir -p .build && swiftc -swift-version 6 -O src/content/mobile/*.swift tests/mobile/main.swift -o .build/mobiletests && .build/mobiletests",
-    "build:static": "STATIC_EXPORT=1 next build"
+    "build:static": "STATIC_EXPORT=1 next build",
+    "test:mobile": "sh scripts/test-mobile.sh"
   },
   "dependencies": {
     "@types/node": "^26.6.6",

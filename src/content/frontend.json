@@ -2026,9 +2026,9 @@
    ],
    "code": [
     [
-     "Using the on-device model on iOS 26 (Foundation Models framework)",
-     "swift",
-     "import FoundationModels\n\nfunc summarise(_ text: String) async -> AiResult<String> {\n  let model = SystemLanguageModel.default\n  guard case .available = model.availability else {\n    return await cloudOrFallback(text)                         // older device or model not ready\n  }\n  let session = LanguageModelSession(instructions: \"Summarise service descriptions in 60 words or fewer.\")\n  do {\n    let response = try await session.respond(to: text)\n    return .ok(response.content, source: .systemModel)\n  } catch {\n    return await cloudOrFallback(text)\n  }\n}"
+     "One interface over each platform’s on-device model (Kotlin Multiplatform)",
+     "kotlin",
+     "// Shared code sees one interface. Android backs it with Gemini Nano (AICore) and iOS with\n// Apple's Foundation Models framework, each in its own platform source set.\nenum class Availability { READY, DOWNLOADING, UNSUPPORTED }\n\ninterface OnDeviceModel {\n  suspend fun availability(): Availability\n  suspend fun generate(instructions: String, input: String): String\n}\n\nclass Summariser(private val local: OnDeviceModel, private val cloudOrFallback: suspend (String) -> AiResult<String>) {\n  suspend fun summarise(text: String): AiResult<String> {\n    if (local.availability() != Availability.READY) return cloudOrFallback(text)   // older device or model not ready\n    return try {\n      val out = local.generate(\"Summarise service descriptions in 60 words or fewer.\", text)\n      AiResult.Ok(out, Source.SYSTEM_MODEL)\n    } catch (e: CancellationException) {\n      throw e                                          // never swallow cancellation\n    } catch (e: Exception) {\n      cloudOrFallback(text)\n    }\n  }\n}"
     ],
     [
      "Router with a time budget and fallback (Kotlin)",

@@ -25,8 +25,8 @@ export function buildSearchIndex(): SearchItem[] {
     { href: "/protocols", title: "Protocol Explorer", kind: "Page", summary: "Fourteen protocols decoded packet by packet.", keywords: "network packets" },
     { href: "/revise", title: "Revise critical Q&A", kind: "Page", summary: "Critical incident questions as flashcards.", keywords: "flashcards incidents probes traps" },
     { href: "/reels", title: "Reels", kind: "Page", summary: "Read the portal like short-form cards.", keywords: "swipe courses" },
-    { href: "/coding", title: "Coding patterns, hacks and tricks", kind: "Page", summary: "Fifteen patterns, the six-step method and the tricks that save minutes.", keywords: "leetcode algorithms dsa coding round python" },
-    { href: "/coding#hacks", title: "Coding hacks and tricks", kind: "Page", summary: "Python tools, edge cases, common bugs and how to talk through it.", keywords: "tips tricks python bugs" },
+    { href: "/coding", title: "Coding patterns, hacks and tricks", kind: "Page", summary: "Fifteen patterns, the six-step method and the tricks that save minutes.", keywords: "leetcode algorithms dsa coding round typescript" },
+    { href: "/coding#hacks", title: "Coding hacks and tricks", kind: "Page", summary: "TypeScript tools, edge cases, common bugs and how to talk through it.", keywords: "tips tricks typescript bugs" },
     { href: "/problem-solving", title: "Problem-solving interview questions", kind: "Page", summary: "25 behavioral questions with STAR model answers.", keywords: "behavioral competency star soft skills" },
     { href: "/library", title: "My library", kind: "Page", summary: "Saved pages and reading progress.", keywords: "bookmarks saved" },
     { href: `/series/${PART_ONE.id}`, title: PART_ONE.title, kind: "Post", summary: PART_ONE.blurb, keywords: "part 1 workmanager bgtaskscheduler outbox simulator" },
@@ -51,15 +51,15 @@ export function buildSearchIndex(): SearchItem[] {
   );
   Object.entries(MORE_PROBLEMS).forEach(([pid, list]) =>
     list.forEach((m) =>
-      items.push({ href: `/coding/${pid}#pt-more`, title: m.problem, kind: "Problem", summary: m.prompt, keywords: `${pid} ${m.level} python` })
+      items.push({ href: `/coding/${pid}#pt-more`, title: m.problem, kind: "Problem", summary: m.prompt, keywords: `${pid} ${m.level} typescript` })
     )
   );
   PATTERNS.forEach((p) =>
-    items.push({ href: `/coding/${p.id}#pt-worked`, title: p.worked.problem, kind: "Problem", summary: p.worked.prompt, keywords: `${p.id} python` })
+    items.push({ href: `/coding/${p.id}#pt-worked`, title: p.worked.problem, kind: "Problem", summary: p.worked.prompt, keywords: `${p.id} typescript` })
   );
-  items.push({ href: "/mobile-coding", title: "Mobile machine coding", kind: "Page", summary: "Low-level design problems in tested Swift with Android equivalents.", keywords: "lld ios android swift kotlin machine coding" });
+  items.push({ href: "/mobile-coding", title: "Mobile machine coding", kind: "Page", summary: "Low-level design problems in tested Kotlin with iOS equivalents.", keywords: "lld android kotlin coroutines ios machine coding" });
   MOBILE_PROBLEMS.forEach((m) =>
-    items.push({ href: `/mobile-coding/${m.id}`, title: m.title, kind: "Mobile", summary: m.tagline, keywords: `${m.tags.join(" ")} swift ios android kotlin` })
+    items.push({ href: `/mobile-coding/${m.id}`, title: m.title, kind: "Mobile", summary: m.tagline, keywords: `${m.tags.join(" ")} kotlin coroutines android ios` })
   );
   BEHAVIORAL.forEach((b) =>
     items.push({ href: `/problem-solving#bq-${b.id}`, title: b.q, kind: "Behavioral", summary: b.testing, keywords: b.theme })

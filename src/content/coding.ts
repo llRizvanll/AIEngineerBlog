@@ -1,5 +1,6 @@
 /* Coding interview patterns: how to recognise them, a reusable template,
-   a worked problem, practice problems and the traps. Code is Python 3. */
+   a worked problem, practice problems and the traps. Code is TypeScript (strict mode),
+   type-checked and tested. */
 
 export interface Pattern {
   id: string;
@@ -26,46 +27,45 @@ export const PATTERNS: Pattern[] = [
     complexity: "O(n) time after sorting, O(1) extra space",
     template: {
       title: "Pair with target sum (sorted)",
-      code: `def pair_sum(nums, target):
-    lo, hi = 0, len(nums) - 1
-    while lo < hi:
-        s = nums[lo] + nums[hi]
-        if s == target:
-            return lo, hi
-        if s < target:
-            lo += 1      # need a bigger sum
-        else:
-            hi -= 1      # need a smaller sum
-    return None`,
+      code: `function pairSum(nums: number[], target: number): [number, number] | null {
+  let lo = 0, hi = nums.length - 1;
+  while (lo < hi) {
+    const s = nums[lo] + nums[hi];
+    if (s === target) return [lo, hi];
+    if (s < target) lo++;   // need a bigger sum
+    else hi--;              // need a smaller sum
+  }
+  return null;
+}`,
       beats: [
         { hl: [1], note: "Start at both ends of the sorted array." },
-        { hl: [3, 4, 5], note: "Compare the current pair with the target." },
-        { hl: [6, 7, 8, 9], note: "Move the pointer that can only improve the sum." },
+        { hl: [3, 4], note: "Compare the current pair with the target." },
+        { hl: [5, 6], note: "Move the pointer that can only improve the sum." },
       ],
     },
     worked: {
       problem: "3Sum",
       prompt: "Return all unique triplets in nums that sum to zero.",
       approach: ["Sort the array.", "Fix one number, then run two pointers on the rest for the negated value.", "Skip duplicates at every level so triplets stay unique."],
-      code: `def three_sum(nums):
-    nums.sort()
-    out = []
-    for i in range(len(nums) - 2):
-        if i and nums[i] == nums[i - 1]:
-            continue                      # skip duplicate anchors
-        lo, hi = i + 1, len(nums) - 1
-        while lo < hi:
-            s = nums[i] + nums[lo] + nums[hi]
-            if s < 0:
-                lo += 1
-            elif s > 0:
-                hi -= 1
-            else:
-                out.append([nums[i], nums[lo], nums[hi]])
-                lo += 1
-                while lo < hi and nums[lo] == nums[lo - 1]:
-                    lo += 1               # skip duplicate seconds
-    return out`,
+      code: `function threeSum(nums: number[]): number[][] {
+  nums.sort((a, b) => a - b);
+  const out: number[][] = [];
+  for (let i = 0; i < nums.length - 2; i++) {
+    if (i > 0 && nums[i] === nums[i - 1]) continue;   // skip duplicate anchors
+    let lo = i + 1, hi = nums.length - 1;
+    while (lo < hi) {
+      const s = nums[i] + nums[lo] + nums[hi];
+      if (s < 0) lo++;
+      else if (s > 0) hi--;
+      else {
+        out.push([nums[i], nums[lo], nums[hi]]);
+        lo++;
+        while (lo < hi && nums[lo] === nums[lo - 1]) lo++;   // skip duplicate seconds
+      }
+    }
+  }
+  return out;
+}`,
       complexity: "O(n²) time, O(1) extra space beyond the output",
     },
     practice: [
@@ -85,46 +85,51 @@ export const PATTERNS: Pattern[] = [
     complexity: "O(n) time, O(k) space for the window state",
     template: {
       title: "Longest window that satisfies a rule",
-      code: `def longest_window(s):
-    count = {}
-    left = best = 0
-    for right, ch in enumerate(s):
-        count[ch] = count.get(ch, 0) + 1
-        while count[ch] > 1:           # window invalid
-            count[s[left]] -= 1
-            left += 1
-        best = max(best, right - left + 1)
-    return best`,
+      code: `function longestWindow(s: string): number {
+  const count = new Map<string, number>();
+  let left = 0, best = 0;
+  for (let right = 0; right < s.length; right++) {
+    const ch = s[right];
+    count.set(ch, (count.get(ch) ?? 0) + 1);
+    while (count.get(ch)! > 1) {   // window invalid
+      count.set(s[left], count.get(s[left])! - 1);
+      left++;
+    }
+    best = Math.max(best, right - left + 1);
+  }
+  return best;
+}`,
       beats: [
-        { hl: [3, 4], note: "Extend the right edge and record the new character." },
-        { hl: [5, 6, 7], note: "Shrink from the left until the window is valid again." },
-        { hl: [8], note: "Every valid window is a candidate answer." },
+        { hl: [3, 4, 5], note: "Extend the right edge and record the new character." },
+        { hl: [6, 7, 8, 9], note: "Shrink from the left until the window is valid again." },
+        { hl: [10], note: "Every valid window is a candidate answer." },
       ],
     },
     worked: {
       problem: "Minimum Window Substring",
       prompt: "Find the smallest substring of s that contains every character of t (with multiplicity).",
       approach: ["Count what t needs.", "Expand right; when a need is met, decrement 'missing'.", "While nothing is missing, record the window and shrink from the left."],
-      code: `from collections import Counter
-
-def min_window(s, t):
-    need = Counter(t)
-    missing = len(t)
-    left = 0
-    best = (0, float("inf"))
-    for right, ch in enumerate(s):
-        if need[ch] > 0:
-            missing -= 1
-        need[ch] -= 1
-        while missing == 0:
-            if right - left < best[1] - best[0]:
-                best = (left, right)
-            need[s[left]] += 1
-            if need[s[left]] > 0:
-                missing += 1
-            left += 1
-    lo, hi = best
-    return "" if hi == float("inf") else s[lo:hi + 1]`,
+      code: `function minWindow(s: string, t: string): string {
+  const need = new Map<string, number>();
+  for (const ch of t) need.set(ch, (need.get(ch) ?? 0) + 1);
+  let missing = t.length;
+  let left = 0, bestLo = 0, bestLen = Infinity;
+  for (let right = 0; right < s.length; right++) {
+    const ch = s[right];
+    if ((need.get(ch) ?? 0) > 0) missing--;
+    need.set(ch, (need.get(ch) ?? 0) - 1);
+    while (missing === 0) {
+      if (right - left + 1 < bestLen) {
+        bestLo = left;
+        bestLen = right - left + 1;
+      }
+      const out = s[left++];
+      need.set(out, need.get(out)! + 1);
+      if (need.get(out)! > 0) missing++;
+    }
+  }
+  return bestLen === Infinity ? "" : s.slice(bestLo, bestLo + bestLen);
+}`,
       complexity: "O(|s| + |t|) time, O(alphabet) space",
     },
     practice: [
@@ -144,34 +149,43 @@ def min_window(s, t):
     complexity: "O(n) time, O(1) space",
     template: {
       title: "Detect a cycle",
-      code: `def has_cycle(head):
-    slow = fast = head
-    while fast and fast.next:
-        slow = slow.next
-        fast = fast.next.next
-        if slow is fast:
-            return True
-    return False`,
+      code: `type ListNode = { val: number; next: ListNode | null };
+
+function hasCycle(head: ListNode | null): boolean {
+  let slow = head, fast = head;
+  while (fast && fast.next) {
+    slow = slow!.next;
+    fast = fast.next.next;
+    if (slow === fast) return true;
+  }
+  return false;
+}`,
       beats: [
-        { hl: [1], note: "Both pointers start at the head." },
-        { hl: [3, 4], note: "Slow moves one step, fast moves two." },
-        { hl: [5, 6], note: "If they ever meet, the list loops." },
+        { hl: [3], note: "Both pointers start at the head." },
+        { hl: [5, 6], note: "Slow moves one step, fast moves two." },
+        { hl: [7], note: "If they ever meet, the list loops." },
       ],
     },
     worked: {
       problem: "Linked List Cycle II",
-      prompt: "Return the node where the cycle begins, or None.",
+      prompt: "Return the node where the cycle begins, or null.",
       approach: ["Find a meeting point with fast and slow.", "Reset one pointer to head.", "Move both one step at a time; they meet at the cycle start (distance maths)."],
-      code: `def detect_cycle(head):
-    slow = fast = head
-    while fast and fast.next:
-        slow, fast = slow.next, fast.next.next
-        if slow is fast:
-            p = head
-            while p is not slow:
-                p, slow = p.next, slow.next
-            return p
-    return None`,
+      code: `function detectCycle(head: ListNode | null): ListNode | null {
+  let slow = head, fast = head;
+  while (fast && fast.next) {
+    slow = slow!.next;
+    fast = fast.next.next;
+    if (slow === fast) {
+      let p = head;
+      while (p !== slow) {
+        p = p!.next;
+        slow = slow!.next;
+      }
+      return p;
+    }
+  }
+  return null;
+}`,
       complexity: "O(n) time, O(1) space",
     },
     practice: [
@@ -191,36 +205,36 @@ def min_window(s, t):
     complexity: "O(log n) per search; O(n log range) for search on the answer",
     template: {
       title: "First value where check() becomes true",
-      code: `def first_true(lo, hi, check):
-    # smallest x in [lo, hi] with check(x) True
-    while lo < hi:
-        mid = (lo + hi) // 2
-        if check(mid):
-            hi = mid          # mid might be the answer
-        else:
-            lo = mid + 1      # answer is right of mid
-    return lo`,
+      code: `// smallest x in [lo, hi] with check(x) === true
+function firstTrue(lo: number, hi: number, check: (x: number) => boolean): number {
+  while (lo < hi) {
+    const mid = lo + Math.floor((hi - lo) / 2);
+    if (check(mid)) hi = mid;   // mid might be the answer
+    else lo = mid + 1;          // answer is right of mid
+  }
+  return lo;
+}`,
       beats: [
-        { hl: [2], note: "Loop until the range is a single value." },
-        { hl: [4, 5], note: "If mid works, keep it and search left." },
-        { hl: [6, 7], note: "Otherwise the answer is strictly to the right." },
+        { hl: [2, 3], note: "Loop until the range is a single value." },
+        { hl: [4], note: "If mid works, keep it and search left." },
+        { hl: [5], note: "Otherwise the answer is strictly to the right." },
       ],
     },
     worked: {
       problem: "Koko Eating Bananas",
       prompt: "Piles of bananas, h hours. Find the minimum eating speed k to finish in time.",
       approach: ["Speed range is 1 to max(pile).", "Feasible(k): total hours = sum(ceil(p / k)) ≤ h. It is monotonic in k.", "Binary search for the first feasible speed."],
-      code: `def min_eating_speed(piles, h):
-    def can(k):
-        return sum((p + k - 1) // k for p in piles) <= h
-    lo, hi = 1, max(piles)
-    while lo < hi:
-        mid = (lo + hi) // 2
-        if can(mid):
-            hi = mid
-        else:
-            lo = mid + 1
-    return lo`,
+      code: `function minEatingSpeed(piles: number[], h: number): number {
+  const can = (k: number) =>
+    piles.reduce((hours, p) => hours + Math.ceil(p / k), 0) <= h;
+  let lo = 1, hi = Math.max(...piles);
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (can(mid)) hi = mid;
+    else lo = mid + 1;
+  }
+  return lo;
+}`,
       complexity: "O(n log max(pile)) time, O(1) space",
     },
     practice: [
@@ -240,14 +254,16 @@ def min_window(s, t):
     complexity: "O(n) time, O(n) space",
     template: {
       title: "Count subarrays summing to k",
-      code: `def subarray_sum(nums, k):
-    seen = {0: 1}          # prefix sum -> count
-    prefix = count = 0
-    for x in nums:
-        prefix += x
-        count += seen.get(prefix - k, 0)
-        seen[prefix] = seen.get(prefix, 0) + 1
-    return count`,
+      code: `function subarraySum(nums: number[], k: number): number {
+  const seen = new Map<number, number>([[0, 1]]);   // prefix sum -> count
+  let prefix = 0, count = 0;
+  for (const x of nums) {
+    prefix += x;
+    count += seen.get(prefix - k) ?? 0;
+    seen.set(prefix, (seen.get(prefix) ?? 0) + 1);
+  }
+  return count;
+}`,
       beats: [
         { hl: [1], note: "An empty prefix (sum 0) has been seen once." },
         { hl: [4, 5], note: "A subarray ending here sums to k if prefix − k was seen." },
@@ -258,21 +274,22 @@ def min_window(s, t):
       problem: "Longest Consecutive Sequence",
       prompt: "Unsorted integers; return the length of the longest run of consecutive values, in O(n).",
       approach: ["Put everything in a set.", "Only start counting from numbers whose predecessor is missing.", "Each number is visited a constant number of times."],
-      code: `def longest_consecutive(nums):
-    s = set(nums)
-    best = 0
-    for x in s:
-        if x - 1 not in s:           # x starts a run
-            y = x
-            while y + 1 in s:
-                y += 1
-            best = max(best, y - x + 1)
-    return best`,
+      code: `function longestConsecutive(nums: number[]): number {
+  const s = new Set(nums);
+  let best = 0;
+  for (const x of s) {
+    if (s.has(x - 1)) continue;   // x is not the start of a run
+    let y = x;
+    while (s.has(y + 1)) y++;
+    best = Math.max(best, y - x + 1);
+  }
+  return best;
+}`,
       complexity: "O(n) time, O(n) space",
     },
     practice: [
       { name: "Two Sum", level: "Easy", hint: "Store value → index; look up target − x." },
-      { name: "Group Anagrams", level: "Medium", hint: "Key = sorted word or a 26-count tuple." },
+      { name: "Group Anagrams", level: "Medium", hint: "Key = sorted word or the 26 letter counts joined into a string." },
       { name: "Product of Array Except Self", level: "Medium", hint: "Prefix products from the left, suffix from the right." },
     ],
     pitfalls: ["Forgetting the {0: 1} seed", "Updating the map before the lookup (counts itself)"],
@@ -287,33 +304,39 @@ def min_window(s, t):
     complexity: "O(n) time, O(n) space",
     template: {
       title: "Next greater element to the right",
-      code: `def next_greater(nums):
-    res = [-1] * len(nums)
-    stack = []                 # indices, values decreasing
-    for i, x in enumerate(nums):
-        while stack and nums[stack[-1]] < x:
-            res[stack.pop()] = x
-        stack.append(i)
-    return res`,
+      code: `function nextGreater(nums: number[]): number[] {
+  const res = new Array<number>(nums.length).fill(-1);
+  const stack: number[] = [];   // indices, values decreasing
+  for (let i = 0; i < nums.length; i++) {
+    while (stack.length && nums[stack[stack.length - 1]] < nums[i]) {
+      res[stack.pop()!] = nums[i];
+    }
+    stack.push(i);
+  }
+  return res;
+}`,
       beats: [
         { hl: [2], note: "The stack holds indices still waiting for an answer." },
-        { hl: [4, 5], note: "A bigger value resolves every smaller one on the stack." },
-        { hl: [6], note: "The current index now waits for its own answer." },
+        { hl: [4, 5, 6], note: "A bigger value resolves every smaller one on the stack." },
+        { hl: [7], note: "The current index now waits for its own answer." },
       ],
     },
     worked: {
       problem: "Daily Temperatures",
       prompt: "For each day, how many days until a warmer temperature? 0 if none.",
       approach: ["Same template, but store the distance instead of the value."],
-      code: `def daily_temperatures(t):
-    res = [0] * len(t)
-    stack = []
-    for i, x in enumerate(t):
-        while stack and t[stack[-1]] < x:
-            j = stack.pop()
-            res[j] = i - j
-        stack.append(i)
-    return res`,
+      code: `function dailyTemperatures(t: number[]): number[] {
+  const res = new Array<number>(t.length).fill(0);
+  const stack: number[] = [];
+  for (let i = 0; i < t.length; i++) {
+    while (stack.length && t[stack[stack.length - 1]] < t[i]) {
+      const j = stack.pop()!;
+      res[j] = i - j;
+    }
+    stack.push(i);
+  }
+  return res;
+}`,
       complexity: "O(n) time, O(n) space",
     },
     practice: [
@@ -333,42 +356,79 @@ def min_window(s, t):
     complexity: "O(n log k) time, O(k) space",
     template: {
       title: "K largest with a size-k min-heap",
-      code: `import heapq
+      code: `class MinHeap<T> {
+  private a: T[] = [];
+  private less: (x: T, y: T) => boolean;
+  constructor(less: (x: T, y: T) => boolean) {
+    this.less = less;
+  }
+  get size(): number { return this.a.length; }
+  peek(): T | undefined { return this.a[0]; }
+  push(x: T): void {
+    const a = this.a;
+    let i = a.push(x) - 1;
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (!this.less(a[i], a[p])) break;
+      [a[i], a[p]] = [a[p], a[i]];
+      i = p;
+    }
+  }
+  pop(): T | undefined {
+    const a = this.a, top = a[0], last = a.pop()!;
+    if (a.length === 0) return top;
+    a[0] = last;
+    for (let i = 0; ; ) {
+      const l = 2 * i + 1, r = l + 1;
+      let m = i;
+      if (l < a.length && this.less(a[l], a[m])) m = l;
+      if (r < a.length && this.less(a[r], a[m])) m = r;
+      if (m === i) return top;
+      [a[i], a[m]] = [a[m], a[i]];
+      i = m;
+    }
+  }
+}
 
-def k_largest(nums, k):
-    heap = []
-    for x in nums:
-        heapq.heappush(heap, x)
-        if len(heap) > k:
-            heapq.heappop(heap)   # drop the smallest
-    return sorted(heap, reverse=True)`,
+function kLargest(nums: number[], k: number): number[] {
+  const heap = new MinHeap<number>((x, y) => x < y);
+  for (const x of nums) {
+    heap.push(x);
+    if (heap.size > k) heap.pop();   // drop the smallest
+  }
+  const out: number[] = [];
+  while (heap.size) out.push(heap.pop()!);
+  return out.reverse();
+}`,
       beats: [
-        { hl: [3], note: "Python's heapq is a min-heap." },
-        { hl: [5, 6, 7], note: "Push, then evict the smallest once we exceed k." },
-        { hl: [8], note: "What remains are the k largest; heap[0] is the kth." },
+        { hl: [0, 1, 2, 3, 4, 5], note: "TypeScript has no built-in heap: write a small array-backed one with a comparator." },
+        { hl: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17], note: "push: append, then sift up while smaller than the parent. O(log n)." },
+        { hl: [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31], note: "pop: move the last item to the root, then sift down. O(log n)." },
+        { hl: [35, 36, 37, 38, 39], note: "Size-k min-heap: push, then evict the smallest once we exceed k." },
       ],
     },
     worked: {
       problem: "Merge K Sorted Lists",
       prompt: "Merge k sorted linked lists into one sorted list.",
       approach: ["Push (value, list index, node) for each head; the index breaks ties.", "Pop the smallest, append it, push its next node."],
-      code: `import heapq
-
-def merge_k_lists(lists):
-    heap = [(n.val, i, n) for i, n in enumerate(lists) if n]
-    heapq.heapify(heap)
-    dummy = tail = ListNode(0)
-    while heap:
-        _, i, node = heapq.heappop(heap)
-        tail.next = tail = node
-        if node.next:
-            heapq.heappush(heap, (node.next.val, i, node.next))
-    return dummy.next`,
+      code: `function mergeKLists(lists: (ListNode | null)[]): ListNode | null {
+  const heap = new MinHeap<ListNode>((x, y) => x.val < y.val);
+  for (const head of lists) if (head) heap.push(head);
+  const dummy: ListNode = { val: 0, next: null };
+  let tail = dummy;
+  while (heap.size) {
+    const node = heap.pop()!;
+    tail.next = node;
+    tail = node;
+    if (node.next) heap.push(node.next);
+  }
+  return dummy.next;
+}`,
       complexity: "O(N log k) time for N total nodes, O(k) space",
     },
     practice: [
       { name: "Kth Largest Element in an Array", level: "Medium", hint: "Size-k min-heap, answer is heap[0]." },
-      { name: "Top K Frequent Elements", level: "Medium", hint: "Counter, then heapq.nlargest(k, counts, key=counts.get)." },
+      { name: "Top K Frequent Elements", level: "Medium", hint: "Count with a Map, then bucket by frequency, or keep a size-k heap." },
       { name: "Find Median from Data Stream", level: "Hard", hint: "Max-heap for the low half, min-heap for the high half." },
     ],
     pitfalls: ["Needing a max-heap: push negated values", "Comparing nodes on ties: add an index"],
@@ -383,36 +443,35 @@ def merge_k_lists(lists):
     complexity: "O(n log n) time for the sort",
     template: {
       title: "Merge overlapping intervals",
-      code: `def merge(intervals):
-    intervals.sort(key=lambda iv: iv[0])
-    merged = []
-    for start, end in intervals:
-        if merged and start <= merged[-1][1]:
-            merged[-1][1] = max(merged[-1][1], end)
-        else:
-            merged.append([start, end])
-    return merged`,
+      code: `function merge(intervals: number[][]): number[][] {
+  intervals.sort((a, b) => a[0] - b[0]);
+  const merged: number[][] = [];
+  for (const [start, end] of intervals) {
+    const last = merged[merged.length - 1];
+    if (last && start <= last[1]) last[1] = Math.max(last[1], end);
+    else merged.push([start, end]);
+  }
+  return merged;
+}`,
       beats: [
         { hl: [1], note: "Sort by start time." },
         { hl: [4, 5], note: "Overlap with the last block: extend its end." },
-        { hl: [6, 7], note: "No overlap: start a new block." },
+        { hl: [6], note: "No overlap: start a new block." },
       ],
     },
     worked: {
       problem: "Meeting Rooms II",
       prompt: "Minimum number of rooms needed for a list of meetings.",
       approach: ["Sort meetings by start.", "Keep a min-heap of end times of rooms in use.", "Reuse the room that frees up first if it is free by the new start."],
-      code: `import heapq
-
-def min_rooms(meetings):
-    meetings.sort()
-    ends = []
-    for start, end in meetings:
-        if ends and ends[0] <= start:
-            heapq.heapreplace(ends, end)   # reuse a room
-        else:
-            heapq.heappush(ends, end)      # open a room
-    return len(ends)`,
+      code: `function minRooms(meetings: number[][]): number {
+  meetings.sort((a, b) => a[0] - b[0]);
+  const ends = new MinHeap<number>((x, y) => x < y);
+  for (const [start, end] of meetings) {
+    if (ends.size && ends.peek()! <= start) ends.pop();   // reuse a room
+    ends.push(end);
+  }
+  return ends.size;
+}`,
       complexity: "O(n log n) time, O(n) space",
     },
     practice: [
@@ -432,47 +491,54 @@ def min_rooms(meetings):
     complexity: "O(V + E) time, O(V) space",
     template: {
       title: "BFS shortest steps in a grid",
-      code: `from collections import deque
-
-def shortest(grid, start, goal):
-    q = deque([(start, 0)])
-    seen = {start}
-    while q:
-        (r, c), d = q.popleft()
-        if (r, c) == goal:
-            return d
-        for nr, nc in ((r+1,c),(r-1,c),(r,c+1),(r,c-1)):
-            if (0 <= nr < len(grid) and 0 <= nc < len(grid[0])
-                    and grid[nr][nc] != "#" and (nr, nc) not in seen):
-                seen.add((nr, nc))
-                q.append(((nr, nc), d + 1))
-    return -1`,
+      code: `function shortest(grid: string[][], start: [number, number], goal: [number, number]): number {
+  const rows = grid.length, cols = grid[0].length;
+  const q: [number, number, number][] = [[start[0], start[1], 0]];
+  const seen = new Set([start[0] * cols + start[1]]);
+  for (let head = 0; head < q.length; head++) {
+    const [r, c, d] = q[head];
+    if (r === goal[0] && c === goal[1]) return d;
+    for (const [nr, nc] of [[r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]]) {
+      if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
+      if (grid[nr][nc] === "#" || seen.has(nr * cols + nc)) continue;
+      seen.add(nr * cols + nc);
+      q.push([nr, nc, d + 1]);
+    }
+  }
+  return -1;
+}`,
       beats: [
-        { hl: [3, 4], note: "Queue of (cell, distance); mark the start visited." },
-        { hl: [6, 7, 8], note: "Pop in layer order; the first time we see the goal is shortest." },
-        { hl: [9, 10, 11, 12, 13], note: "Enqueue valid neighbours and mark them visited immediately." },
+        { hl: [2, 3], note: "Queue of [row, col, distance]; a cell's key is row × cols + col." },
+        { hl: [4, 5, 6], note: "A head index turns the array into an O(1) queue; the first time we reach the goal is shortest." },
+        { hl: [7, 8, 9, 10, 11, 12], note: "Enqueue valid neighbours and mark them visited immediately." },
       ],
     },
     worked: {
       problem: "Number of Islands",
       prompt: "Count groups of connected '1' cells in a grid.",
       approach: ["Scan every cell.", "On an unvisited land cell, count an island and flood-fill it.", "Flood-fill sinks cells so they are not counted again."],
-      code: `def num_islands(grid):
-    rows, cols = len(grid), len(grid[0])
-    def sink(r, c):
-        stack = [(r, c)]
-        while stack:
-            r, c = stack.pop()
-            if 0 <= r < rows and 0 <= c < cols and grid[r][c] == "1":
-                grid[r][c] = "0"
-                stack += [(r+1, c), (r-1, c), (r, c+1), (r, c-1)]
-    count = 0
-    for r in range(rows):
-        for c in range(cols):
-            if grid[r][c] == "1":
-                count += 1
-                sink(r, c)
-    return count`,
+      code: `function numIslands(grid: string[][]): number {
+  const rows = grid.length, cols = grid[0].length;
+  const sink = (r0: number, c0: number) => {
+    const stack: [number, number][] = [[r0, c0]];
+    while (stack.length) {
+      const [r, c] = stack.pop()!;
+      if (r < 0 || r >= rows || c < 0 || c >= cols || grid[r][c] !== "1") continue;
+      grid[r][c] = "0";
+      stack.push([r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]);
+    }
+  };
+  let count = 0;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (grid[r][c] === "1") {
+        count++;
+        sink(r, c);
+      }
+    }
+  }
+  return count;
+}`,
       complexity: "O(rows × cols) time and space",
     },
     practice: [
@@ -492,52 +558,49 @@ def shortest(grid, start, goal):
     complexity: "O(V + E) time and space",
     template: {
       title: "Kahn's algorithm",
-      code: `from collections import deque, defaultdict
-
-def topo_order(n, edges):          # edge (a, b): a before b
-    graph = defaultdict(list)
-    indeg = [0] * n
-    for a, b in edges:
-        graph[a].append(b)
-        indeg[b] += 1
-    q = deque(i for i in range(n) if indeg[i] == 0)
-    order = []
-    while q:
-        node = q.popleft()
-        order.append(node)
-        for nxt in graph[node]:
-            indeg[nxt] -= 1
-            if indeg[nxt] == 0:
-                q.append(nxt)
-    return order if len(order) == n else []   # [] = cycle`,
+      code: `// edge [a, b]: a must come before b
+function topoOrder(n: number, edges: [number, number][]): number[] {
+  const graph: number[][] = Array.from({ length: n }, () => []);
+  const indeg = new Array<number>(n).fill(0);
+  for (const [a, b] of edges) {
+    graph[a].push(b);
+    indeg[b]++;
+  }
+  const q = [...indeg.keys()].filter((i) => indeg[i] === 0);
+  for (let head = 0; head < q.length; head++) {
+    for (const next of graph[q[head]]) {
+      if (--indeg[next] === 0) q.push(next);
+    }
+  }
+  return q.length === n ? q : [];   // [] means a cycle
+}`,
       beats: [
-        { hl: [5, 6, 7], note: "Build the graph and count incoming edges." },
+        { hl: [2, 3, 4, 5, 6, 7], note: "Build the graph and count incoming edges." },
         { hl: [8], note: "Start with everything that has no prerequisites." },
-        { hl: [13, 14, 15, 16], note: "Removing a node may free its neighbours." },
+        { hl: [9, 10, 11, 12, 13], note: "Removing a node may free its neighbours. The queue, read in order, is the answer." },
       ],
     },
     worked: {
       problem: "Course Schedule",
       prompt: "Can you finish all courses given prerequisite pairs [course, prereq]?",
       approach: ["Edges go prereq → course.", "Run Kahn's algorithm.", "Possible only if every course gets placed."],
-      code: `from collections import deque
-
-def can_finish(n, prereqs):
-    graph = [[] for _ in range(n)]
-    indeg = [0] * n
-    for course, pre in prereqs:
-        graph[pre].append(course)
-        indeg[course] += 1
-    q = deque(i for i in range(n) if indeg[i] == 0)
-    taken = 0
-    while q:
-        c = q.popleft()
-        taken += 1
-        for nxt in graph[c]:
-            indeg[nxt] -= 1
-            if indeg[nxt] == 0:
-                q.append(nxt)
-    return taken == n`,
+      code: `function canFinish(n: number, prereqs: [number, number][]): boolean {
+  const graph: number[][] = Array.from({ length: n }, () => []);
+  const indeg = new Array<number>(n).fill(0);
+  for (const [course, pre] of prereqs) {
+    graph[pre].push(course);
+    indeg[course]++;
+  }
+  const q = [...indeg.keys()].filter((i) => indeg[i] === 0);
+  let taken = 0;
+  for (let head = 0; head < q.length; head++) {
+    taken++;
+    for (const next of graph[q[head]]) {
+      if (--indeg[next] === 0) q.push(next);
+    }
+  }
+  return taken === n;
+}`,
       complexity: "O(V + E) time and space",
     },
     practice: [
@@ -557,40 +620,46 @@ def can_finish(n, prereqs):
     complexity: "≈ O(α(n)) per operation, effectively constant",
     template: {
       title: "Disjoint set union",
-      code: `class DSU:
-    def __init__(self, n):
-        self.parent = list(range(n))
-        self.size = [1] * n
-    def find(self, x):
-        while self.parent[x] != x:
-            self.parent[x] = self.parent[self.parent[x]]
-            x = self.parent[x]
-        return x
-    def union(self, a, b):
-        ra, rb = self.find(a), self.find(b)
-        if ra == rb:
-            return False
-        if self.size[ra] < self.size[rb]:
-            ra, rb = rb, ra
-        self.parent[rb] = ra
-        self.size[ra] += self.size[rb]
-        return True`,
+      code: `class DSU {
+  parent: number[];
+  size: number[];
+  constructor(n: number) {
+    this.parent = Array.from({ length: n }, (_, i) => i);
+    this.size = new Array<number>(n).fill(1);
+  }
+  find(x: number): number {
+    while (this.parent[x] !== x) {
+      this.parent[x] = this.parent[this.parent[x]];   // path halving
+      x = this.parent[x];
+    }
+    return x;
+  }
+  union(a: number, b: number): boolean {
+    let ra = this.find(a), rb = this.find(b);
+    if (ra === rb) return false;
+    if (this.size[ra] < this.size[rb]) [ra, rb] = [rb, ra];
+    this.parent[rb] = ra;
+    this.size[ra] += this.size[rb];
+    return true;
+  }
+}`,
       beats: [
-        { hl: [2, 3], note: "Each element starts as its own group." },
-        { hl: [4, 5, 6, 7, 8], note: "Find the root, halving the path as we go." },
-        { hl: [9, 10, 11, 12, 13, 14, 15, 16, 17], note: "Attach the smaller tree under the bigger root." },
+        { hl: [1, 2, 3, 4, 5, 6], note: "Each element starts as its own group." },
+        { hl: [7, 8, 9, 10, 11, 12, 13], note: "Find the root, halving the path as we go." },
+        { hl: [14, 15, 16, 17, 18, 19, 20, 21], note: "Attach the smaller tree under the bigger root." },
       ],
     },
     worked: {
       problem: "Redundant Connection",
       prompt: "A tree with one extra edge added. Return the edge that creates the cycle.",
       approach: ["Process edges in order.", "If both ends are already in the same group, this edge closes a cycle."],
-      code: `def find_redundant_connection(edges):
-    dsu = DSU(len(edges) + 1)
-    for a, b in edges:
-        if not dsu.union(a, b):
-            return [a, b]
-    return []`,
+      code: `function findRedundantConnection(edges: [number, number][]): number[] {
+  const dsu = new DSU(edges.length + 1);
+  for (const [a, b] of edges) {
+    if (!dsu.union(a, b)) return [a, b];
+  }
+  return [];
+}`,
       complexity: "O(n α(n)) time, O(n) space",
     },
     practice: [
@@ -610,16 +679,19 @@ def can_finish(n, prereqs):
     complexity: "Exponential: O(2ⁿ) subsets, O(n!) permutations",
     template: {
       title: "Subsets",
-      code: `def subsets(nums):
-    out, path = [], []
-    def go(start):
-        out.append(path[:])          # copy!
-        for i in range(start, len(nums)):
-            path.append(nums[i])     # choose
-            go(i + 1)                # explore
-            path.pop()               # un-choose
-    go(0)
-    return out`,
+      code: `function subsets(nums: number[]): number[][] {
+  const out: number[][] = [], path: number[] = [];
+  const go = (start: number): void => {
+    out.push([...path]);   // copy!
+    for (let i = start; i < nums.length; i++) {
+      path.push(nums[i]);  // choose
+      go(i + 1);           // explore
+      path.pop();          // un-choose
+    }
+  };
+  go(0);
+  return out;
+}`,
       beats: [
         { hl: [3], note: "Every node of the recursion tree is a subset; store a copy." },
         { hl: [5, 6], note: "Choose an element and recurse on the rest." },
@@ -630,21 +702,24 @@ def can_finish(n, prereqs):
       problem: "Combination Sum",
       prompt: "Distinct candidates, reuse allowed. All combinations that sum to target.",
       approach: ["Sort so you can stop early when a candidate is too big.", "Recurse with i (not i + 1) because reuse is allowed."],
-      code: `def combination_sum(cands, target):
-    cands.sort()
-    out, path = [], []
-    def go(start, remain):
-        if remain == 0:
-            out.append(path[:])
-            return
-        for i in range(start, len(cands)):
-            if cands[i] > remain:
-                break                 # prune: sorted
-            path.append(cands[i])
-            go(i, remain - cands[i])  # reuse allowed
-            path.pop()
-    go(0, target)
-    return out`,
+      code: `function combinationSum(cands: number[], target: number): number[][] {
+  cands.sort((a, b) => a - b);
+  const out: number[][] = [], path: number[] = [];
+  const go = (start: number, remain: number): void => {
+    if (remain === 0) {
+      out.push([...path]);
+      return;
+    }
+    for (let i = start; i < cands.length; i++) {
+      if (cands[i] > remain) break;   // prune: sorted
+      path.push(cands[i]);
+      go(i, remain - cands[i]);       // reuse allowed
+      path.pop();
+    }
+  };
+  go(0, target);
+  return out;
+}`,
       complexity: "Exponential in target / min(candidate)",
     },
     practice: [
@@ -664,42 +739,44 @@ def can_finish(n, prereqs):
     complexity: "O(states × transitions)",
     template: {
       title: "Top-down with memo",
-      code: `from functools import lru_cache
-
-def min_cost_climb(cost):
-    n = len(cost)
-    @lru_cache(None)
-    def dp(i):                      # min cost to reach the top from step i
-        if i >= n:
-            return 0
-        return cost[i] + min(dp(i + 1), dp(i + 2))
-    return min(dp(0), dp(1))`,
+      code: `function minCostClimb(cost: number[]): number {
+  const n = cost.length;
+  const memo = new Map<number, number>();
+  const dp = (i: number): number => {   // min cost to reach the top from step i
+    if (i >= n) return 0;
+    if (!memo.has(i)) memo.set(i, cost[i] + Math.min(dp(i + 1), dp(i + 2)));
+    return memo.get(i)!;
+  };
+  return Math.min(dp(0), dp(1));
+}`,
       beats: [
-        { hl: [5], note: "State: the cheapest way to finish from step i." },
-        { hl: [6, 7], note: "Base case: past the end costs nothing." },
-        { hl: [8], note: "Recurrence: pay this step, then take the better next move." },
+        { hl: [3], note: "State: the cheapest way to finish from step i." },
+        { hl: [4], note: "Base case: past the end costs nothing." },
+        { hl: [5, 6], note: "Recurrence: pay this step, then take the better next move. A Map memoises each state once." },
       ],
     },
     worked: {
       problem: "Coin Change",
       prompt: "Fewest coins to make amount; -1 if impossible.",
       approach: ["State: best[a] = fewest coins for amount a.", "Recurrence: best[a] = 1 + min(best[a − coin]).", "Fill amounts from 1 upwards."],
-      code: `def coin_change(coins, amount):
-    INF = float("inf")
-    best = [0] + [INF] * amount
-    for a in range(1, amount + 1):
-        for c in coins:
-            if c <= a and best[a - c] + 1 < best[a]:
-                best[a] = best[a - c] + 1
-    return best[amount] if best[amount] != INF else -1`,
+      code: `function coinChange(coins: number[], amount: number): number {
+  const best = new Array<number>(amount + 1).fill(Infinity);
+  best[0] = 0;
+  for (let a = 1; a <= amount; a++) {
+    for (const c of coins) {
+      if (c <= a && best[a - c] + 1 < best[a]) best[a] = best[a - c] + 1;
+    }
+  }
+  return best[amount] === Infinity ? -1 : best[amount];
+}`,
       complexity: "O(amount × coins) time, O(amount) space",
     },
     practice: [
       { name: "Climbing Stairs", level: "Easy", hint: "ways(n) = ways(n-1) + ways(n-2)." },
-      { name: "Longest Increasing Subsequence", level: "Medium", hint: "O(n log n): patience sorting with bisect." },
+      { name: "Longest Increasing Subsequence", level: "Medium", hint: "O(n log n): patience sorting with a hand-written binary search." },
       { name: "Edit Distance", level: "Hard", hint: "dp[i][j] over prefixes; insert, delete or replace." },
     ],
-    pitfalls: ["Starting to code before stating the state", "Mutable arguments in lru_cache (use tuples)", "Wrong iteration order in bottom-up tables"],
+    pitfalls: ["Starting to code before stating the state", "Memo keys built from arrays (Map compares them by reference)", "Wrong iteration order in bottom-up tables"],
   },
   {
     id: "trie",
@@ -707,45 +784,61 @@ def min_cost_climb(cost):
     tagline: "A tree of characters for fast prefix lookups.",
     color: ["#d946ef", "#0ea5e9"],
     signals: ["Autocomplete or 'starts with'", "Many words searched in one grid", "Longest common prefix", "Replace words by roots"],
-    idea: "Each node is a dict of next characters plus an end-of-word flag. Inserting or searching a word costs its length, independent of how many words are stored.",
+    idea: "Each node is a Map of next characters plus an end-of-word flag. Inserting or searching a word costs its length, independent of how many words are stored.",
     complexity: "O(L) per insert or lookup, O(total characters) space",
     template: {
       title: "Insert and prefix search",
-      code: `class Trie:
-    def __init__(self):
-        self.root = {}
-    def insert(self, word):
-        node = self.root
-        for ch in word:
-            node = node.setdefault(ch, {})
-        node["$"] = True             # end of word
-    def starts_with(self, prefix):
-        node = self.root
-        for ch in prefix:
-            if ch not in node:
-                return False
-            node = node[ch]
-        return True`,
+      code: `class TrieNode {
+  children = new Map<string, TrieNode>();
+  end = false;
+}
+
+class Trie {
+  root = new TrieNode();
+  insert(word: string): void {
+    let node = this.root;
+    for (const ch of word) {
+      if (!node.children.has(ch)) node.children.set(ch, new TrieNode());
+      node = node.children.get(ch)!;
+    }
+    node.end = true;
+  }
+  startsWith(prefix: string): boolean {
+    let node = this.root;
+    for (const ch of prefix) {
+      const next = node.children.get(ch);
+      if (!next) return false;
+      node = next;
+    }
+    return true;
+  }
+}`,
       beats: [
-        { hl: [2], note: "The root is an empty map of first letters." },
-        { hl: [4, 5, 6, 7], note: "Walk or create one node per character; mark the end." },
-        { hl: [9, 10, 11, 12, 13, 14], note: "A prefix exists if every character has a node." },
+        { hl: [6], note: "The root is an empty node; each node maps a character to its child." },
+        { hl: [7, 8, 9, 10, 11, 12, 13, 14], note: "Walk or create one node per character, then mark the end of the word." },
+        { hl: [15, 16, 17, 18, 19, 20, 21, 22, 23], note: "A prefix exists if every character has a node." },
       ],
     },
     worked: {
       problem: "Search Suggestions System",
       prompt: "After each typed character, return up to three products with that prefix, alphabetically.",
-      approach: ["Sort products once.", "For each prefix, binary search the first match and take up to three that still match.", "A trie works too; sorting + bisect is shorter in an interview."],
-      code: `from bisect import bisect_left
-
-def suggested_products(products, word):
-    products.sort()
-    out, prefix = [], ""
-    for ch in word:
-        prefix += ch
-        i = bisect_left(products, prefix)
-        out.append([p for p in products[i:i + 3] if p.startswith(prefix)])
-    return out`,
+      approach: ["Sort products once.", "For each prefix, binary search the first match and take up to three that still match.", "A trie works too; sorting + binary search is shorter in an interview."],
+      code: `function suggestedProducts(products: string[], word: string): string[][] {
+  products.sort();
+  const out: string[][] = [];
+  let prefix = "";
+  for (const ch of word) {
+    prefix += ch;
+    let lo = 0, hi = products.length;   // first product >= prefix
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (products[mid] < prefix) lo = mid + 1;
+      else hi = mid;
+    }
+    out.push(products.slice(lo, lo + 3).filter((p) => p.startsWith(prefix)));
+  }
+  return out;
+}`,
       complexity: "O(n log n + L log n) time",
     },
     practice: [
@@ -765,32 +858,37 @@ def suggested_products(products, word):
     complexity: "Usually O(n) or O(n log n) with a sort",
     template: {
       title: "Jump game: can you reach the end?",
-      code: `def can_jump(nums):
-    reach = 0
-    for i, step in enumerate(nums):
-        if i > reach:
-            return False          # stuck before i
-        reach = max(reach, i + step)
-    return True`,
+      code: `function canJump(nums: number[]): boolean {
+  let reach = 0;
+  for (let i = 0; i < nums.length; i++) {
+    if (i > reach) return false;   // stuck before i
+    reach = Math.max(reach, i + nums[i]);
+  }
+  return true;
+}`,
       beats: [
         { hl: [1], note: "Track the furthest index reachable so far." },
-        { hl: [3, 4], note: "If we are past it, we can never get here." },
-        { hl: [5], note: "Greedily extend the reach." },
+        { hl: [3], note: "If we are past it, we can never get here." },
+        { hl: [4], note: "Greedily extend the reach." },
       ],
     },
     worked: {
       problem: "Gas Station",
       prompt: "Circular route; find the start station that lets you finish, or -1.",
       approach: ["If total gas < total cost, impossible.", "Otherwise, whenever the tank goes negative, the start must be after this station."],
-      code: `def can_complete_circuit(gas, cost):
-    if sum(gas) < sum(cost):
-        return -1
-    start = tank = 0
-    for i in range(len(gas)):
-        tank += gas[i] - cost[i]
-        if tank < 0:
-            start, tank = i + 1, 0
-    return start`,
+      code: `function canCompleteCircuit(gas: number[], cost: number[]): number {
+  const total = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
+  if (total(gas) < total(cost)) return -1;
+  let start = 0, tank = 0;
+  for (let i = 0; i < gas.length; i++) {
+    tank += gas[i] - cost[i];
+    if (tank < 0) {
+      start = i + 1;
+      tank = 0;
+    }
+  }
+  return start;
+}`,
       complexity: "O(n) time, O(1) space",
     },
     practice: [
@@ -840,17 +938,17 @@ export const SIGNAL_MAP: [string, string, string][] = [
 
 export const HACKS: { title: string; color: [string, string]; items: [string, string][] }[] = [
   {
-    title: "Python power tools",
+    title: "TypeScript power tools",
     color: ["#6c47ff", "#ec4899"],
     items: [
-      ["collections.Counter", "Frequency maps in one line; most_common(k) gives top-k."],
-      ["collections.defaultdict(list)", "Adjacency lists and grouping without key checks."],
-      ["collections.deque", "O(1) pops from both ends: BFS queues and monotonic deques."],
-      ["heapq with negatives", "Max-heap = push -x. Tuples (priority, tiebreak, item) avoid comparing objects."],
-      ["bisect_left / bisect_right", "Binary search on sorted lists for insert positions and counts."],
-      ["functools.lru_cache(None)", "Instant memoisation for top-down DP. Arguments must be hashable."],
-      ["float('inf')", "Clean initial values for min and max comparisons."],
-      ["sys.setrecursionlimit(10**6)", "Deep DFS on large inputs, or switch to an explicit stack."],
+      ["Map + ?? for counts", "map.set(k, (map.get(k) ?? 0) + 1) is the one-line frequency map. Map keeps insertion order."],
+      ["Queue = array + head index", "q[head++] is O(1). Array.shift() is O(n) and turns BFS quadratic."],
+      ["Write a 25-line MinHeap", "No built-in heap: an array, sift-up, sift-down and a comparator. Flip the comparator for a max-heap."],
+      ["sort((a, b) => a - b)", "The default sort compares numbers as strings: [10, 9, 1].sort() gives [1, 10, 9]."],
+      ["Keys by value, not reference", "Map and Set compare arrays by reference. Encode cells as r * cols + c, or join into a string."],
+      ["Map for memoisation", "memo.has(i) ? memo.get(i)! : compute. Encode multi-part states as one number or string."],
+      ["Infinity and -Infinity", "Clean initial values for min and max comparisons."],
+      ["Explicit stacks for deep DFS", "JavaScript engines overflow around 10⁴ frames; use a stack for large grids."],
     ],
   },
   {
@@ -862,7 +960,7 @@ export const HACKS: { title: string; color: [string, string]; items: [string, st
       ["All the same", "Duplicates break uniqueness and pointer logic."],
       ["Negatives and zero", "Sliding windows on sums fail with negatives; use prefix sums instead."],
       ["Already sorted / reversed", "Worst cases for naive quicksort and some greedy choices."],
-      ["Very large values", "Overflow in other languages; time limits in Python."],
+      ["Very large values", "Numbers are exact only up to 2⁵³ − 1; use BigInt for big products or hashes."],
     ],
   },
   {
@@ -870,11 +968,11 @@ export const HACKS: { title: string; color: [string, string]; items: [string, st
     color: ["#f43f5e", "#f59e0b"],
     items: [
       ["Off-by-one", "Decide inclusive or exclusive bounds once and write it as a comment."],
-      ["path instead of path[:]", "Backtracking stores the same list object again and again."],
+      ["path instead of [...path]", "Backtracking stores the same array again and again; push a copy."],
       ["Visited on pop", "Mark visited when you enqueue, or BFS revisits nodes many times."],
       ["Mutating while iterating", "Iterate over a copy or collect changes first."],
-      ["Shared default lists", "def f(x, seen=[]) keeps state between calls; use None."],
-      ["[[0]*m]*n", "Creates n references to the same row. Use a comprehension."],
+      ["Missing a key in a Map", "map.get(k) is undefined, and undefined + 1 is NaN. Default with ?? 0."],
+      ["new Array(n).fill([])", "Every slot shares one array. Use Array.from({ length: n }, () => [])."],
     ],
   },
   {
@@ -894,58 +992,58 @@ export const HACKS: { title: string; color: [string, string]; items: [string, st
 /** Step-by-step highlights for each worked solution (0-based line numbers), used by the code reels. */
 export const WORKED_BEATS: Record<string, { hl: number[]; note: string }[]> = {
   "two-pointers": [
-    { hl: [1], note: "Sort first, so two pointers can steer the sum." },
-    { hl: [3, 4, 5], note: "Fix each anchor once and skip duplicate anchors." },
-    { hl: [6, 7, 8, 9, 10, 11, 12], note: "Two pointers on the rest: move towards a zero sum." },
-    { hl: [13, 14, 15, 16, 17], note: "Record the triplet, then skip duplicate seconds." },
+    { hl: [1], note: "Sort numerically first (the default sort compares strings), so two pointers can steer the sum." },
+    { hl: [3, 4], note: "Fix each anchor once and skip duplicate anchors." },
+    { hl: [5, 6, 7, 8, 9], note: "Two pointers on the rest: move towards a zero sum." },
+    { hl: [10, 11, 12, 13, 14], note: "Record the triplet, then skip duplicate seconds." },
   ],
   "sliding-window": [
-    { hl: [3, 4], note: "need counts what t requires; missing is how many are still owed." },
-    { hl: [7, 8, 9, 10], note: "Grow right and pay off a need when you can." },
-    { hl: [11, 12, 13], note: "Window covers t: keep it if it is the smallest so far." },
-    { hl: [14, 15, 16, 17], note: "Shrink left; giving back a needed character breaks the window." },
+    { hl: [1, 2, 3], note: "need counts what t requires; missing is how many are still owed." },
+    { hl: [6, 7, 8], note: "Grow right and pay off a need when you can." },
+    { hl: [9, 10, 11, 12, 13], note: "Window covers t: keep it if it is the smallest so far." },
+    { hl: [14, 15, 16], note: "Shrink left; giving back a needed character breaks the window." },
   ],
   "fast-slow": [
-    { hl: [1, 2, 3], note: "Race: slow moves one step, fast moves two." },
-    { hl: [4], note: "If they meet, there is a cycle." },
-    { hl: [5, 6, 7, 8], note: "Restart one pointer at head; step together; they meet at the cycle start." },
+    { hl: [1, 2, 3, 4], note: "Race: slow moves one step, fast moves two." },
+    { hl: [5], note: "If they meet, there is a cycle." },
+    { hl: [6, 7, 8, 9, 10, 11], note: "Restart one pointer at head; step together; they meet at the cycle start." },
   ],
   "binary-search": [
     { hl: [1, 2], note: "Feasibility: can we finish within h hours at speed k?" },
     { hl: [3], note: "The answer is between 1 and the largest pile." },
-    { hl: [4, 5, 6, 7, 8, 9], note: "Find the first speed that works: keep mid if it works, else go right." },
+    { hl: [4, 5, 6, 7, 8], note: "Find the first speed that works: keep mid if it works, else go right." },
   ],
   "prefix-hash": [
     { hl: [1], note: "A set gives O(1) membership checks." },
     { hl: [3, 4], note: "Only start counting where a run begins (x − 1 is missing)." },
-    { hl: [5, 6, 7, 8], note: "Walk the run and keep the longest." },
+    { hl: [5, 6, 7], note: "Walk the run and keep the longest." },
   ],
   "monotonic-stack": [
     { hl: [1, 2], note: "Answers default to 0; the stack holds days still waiting." },
-    { hl: [4, 5, 6], note: "A warmer day answers every colder day waiting on the stack." },
-    { hl: [7], note: "Today waits for its own warmer day." },
+    { hl: [4, 5, 6, 7], note: "A warmer day answers every colder day waiting on the stack." },
+    { hl: [8], note: "Today waits for its own warmer day." },
   ],
   heap: [
-    { hl: [3, 4], note: "Heap of each list's head; the index breaks ties." },
-    { hl: [6, 7, 8], note: "Pop the smallest node and append it." },
-    { hl: [9, 10], note: "Push the next node from the same list." },
+    { hl: [1, 2], note: "A heap of each list's head, ordered by value (MinHeap from the template)." },
+    { hl: [5, 6, 7, 8], note: "Pop the smallest node and append it." },
+    { hl: [9], note: "Push the next node from the same list." },
   ],
   intervals: [
-    { hl: [3], note: "Handle meetings in order of start time." },
-    { hl: [4, 6, 7], note: "Heap of end times: reuse the room that frees up first." },
-    { hl: [8, 9], note: "Nothing free yet: open a new room." },
-    { hl: [10], note: "Rooms needed = heap size." },
+    { hl: [1], note: "Handle meetings in order of start time." },
+    { hl: [2, 4], note: "Heap of end times: if the room that frees up first is free, reuse it." },
+    { hl: [5], note: "Push this meeting's end: a reused room or a new one." },
+    { hl: [7], note: "Rooms needed = heap size." },
   ],
   graphs: [
-    { hl: [10, 11, 12, 13], note: "Scan the grid; unvisited land starts a new island." },
-    { hl: [2, 3, 4, 5, 6, 7, 8], note: "Sink the whole island with an explicit stack." },
-    { hl: [14, 15], note: "Sunk cells are never counted again." },
+    { hl: [12, 13, 14, 15], note: "Scan the grid; unvisited land starts a new island." },
+    { hl: [2, 3, 4, 5, 6, 7, 8, 9, 10], note: "Sink the whole island with an explicit stack." },
+    { hl: [16], note: "Sunk cells are never counted again." },
   ],
   "topo-sort": [
-    { hl: [3, 4, 5, 6, 7], note: "Edges go prerequisite → course; count each course's prerequisites." },
-    { hl: [8], note: "Start with courses that need nothing." },
-    { hl: [10, 11, 12, 13, 14, 15, 16], note: "Take a course and unlock the courses waiting on it." },
-    { hl: [17], note: "Everything taken means there is no cycle." },
+    { hl: [1, 2, 3, 4, 5, 6], note: "Edges go prerequisite → course; count each course's prerequisites." },
+    { hl: [7], note: "Start with courses that need nothing." },
+    { hl: [9, 10, 11, 12, 13, 14], note: "Take a course and unlock the courses waiting on it." },
+    { hl: [15], note: "Everything taken means there is no cycle." },
   ],
   "union-find": [
     { hl: [1], note: "Every node starts in its own group." },
@@ -953,24 +1051,24 @@ export const WORKED_BEATS: Record<string, { hl: number[]; note: string }[]> = {
   ],
   backtracking: [
     { hl: [1], note: "Sort so we can stop early." },
-    { hl: [4, 5, 6], note: "Hit the target exactly: save a copy of the path." },
-    { hl: [8, 9], note: "Prune: every later candidate is too big too." },
+    { hl: [4, 5, 6, 7], note: "Hit the target exactly: save a copy of the path." },
+    { hl: [9], note: "Prune: every later candidate is too big too." },
     { hl: [10, 11, 12], note: "Choose, recurse with reuse allowed, un-choose." },
   ],
   "dynamic-programming": [
-    { hl: [2], note: "best[a] = fewest coins for amount a; best[0] = 0." },
-    { hl: [3, 4, 5, 6], note: "Try every coin as the last coin used." },
-    { hl: [7], note: "Still infinite means the amount is unreachable." },
+    { hl: [1, 2], note: "best[a] = fewest coins for amount a; best[0] = 0." },
+    { hl: [3, 4, 5, 6, 7], note: "Try every coin as the last coin used." },
+    { hl: [8], note: "Still infinite means the amount is unreachable." },
   ],
   trie: [
-    { hl: [3], note: "Sort once: words sharing a prefix sit together." },
-    { hl: [5, 6, 7], note: "Binary search the first word ≥ the prefix." },
-    { hl: [8], note: "Take up to three that still match." },
+    { hl: [1], note: "Sort once: words sharing a prefix sit together." },
+    { hl: [5, 6, 7, 8, 9, 10, 11], note: "Binary search the first word ≥ the prefix." },
+    { hl: [12], note: "Take up to three that still match." },
   ],
   greedy: [
     { hl: [1, 2], note: "Less gas than cost overall: impossible." },
     { hl: [4, 5], note: "Drive the loop, tracking the tank." },
-    { hl: [6, 7], note: "Tank went negative: no start up to here works; restart after it." },
-    { hl: [8], note: "The last restart point is the answer." },
+    { hl: [6, 7, 8, 9], note: "Tank went negative: no start up to here works; restart after it." },
+    { hl: [11], note: "The last restart point is the answer." },
   ],
 };

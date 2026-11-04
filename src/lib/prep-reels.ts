@@ -2,11 +2,11 @@ import { ALL_BEHAVIORAL as BEHAVIORAL, BEHAVIORAL_TIPS, STAR, THEMES } from "@/c
 import { COMPLEXITY, HACKS, METHOD, PATTERNS, SIGNAL_MAP, WORKED_BEATS } from "@/content/coding";
 
 /** Reels have no room for trailing comments: the step notes explain the code instead. */
-const stripComments = (code: string) => code.split("\n").map((l) => l.replace(/\s{2,}#\s.*$/, ""));
+const stripComments = (code: string) => code.split("\n").map((l) => l.replace(/\s{2,}\/\/\s.*$/, ""));
 import type { Reel, ReelCollection } from "@/content/types";
 import { MORE_PROBLEMS } from "@/content/coding-more";
 import { MOBILE_PROBLEMS } from "@/content/mobile-coding";
-import { swiftLines } from "./mobile-source";
+import { kotlinLines } from "./mobile-source";
 
 /* Reel collections generated from the problem-solving and coding sections. */
 
@@ -26,6 +26,23 @@ const behavioralReels: Reel[] = BEHAVIORAL.map((b) => ({
   ],
   cta: { label: "Open the full answer", post: "problem-solving", section: "bq-" + b.id },
 }));
+
+/** Long snippets (a hand-written heap, a trie class…) would shrink to an unreadable size in a reel:
+    show a window around each step's lines instead, with real line numbers. */
+const LONG = 24;
+type Beat = { hl?: number[]; note?: string; window?: [number, number] };
+function windowed(lines: string[], beats: Beat[]): { beats: Beat[]; firstLine?: number } {
+  if (lines.length <= LONG) return { beats };
+  const last = lines.length - 1;
+  return {
+    firstLine: 1,
+    beats: beats.map((b) => {
+      if (!b.hl?.length) return { ...b, window: [0, Math.min(last, LONG - 4)] as [number, number] };
+      const lo = Math.min(...b.hl), hi = Math.max(...b.hl);
+      return { ...b, window: [Math.max(0, lo - 2), Math.min(last, hi + 2)] as [number, number] };
+    }),
+  };
+}
 
 const patternReels: Reel[] = PATTERNS.flatMap((p): Reel[] => [
   {
@@ -49,9 +66,9 @@ const patternReels: Reel[] = PATTERNS.flatMap((p): Reel[] => [
     kicker: "Problem · " + p.name,
     heading: p.worked.problem,
     problem: p.worked.prompt,
-    lang: "python",
+    lang: "ts",
     lines: stripComments(p.worked.code),
-    beats: [{ hl: [], note: "Read the problem. Which signal points to " + p.name.toLowerCase() + "?" }, ...(WORKED_BEATS[p.id] ?? [])],
+    ...windowed(p.worked.code.split("\n"), [{ hl: [], note: "Read the problem. Which signal points to " + p.name.toLowerCase() + "?" }, ...(WORKED_BEATS[p.id] ?? [])]),
     beatMs: [5000, ...(WORKED_BEATS[p.id] ?? []).map(() => 6500)],
     tags: [p.name.toLowerCase(), "solution"],
     cta: { label: "Full walkthrough", post: "coding-" + p.id, section: "pt-worked" },
@@ -63,10 +80,10 @@ const patternReels: Reel[] = PATTERNS.flatMap((p): Reel[] => [
     kicker: "Template · " + p.name,
     heading: p.template.title,
     problem: "The reusable shape behind every " + p.name.toLowerCase() + " problem. Memorise it, then adapt the twist.",
-    lang: "python",
+    lang: "ts",
     lines: stripComments(p.template.code),
-    beats: p.template.beats,
-    tags: ["template", "python"],
+    ...windowed(p.template.code.split("\n"), p.template.beats),
+    tags: ["template", "typescript"],
     beatMs: 5600,
     cta: { label: "Open the pattern", post: "coding-" + p.id },
   },
@@ -78,9 +95,9 @@ const patternReels: Reel[] = PATTERNS.flatMap((p): Reel[] => [
       kicker: `${m.level} · ${p.name}`,
       heading: m.problem,
       problem: m.prompt,
-      lang: "python",
+      lang: "ts",
       lines: stripComments(m.code),
-      beats: [{ hl: [], note: m.approach[0] }, ...m.beats],
+      ...windowed(m.code.split("\n"), [{ hl: [], note: m.approach[0] }, ...m.beats]),
       beatMs: [5000, ...m.beats.map(() => 6500)],
       tags: [p.name.toLowerCase(), "solution"],
       cta: { label: "Full walkthrough", post: "coding-" + p.id, section: "pt-more" },
@@ -88,11 +105,11 @@ const patternReels: Reel[] = PATTERNS.flatMap((p): Reel[] => [
   ),
 ]);
 
-/** Swift: drop trailing `// …` comments in reels; the step notes carry the explanation. */
-const stripSwift = (lines: string[]) => lines.map((l) => (l.trimStart().startsWith("//") ? l : l.replace(/\s{2,}\/\/.*$/, "")));
+/** Kotlin: drop trailing `// …` comments in reels; the step notes carry the explanation. */
+const stripTrailingComments = (lines: string[]) => lines.map((l) => (l.trimStart().startsWith("//") ? l : l.replace(/\s{2,}\/\/.*$/, "")));
 
 const mobileReels: Reel[] = MOBILE_PROBLEMS.flatMap((p): Reel[] => {
-  const lines = stripSwift(swiftLines(p.file));
+  const lines = stripTrailingComments(kotlinLines(p.file));
   const last = lines.length - 1;
   const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
   return [
@@ -106,7 +123,7 @@ const mobileReels: Reel[] = MOBILE_PROBLEMS.flatMap((p): Reel[] => {
         { h: "Ask first", p: p.clarify.map(([q, a]) => `**${q}** ${a}`).join(" ") },
         { h: "The design", p: p.design.map(([h, d]) => `**${h}.** ${d}`).join(" ") },
         { h: "Edge cases", p: p.edgeCases.join(". ") + ".", ex: p.complexity, exLabel: "Complexity" },
-        { h: "Follow-up", p: `“${p.followups[0][0]}” ${p.followups[0][1]}`, ex: p.android.map(([k, v]) => `${k}: ${v}`).join(" · "), exLabel: "On Android" },
+        { h: "Follow-up", p: `“${p.followups[0][0]}” ${p.followups[0][1]}`, ex: p.ios.map(([k, v]) => `${k}: ${v}`).join(" · "), exLabel: "On iOS" },
       ],
       cta: { label: "Open the full solution", post: "mobile-" + p.id },
     },
@@ -114,10 +131,10 @@ const mobileReels: Reel[] = MOBILE_PROBLEMS.flatMap((p): Reel[] => {
       id: "mc-code-" + p.id,
       title: p.title + " · the code",
       template: "code",
-      kicker: `${p.level} · ${p.file}.swift`,
+      kicker: `${p.level} · ${p.file}.kt`,
       heading: p.title,
       problem: p.tagline,
-      lang: "swift",
+      lang: "kotlin",
       lines,
       firstLine: 1,
       beats: p.steps.map((st) => ({
@@ -126,7 +143,7 @@ const mobileReels: Reel[] = MOBILE_PROBLEMS.flatMap((p): Reel[] => {
         window: [Math.max(0, st.lines[0] - 2), Math.min(last, st.lines[1] + 2)] as [number, number],
       })),
       beatMs: p.steps.map(() => 7000),
-      tags: ["swift", "walkthrough"],
+      tags: ["kotlin", "walkthrough"],
       cta: { label: "Open the full solution", post: "mobile-" + p.id, section: "mc-walk" },
     },
   ];
@@ -153,7 +170,7 @@ export const PREP_REELS: ReelCollection[] = [
     id: "c-mobile",
     group: "learn",
     title: "Mobile machine coding",
-    blurb: "Caches, image loading, offline sync, retries, paging and uploads: the design, then the Swift code step by step.",
+    blurb: "Caches, image loading, offline sync, retries, paging and uploads: the design, then the Kotlin code step by step.",
     theme: { bg: "#0f1220", fg: "#f1f3ff", accent: "#ff7ab6", muted: "#a3a8c8" },
     reels: mobileReels,
   },
@@ -168,7 +185,7 @@ export const PREP_REELS: ReelCollection[] = [
       { id: "hack-constraints", title: "Read the constraints first", template: "analogy", heading: "n tells you the target complexity", pairs: COMPLEXITY.map(([n, o, ex]) => [`${n}`, `${o} · ${ex}`] as [string, string]), tags: ["complexity"] },
       { id: "hack-signals", title: "Signal → pattern", template: "analogy", heading: "Hear this, reach for that", pairs: SIGNAL_MAP.slice(0, 8).map(([s, p]) => [s, p] as [string, string]), tags: ["patterns"] },
       { id: "hack-signals-2", title: "Signal → pattern, part 2", template: "analogy", heading: "Hear this, reach for that", pairs: SIGNAL_MAP.slice(8).map(([s, p]) => [s, p] as [string, string]), tags: ["patterns"] },
-      { id: "hack-python", title: "Python power tools", template: "steps", heading: "Imports that save minutes", items: HACKS[0].items.slice(0, 6).map(([h, p]) => ({ h, p })), tags: ["python"] },
+      { id: "hack-ts", title: "TypeScript power tools", template: "steps", heading: "Idioms that save minutes", items: HACKS[0].items.slice(0, 6).map(([h, p]) => ({ h, p })), tags: ["typescript"] },
       { id: "hack-bugs", title: "Bugs that cost offers", template: "steps", heading: "Check these before you say done", items: HACKS[2].items.map(([h, p]) => ({ h, p })), tags: ["bugs"] },
       { id: "hack-quiz-1", title: "Quick check: constraints", template: "quiz", q: "n is up to 20 and you need every valid selection. What fits?", options: ["Two pointers", "Bitmask / backtracking, O(2ⁿ)", "Binary search", "Union-find"], answer: 1, why: "2²⁰ is about a million: exponential is fine at this size.", tags: ["quiz"] },
       { id: "hack-quiz-2", title: "Quick check: signals", template: "quiz", q: "“Smallest capacity such that all packages ship within D days.” Which pattern?", options: ["Sliding window", "Heap", "Binary search on the answer", "Topological sort"], answer: 2, why: "‘Smallest X such that…’ with a monotonic feasibility check is binary search on the answer.", tags: ["quiz"] },

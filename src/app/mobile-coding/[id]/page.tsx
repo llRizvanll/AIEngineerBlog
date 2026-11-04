@@ -4,9 +4,11 @@ import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
 import { MOBILE_PROBLEMS } from "@/content/mobile-coding";
 import { Reading } from "@/components/Reading";
-import { Code, Faq, Footer, Section, Table } from "@/components/ui";
+import { Code, Faq, Footer, Table } from "@/components/ui";
+import { Chapters, ConceptGrid, type ChapterPart } from "@/components/Chapters";
+import { MOBILE_CONCEPTS } from "@/content/basics";
 import { Icon } from "@/components/Icons";
-import { swiftLines, swiftSource } from "@/lib/mobile-source";
+import { kotlinLines, kotlinSource } from "@/lib/mobile-source";
 
 export const dynamicParams = false;
 export const generateStaticParams = () => MOBILE_PROBLEMS.map((p) => ({ id: p.id }));
@@ -23,10 +25,138 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
   if (!p) notFound();
   const i = MOBILE_PROBLEMS.indexOf(p);
   const next = MOBILE_PROBLEMS[(i + 1) % MOBILE_PROBLEMS.length];
-  const source = swiftSource(p.file);
-  const lines = swiftLines(p.file);
+  const source = kotlinSource(p.file);
+  const lines = kotlinLines(p.file);
   const style = { "--c1": p.color[0], "--c2": p.color[1] } as CSSProperties;
   const related = p.related.map((r) => MOBILE_PROBLEMS.find((x) => x.id === r)).filter((x): x is (typeof MOBILE_PROBLEMS)[number] => !!x);
+
+  const parts: ChapterPart[] = [
+    {
+      key: "basics",
+      lead: "The concepts this component is built on. With these in mind, every line of the solution has a reason.",
+      sections: [
+        { id: "concepts", title: "Concepts you need", intro: "One idea per card, in the order the solution uses them.", body: <ConceptGrid items={MOBILE_CONCEPTS[p.id] ?? []} /> },
+      ],
+    },
+    {
+      key: "question",
+      lead: "What exactly you are asked to build, what must be true when you are done, and what to ask before you start.",
+      sections: [
+        {
+          id: "prompt",
+          title: "The prompt",
+          intro: "The question as the interviewer asks it, and the requirements to check your solution against.",
+          body: (
+            <>
+              <div className="ask">
+                <span className="who">Interviewer</span>
+                <p>{p.prompt}</p>
+              </div>
+              <h3>Requirements</h3>
+              <ul className="req-list">
+                {p.requirements.map((r) => (
+                  <li key={r}>{r}</li>
+                ))}
+              </ul>
+            </>
+          ),
+        },
+        { id: "clarify", title: "Clarify first", intro: "Questions worth asking, and the answers this interviewer gives.", body: <Table head={["You ask", "Interviewer answers"]} rows={p.clarify} /> },
+      ],
+    },
+    {
+      key: "detail",
+      lead: "The design decisions, the complete Kotlin solution, and a walk through it one block at a time.",
+      sections: [
+        {
+          id: "design",
+          title: "Design decisions",
+          intro: "Settle these before writing code; each one shows up in the solution.",
+          body: (
+            <div className="design-grid">
+              {p.design.map(([h, d]) => (
+                <div key={h}>
+                  <b>{h}</b>
+                  <p>{d}</p>
+                </div>
+              ))}
+            </div>
+          ),
+        },
+        {
+          id: "code",
+          title: "The solution",
+          intro: "Complete, compiling Kotlin with coroutines, built with warnings as errors and covered by tests/mobile/MobileTests.kt.",
+          body: <Code sample={[p.title, "kotlin", source]} fileName={`${p.file}.kt`} hideTitle />,
+        },
+        {
+          id: "walk",
+          title: "Line-by-line walkthrough",
+          intro: "The same code in the order you would explain it in the room.",
+          body: (
+            <>
+              {p.steps.map((s, k) => (
+                <div key={s.title} className="walk-step">
+                  <div className="ws-head">
+                    <span className="ws-n">{k + 1}</span>
+                    <div>
+                      <h3>{s.title}</h3>
+                      <p>{s.note}</p>
+                    </div>
+                  </div>
+                  <Code sample={[s.title, "kotlin", lines.slice(s.lines[0], s.lines[1] + 1).join("\n")]} startLine={s.lines[0] + 1} fileName={`${p.file}.kt`} hideTitle />
+                </div>
+              ))}
+              <p className="cx-line">
+                <b>Complexity:</b> {p.complexity}
+              </p>
+            </>
+          ),
+        },
+      ],
+    },
+    {
+      key: "qa",
+      lead: "The questions interviewers ask after the code works. Answer out loud, then open.",
+      sections: [{ id: "follow", title: "Follow-up questions", body: <Faq items={p.followups} /> }],
+    },
+    {
+      key: "more",
+      lead: "The cases that break naive solutions, how the same design looks on iOS, and what to practise next.",
+      sections: [
+        {
+          id: "edges",
+          title: "Edge cases to mention",
+          intro: "Say these before the interviewer does.",
+          body: (
+            <ul className="traps">
+              {p.edgeCases.map((e) => (
+                <li key={e}>{e}</li>
+              ))}
+            </ul>
+          ),
+        },
+        { id: "ios", title: "On iOS", intro: "The same design in Swift and Apple's frameworks.", body: <Table head={["Approach", "Swift / iOS"]} rows={p.ios} /> },
+        ...(related.length
+          ? [
+              {
+                id: "related",
+                title: "Practise next",
+                body: (
+                  <div className="golinks">
+                    {related.map((r) => (
+                      <Link key={r.id} href={`/mobile-coding/${r.id}`}>
+                        {r.title}
+                      </Link>
+                    ))}
+                  </div>
+                ),
+              },
+            ]
+          : []),
+      ],
+    },
+  ];
 
   return (
     <main className="pattern-page" style={style}>
@@ -40,91 +170,14 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
           <span>
             <Icon name="clock" size={14} /> {p.minutes}-minute round · {p.level}
           </span>
-          <span>Swift 6 · tested</span>
+          <span>Kotlin · coroutines · tested</span>
           <Link href="/reels/c-mobile">
             <Icon name="play" size={14} /> Watch as reels
           </Link>
         </div>
       </div>
       <Reading title={p.title} kind="Machine coding" articleId="deep-article">
-        <Section id="mc-prompt" n={1} title="The prompt">
-          <div className="ask">
-            <span className="who">Interviewer</span>
-            <p>{p.prompt}</p>
-          </div>
-          <h3>Requirements</h3>
-          <ul className="req-list">
-            {p.requirements.map((r) => (
-              <li key={r}>{r}</li>
-            ))}
-          </ul>
-        </Section>
-        <Section id="mc-clarify" n={2} title="Clarify first">
-          <Table head={["You ask", "Interviewer answers"]} rows={p.clarify} />
-        </Section>
-        <Section id="mc-design" n={3} title="Design decisions">
-          <div className="design-grid">
-            {p.design.map(([h, d]) => (
-              <div key={h}>
-                <b>{h}</b>
-                <p>{d}</p>
-              </div>
-            ))}
-          </div>
-        </Section>
-        <Section id="mc-code" n={4} title="The solution">
-          <p>
-            Complete, compiling Swift. It is built with Swift 6 strict concurrency checking and covered by the tests in{" "}
-            <code>tests/mobile/main.swift</code>.
-          </p>
-          <Code sample={[p.title, "swift", source]} fileName={`${p.file}.swift`} hideTitle />
-        </Section>
-        <Section id="mc-walk" n={5} title="Line-by-line walkthrough">
-          {p.steps.map((s, k) => (
-            <div key={s.title} className="walk-step">
-              <div className="ws-head">
-                <span className="ws-n">{k + 1}</span>
-                <div>
-                  <h3>{s.title}</h3>
-                  <p>{s.note}</p>
-                </div>
-              </div>
-              <Code
-                sample={[s.title, "swift", lines.slice(s.lines[0], s.lines[1] + 1).join("\n")]}
-                startLine={s.lines[0] + 1}
-                fileName={`${p.file}.swift`}
-                hideTitle
-              />
-            </div>
-          ))}
-          <p>
-            <b>Complexity:</b> {p.complexity}
-          </p>
-        </Section>
-        <Section id="mc-edges" n={6} title="Edge cases to mention">
-          <ul className="traps">
-            {p.edgeCases.map((e) => (
-              <li key={e}>{e}</li>
-            ))}
-          </ul>
-        </Section>
-        <Section id="mc-follow" n={7} title="Follow-up questions">
-          <Faq items={p.followups} />
-        </Section>
-        <Section id="mc-android" n={8} title="On Android">
-          <Table head={["Approach", "Kotlin / Android"]} rows={p.android} />
-        </Section>
-        {related.length > 0 && (
-          <Section id="mc-related" n={9} title="Practise next">
-            <div className="golinks">
-              {related.map((r) => (
-                <Link key={r.id} href={`/mobile-coding/${r.id}`}>
-                  {r.title}
-                </Link>
-              ))}
-            </div>
-          </Section>
-        )}
+        <Chapters parts={parts} prefix="mc" />
         <div className="next">
           <div>
             <div className="kicker">Next problem</div>

@@ -40,7 +40,7 @@ export function Library() {
       </div>
       <div className="section-h">
         <h2>Saved</h2>
-        <span>press b on any page to save it</span>
+        <span>tap ☆ Save while reading</span>
       </div>
       {saved.length ? (
         <div className="lib-g stagger">
@@ -68,7 +68,7 @@ export function Library() {
           ))}
         </div>
       ) : (
-        <div className="empty-card">Nothing saved yet. Use ☆ Save in the contents rail of any article.</div>
+        <div className="empty-card">Nothing saved yet. Tap ☆ Save on any article, round or deep dive to keep it here.</div>
       )}
       <div className="section-h">
         <h2>Reading history</h2>

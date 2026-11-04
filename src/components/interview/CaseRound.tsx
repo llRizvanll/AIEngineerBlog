@@ -2,18 +2,24 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import type { CriticalQ } from "@/content/types";
 import { emptyInterview, INTERVIEW_KEY, useLocal, type InterviewState } from "@/lib/store";
 import { Reading } from "../Reading";
 import { Whiteboard } from "./Whiteboard";
-import { CritItem } from "./CritItem";
+import { PartHead, Roadmap, SectionHead, type PartKey } from "../Chapters";
 
 export interface RoundSection {
   key: string;
   title: string;
-  prompt: string;
+  /** "Your turn" prompt; sections without one (basics, reference material) are always shown */
+  prompt?: string;
+  intro?: string;
   body: ReactNode;
-  crit: { q: CriticalQ; i: number }[];
+}
+
+export interface RoundPart {
+  key: PartKey;
+  lead: string;
+  sections: RoundSection[];
 }
 
 const RUBRIC: [string, string][] = [
@@ -26,66 +32,61 @@ const RUBRIC: [string, string][] = [
   ["Leadership", "Explained how the team would build and evolve it."],
 ];
 
-export function CaseRound({ id, title, minutes, sections, next }: { id: string; title: string; minutes: number; sections: RoundSection[]; next: { id: string; title: string } }) {
+export function CaseRound({ id, title, minutes, parts, next }: { id: string; title: string; minutes: number; parts: RoundPart[]; next: { id: string; title: string } }) {
   const [st, update] = useLocal<InterviewState>(INTERVIEW_KEY, emptyInterview);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const notes = st.notes[id] || {};
+  const shown = parts.filter((p) => p.sections.length > 0);
 
   return (
     <Reading title={title} kind="Round" articleId="case-article" articleClass={st.practice ? "practice" : ""} railTitle="The round">
       <RoundTimer minutes={minutes} practice={st.practice} onPractice={(v) => update((s) => ({ ...s, practice: v }))} />
-      {sections.map((s, i) => (
-        <section key={s.key} id={`cs-${s.key}`} data-toc={s.title}>
-          <h2>
-            <span className="n">{String(i + 1).padStart(2, "0")}</span>
-            {s.title}
-          </h2>
-          {s.key !== "board" && s.key !== "level" && (
-            <div className="try">
-              <label htmlFor={`nt-${s.key}`}>Your turn: {s.prompt}</label>
-              <textarea
-                id={`nt-${s.key}`}
-                rows={4}
-                placeholder="Write your answer, then reveal the model answer."
-                value={notes[s.key] || ""}
-                onChange={(e) => update((x) => ({ ...x, notes: { ...x.notes, [id]: { ...(x.notes[id] || {}), [s.key]: e.target.value } } }))}
-              />
-              {!revealed[s.key] && (
-                <button type="button" className="reveal" onClick={() => setRevealed((r) => ({ ...r, [s.key]: true }))}>
-                  Reveal model answer
-                </button>
-              )}
-            </div>
-          )}
-          <div className={"ans" + (revealed[s.key] ? " open" : "")}>
-            {s.body}
-            {s.key === "level" && (
+      <Roadmap parts={shown} />
+      {shown.flatMap((p, pi) => [
+        <PartHead key={"part-" + p.key} part={p.key} n={pi + 1} total={shown.length} lead={p.lead} />,
+        ...p.sections.map((s, si) => (
+          <section key={s.key} id={`cs-${s.key}`} data-toc={s.title} className={`in-${p.key}`}>
+            <SectionHead num={`${pi + 1}.${si + 1}`} title={s.title} intro={s.intro} />
+            {s.prompt ? (
               <>
-                <h3>Score yourself</h3>
-                <div className="rubric">
-                  {RUBRIC.map(([k, d]) => (
-                    <label key={k}>
-                      <input type="checkbox" /> <b>{k}</b> {d}
-                    </label>
-                  ))}
+                <div className="try">
+                  <label htmlFor={`nt-${s.key}`}>Your turn: {s.prompt}</label>
+                  <textarea
+                    id={`nt-${s.key}`}
+                    rows={4}
+                    placeholder="Write your answer, then reveal the model answer."
+                    value={notes[s.key] || ""}
+                    onChange={(e) => update((x) => ({ ...x, notes: { ...x.notes, [id]: { ...(x.notes[id] || {}), [s.key]: e.target.value } } }))}
+                  />
+                  {!revealed[s.key] && (
+                    <button type="button" className="reveal" onClick={() => setRevealed((r) => ({ ...r, [s.key]: true }))}>
+                      Reveal model answer
+                    </button>
+                  )}
                 </div>
+                <div className={"ans" + (revealed[s.key] ? " open" : "")}>{s.body}</div>
               </>
+            ) : (
+              <div className="ans open">
+                {s.body}
+                {s.key === "level" && (
+                  <>
+                    <h3>Score yourself</h3>
+                    <div className="rubric">
+                      {RUBRIC.map(([k, d]) => (
+                        <label key={k}>
+                          <input type="checkbox" /> <b>{k}</b> {d}
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {s.key === "board" && <Whiteboard caseId={id} />}
+              </div>
             )}
-            {s.key === "board" && <Whiteboard caseId={id} />}
-          </div>
-          {s.crit.length > 0 && (
-            <div className="crit">
-              <h4>
-                Critical Q&amp;A <span className="ct">{s.crit.length}</span>
-              </h4>
-              <p className="sub">Realistic incidents and probes for this section. Answer out loud, then open.</p>
-              {s.crit.map(({ q, i }) => (
-                <CritItem key={i} caseId={id} index={i} q={q} />
-              ))}
-            </div>
-          )}
-        </section>
-      ))}
+          </section>
+        )),
+      ])}
       <div className="next">
         <div>
           <div className="kicker">Next round</div>
