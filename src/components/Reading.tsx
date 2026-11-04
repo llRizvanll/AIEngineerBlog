@@ -1,0 +1,170 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { emptyLibrary, LIBRARY_KEY, useLocal, type LibraryState } from "@/lib/store";
+
+interface Props {
+  title: string;
+  kind: string;
+  articleId?: string;
+  articleClass?: string;
+  railTitle?: string;
+  /** Pre-rendered article HTML (used by the hand-written Part 1). */
+  html?: string;
+  children?: ReactNode;
+}
+
+/**
+ * Two-column reading layout: the article plus a sticky contents rail with scroll-spy.
+ * Also records the page in the reader's library, offers save + focus mode, and fades sections in.
+ */
+export function Reading({ title, kind, articleId = "article", articleClass, railTitle = "On this page", html, children }: Props) {
+  const path = usePathname();
+  const ref = useRef<HTMLElement>(null);
+  const [toc, setToc] = useState<{ id: string; label: string }[]>([]);
+  const [cur, setCur] = useState<string>("");
+  const [focus, setFocus] = useState(false);
+  const [lib, updateLib, hydrated] = useLocal<LibraryState>(LIBRARY_KEY, emptyLibrary);
+  const saved = !!lib.saved[path];
+
+  // Build the rail from the rendered sections.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const secs = Array.from(el.querySelectorAll<HTMLElement>(":scope > section[data-toc]"));
+    setToc(secs.map((s) => ({ id: s.id, label: s.dataset.toc || "" })));
+
+    // Fade sections in as they enter the viewport.
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => e.isIntersecting && (e.target.classList.add("in"), io.unobserve(e.target))),
+      { rootMargin: "0px 0px -8% 0px" }
+    );
+    secs.forEach((s) => {
+      s.classList.add("fx-reveal");
+      io.observe(s);
+    });
+
+    let raf = 0;
+    const spy = () => {
+      raf = 0;
+      let c = secs[0]?.id ?? "";
+      for (const s of secs) {
+        if (s.getBoundingClientRect().top < 140) c = s.id;
+        else break;
+      }
+      setCur(c);
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(spy);
+    };
+    spy();
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    // Jump to a hash on arrival.
+    if (location.hash) {
+      const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+      if (target) setTimeout(() => target.scrollIntoView({ behavior: "smooth" }), 60);
+    }
+    return () => {
+      io.disconnect();
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [path]);
+
+  // Remember what the reader opened, and how far they got.
+  useEffect(() => {
+    if (!hydrated) return;
+    updateLib((l) => ({ ...l, seen: { ...l.seen, [path]: { title, kind, at: Date.now(), pct: l.seen[path]?.pct ?? 0 } } }));
+    const el = ref.current;
+    let t: ReturnType<typeof setTimeout>;
+    const onScroll = () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        const pct = Math.round(100 * Math.min(1, Math.max(0, -r.top / Math.max(1, el.offsetHeight - window.innerHeight))));
+        updateLib((l) => {
+          const prev = l.seen[path];
+          if (!prev || pct <= (prev.pct ?? 0)) return l;
+          return { ...l, seen: { ...l.seen, [path]: { ...prev, pct } } };
+        });
+      }, 600);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("scroll", onScroll);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, path]);
+
+  useEffect(() => {
+    document.body.classList.toggle("rd-focus", focus);
+    return () => document.body.classList.remove("rd-focus");
+  }, [focus]);
+
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || e.metaKey || e.ctrlKey) return;
+      if (e.key === "f") setFocus((f) => !f);
+      if (e.key === "b") toggleSave();
+      if (e.key === "Escape") setFocus(false);
+    };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  });
+
+  const toggleSave = () =>
+    updateLib((l) => {
+      const s = { ...l.saved };
+      if (s[path]) delete s[path];
+      else s[path] = { title, kind, at: Date.now() };
+      return { ...l, saved: s };
+    });
+
+  return (
+    <div className="layout">
+      {html !== undefined ? (
+        <article id={articleId} className={articleClass} ref={ref} data-reading dangerouslySetInnerHTML={{ __html: html }} />
+      ) : (
+        <article id={articleId} className={articleClass} ref={ref} data-reading>
+          {children}
+        </article>
+      )}
+      <aside className="rail" aria-label="Contents">
+        <h4>{railTitle}</h4>
+        <div>
+          {toc.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className={t.id === cur ? "on" : undefined}
+              onClick={() => document.getElementById(t.id)?.scrollIntoView({ behavior: "smooth" })}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div className="rail-act">
+          <button type="button" onClick={toggleSave} aria-pressed={saved} title="Save to library (b)">
+            {saved ? "★ Saved" : "☆ Save"}
+          </button>
+          <button type="button" onClick={() => setFocus((f) => !f)} aria-pressed={focus} title="Focus mode (f)">
+            ◐ Focus
+          </button>
+          <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} title="Back to top">
+            ↑ Top
+          </button>
+        </div>
+      </aside>
+      {focus && (
+        <button type="button" className="focus-exit" onClick={() => setFocus(false)}>
+          Exit focus <kbd>esc</kbd>
+        </button>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,2238 @@
+[
+ {
+  "id": "dhcp",
+  "name": "DHCP",
+  "full": "Dynamic Host Configuration Protocol",
+  "layer": "Application",
+  "port": "UDP 67 / 68",
+  "tag": "How a device with nothing gets an address.",
+  "intro": [
+   "A device that has just joined a network knows nothing: no address, no router, no DNS server. DHCP is how it asks. It shouts into the network with a broadcast, and a DHCP server (usually your router) answers with a lease: an address to use for a while, plus the other settings the device needs.",
+   "The exchange is called DORA: Discover, Offer, Request, Acknowledge. Four short UDP messages and the device is on the network."
+  ],
+  "ideas": [
+   [
+    "A lease, not a gift",
+    "The address is lent for a lease time. At half the lease the client asks to renew; if the server is gone the client eventually starts again."
+   ],
+   [
+    "Broadcast is the bootstrap",
+    "Before there is an address, the only way to talk is the broadcast address. That is why DHCP uses odd source 0.0.0.0 and port 68 to 67."
+   ],
+   [
+    "More than an address",
+    "Options carry subnet mask, default gateway, DNS servers, domain name, NTP servers and even a boot file for network boot."
+   ],
+   [
+    "Relays",
+    "Routers can forward broadcasts as unicast to a central server (a relay agent), filling in giaddr so the server knows which subnet to answer for."
+   ]
+  ],
+  "gotchas": [
+   "Two DHCP servers on one network (a rogue router) hand out conflicting addresses and cause strange outages.",
+   "Short leases on busy networks create lots of renewals; long leases hold addresses for devices that left.",
+   "A device that sees no answer falls back to a 169.254.x.x link-local address."
+  ],
+  "qa": [
+   [
+    "Why does the client send DISCOVER as a broadcast?",
+    "It has no address and does not know any server, so broadcast is the only way to reach whoever is there."
+   ],
+   [
+    "What is the difference between OFFER and ACK?",
+    "An offer is a proposal and can be ignored. The ACK after the client’s REQUEST is the binding commitment."
+   ]
+  ],
+  "packets": [
+   {
+    "tab": "Discover",
+    "note": "A new device has no address, so it broadcasts from 0.0.0.0 to 255.255.255.255, UDP port 68 to 67. Shown without the IP and UDP headers; “×N” means N zero bytes.",
+    "fields": [
+     {
+      "n": "op",
+      "x": "01",
+      "d": "1 = BOOTREQUEST (client to server)."
+     },
+     {
+      "n": "htype",
+      "x": "01",
+      "d": "1 = Ethernet."
+     },
+     {
+      "n": "hlen",
+      "x": "06",
+      "d": "Hardware address length: 6 bytes."
+     },
+     {
+      "n": "hops",
+      "x": "00",
+      "d": "Relay agents increment this."
+     },
+     {
+      "n": "xid",
+      "x": "3903f326",
+      "d": "Transaction ID. All replies carry it so the client can match them."
+     },
+     {
+      "n": "secs",
+      "x": "0000",
+      "d": "Seconds since the client started trying."
+     },
+     {
+      "n": "flags",
+      "x": "8000",
+      "d": "0x8000 = broadcast bit. The client cannot receive unicast yet, so ask for a broadcast reply."
+     },
+     {
+      "n": "ciaddr",
+      "x": "00000000",
+      "d": "Client address: unknown, zero."
+     },
+     {
+      "n": "yiaddr",
+      "x": "00000000",
+      "d": "“Your” address: filled in by the server."
+     },
+     {
+      "n": "siaddr",
+      "x": "00000000",
+      "d": "Next server (for network boot)."
+     },
+     {
+      "n": "giaddr",
+      "x": "00000000",
+      "d": "Relay agent address."
+     },
+     {
+      "n": "chaddr",
+      "x": "000c293e1c9a00000000000000000000",
+      "d": "Client hardware (MAC) address, padded to 16 bytes. The server uses it to identify the client."
+     },
+     {
+      "n": "sname",
+      "x": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "d": "Server name, unused here."
+     },
+     {
+      "n": "file",
+      "x": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "d": "Boot file name, unused here."
+     },
+     {
+      "n": "Magic cookie",
+      "x": "63825363",
+      "d": "99.130.83.99 marks the start of DHCP options."
+     },
+     {
+      "n": "Option 53",
+      "x": "350101",
+      "d": "Message type 1 = DISCOVER (2 Offer, 3 Request, 5 ACK)."
+     },
+     {
+      "n": "Option 61",
+      "x": "3d0701000c293e1c9a",
+      "d": "Client identifier: hardware type 1 and the MAC."
+     },
+     {
+      "n": "Option 55",
+      "x": "37040103060f",
+      "d": "Parameter request list: 1 subnet mask, 3 router, 6 DNS servers, 15 domain name."
+     },
+     {
+      "n": "End",
+      "x": "ff",
+      "d": "Option 255 ends the list."
+     }
+    ]
+   }
+  ],
+  "actors": [
+   "Client",
+   "Server"
+  ],
+  "steps": [
+   [
+    0,
+    1,
+    "DISCOVER (broadcast)",
+    "No address yet, so it sends from 0.0.0.0 to 255.255.255.255 and asks if any server can help."
+   ],
+   [
+    1,
+    0,
+    "OFFER",
+    "The server proposes an address, for example 192.168.1.50, with a lease time, gateway and DNS servers."
+   ],
+   [
+    0,
+    1,
+    "REQUEST (broadcast)",
+    "The client accepts one offer. It broadcasts so any other server that offered knows it was not chosen."
+   ],
+   [
+    1,
+    0,
+    "ACK",
+    "The server confirms the lease. The client configures its interface and can now use the network."
+   ]
+  ]
+ },
+ {
+  "id": "ip",
+  "name": "IP",
+  "full": "Internet Protocol (IPv4)",
+  "layer": "Internet",
+  "port": "Protocol layer",
+  "tag": "Addresses and hops: how a packet finds its way.",
+  "intro": [
+   "IP is the postal system of the internet. Every packet carries a source and destination address, and every router along the way looks at the destination and decides which neighbour is closer. IP promises nothing else: packets may be lost, duplicated, reordered or delayed.",
+   "Everything reliable is built on top of this unreliable service. TCP adds order and retransmission; applications add their own meaning."
+  ],
+  "ideas": [
+   [
+    "Hop-by-hop",
+    "No router knows the full path. Each one only chooses the next hop from its own table."
+   ],
+   [
+    "TTL stops loops",
+    "A routing mistake could circle a packet forever. TTL makes sure it dies."
+   ],
+   [
+    "MTU and fragmentation",
+    "Links have a maximum packet size, typically 1500 bytes. Larger packets are fragmented, or dropped if DF is set, which is why path MTU discovery exists."
+   ],
+   [
+    "NAT",
+    "Home networks use private addresses. The router rewrites source address and port on the way out and reverses it on the way in."
+   ],
+   [
+    "IPv6",
+    "128-bit addresses, no header checksum, no fragmentation by routers, a fixed 40-byte header."
+   ]
+  ],
+  "gotchas": [
+   "A firewall that blocks all ICMP breaks path MTU discovery and creates connections that hang on large transfers.",
+   "The header checksum covers only the header, not the data. Transport protocols check their own data.",
+   "Private ranges are 10/8, 172.16/12 and 192.168/16. They are not routable on the public internet."
+  ],
+  "qa": [
+   [
+    "Why does every router recompute the IP header checksum?",
+    "Because TTL changes at every hop, which changes the header."
+   ],
+   [
+    "Why is IP called best-effort?",
+    "It gives no guarantee of delivery, order or non-duplication. Higher layers add that if needed."
+   ]
+  ],
+  "packets": [
+   {
+    "tab": "IPv4 header",
+    "note": "The 20-byte header that carries an ICMP echo request from 192.168.1.10 to 8.8.8.8. The 64 bytes of ICMP data follow it.",
+    "fields": [
+     {
+      "n": "Version + IHL",
+      "x": "45",
+      "d": "High nibble 4 = IPv4. Low nibble 5 = header is 5 × 4 = 20 bytes (no options)."
+     },
+     {
+      "n": "DSCP + ECN",
+      "x": "00",
+      "d": "Traffic class and congestion bits. Zero means best effort."
+     },
+     {
+      "n": "Total length",
+      "x": "0054",
+      "d": "84 bytes = 20 header + 64 payload."
+     },
+     {
+      "n": "Identification",
+      "x": "1c46",
+      "d": "Groups fragments of one packet. Rarely matters when DF is set."
+     },
+     {
+      "n": "Flags + fragment offset",
+      "x": "4000",
+      "d": "0x4000 = Don’t Fragment set, offset 0. Path MTU discovery relies on this."
+     },
+     {
+      "n": "TTL",
+      "x": "40",
+      "d": "Each router subtracts 1. At 0 the packet is dropped and an ICMP Time Exceeded comes back. traceroute uses this."
+     },
+     {
+      "n": "Protocol",
+      "x": "01",
+      "d": "What is inside: 1 = ICMP, 6 = TCP, 17 = UDP."
+     },
+     {
+      "n": "Header checksum",
+      "x": "4ca1",
+      "d": "Ones-complement sum of the header words. Routers recompute it at every hop because TTL changes."
+     },
+     {
+      "n": "Source address",
+      "x": "c0a8010a",
+      "d": "192.168.1.10, a private address. NAT rewrites it at the router."
+     },
+     {
+      "n": "Destination address",
+      "x": "08080808",
+      "d": "8.8.8.8, Google’s public DNS resolver."
+     }
+    ]
+   }
+  ],
+  "actors": [
+   "Host",
+   "Router"
+  ],
+  "steps": [
+   [
+    0,
+    1,
+    "Packet to 8.8.8.8",
+    "The host is not on the same subnet as the destination, so it sends the packet to its default gateway."
+   ],
+   [
+    1,
+    0,
+    "Forward, TTL − 1",
+    "The router looks up 8.8.8.8 in its routing table, decrements TTL and forwards it to the next hop."
+   ],
+   [
+    1,
+    0,
+    "Forward, TTL − 1",
+    "Each router repeats the process. The packet may take a different path from the next one."
+   ],
+   [
+    1,
+    0,
+    "ICMP Time Exceeded (if TTL = 0)",
+    "If a router receives TTL 1, it drops the packet and tells the sender. This is how traceroute works."
+   ]
+  ]
+ },
+ {
+  "id": "icmp",
+  "name": "ICMP",
+  "full": "Internet Control Message Protocol",
+  "layer": "Internet",
+  "port": "IP protocol 1",
+  "tag": "The network’s way of telling you what went wrong.",
+  "intro": [
+   "ICMP is carried inside IP but is not for user data. It is how routers and hosts report errors and answer simple questions: this host is unreachable, this packet is too big, your TTL expired, are you there?",
+   "Two famous tools are built on it. ping sends Echo requests and times the replies. traceroute sends packets with TTL 1, 2, 3 and so on and collects the Time Exceeded replies to learn each router on the path."
+  ],
+  "ideas": [
+   [
+    "Types and codes",
+    "Type 3 is destination unreachable with codes for network, host, port and “fragmentation needed”. Type 11 is time exceeded."
+   ],
+   [
+    "Path MTU discovery",
+    "A router that cannot forward a large packet with DF set returns type 3 code 4 with the largest size it accepts."
+   ],
+   [
+    "Rate limits",
+    "Routers deprioritise and rate-limit ICMP, so a slow traceroute hop does not always mean a slow path."
+   ],
+   [
+    "ICMPv6 is essential",
+    "In IPv6 it also does neighbour discovery and address autoconfiguration, so it cannot be blocked wholesale."
+   ]
+  ],
+  "gotchas": [
+   "No ping reply does not mean the host is down. Firewalls often drop echo requests.",
+   "Blocking all ICMP breaks path MTU discovery.",
+   "ICMP can be abused for floods and tunnels, so networks rate-limit it, not remove it."
+  ],
+  "qa": [
+   [
+    "How does traceroute work?",
+    "It sends probes with increasing TTL. Each router that drops a packet at TTL 0 replies with ICMP Time Exceeded, revealing its address."
+   ],
+   [
+    "Why can a ping time vary a lot?",
+    "Routers handle ICMP at low priority, and the path may change between probes."
+   ]
+  ],
+  "packets": [
+   {
+    "tab": "Echo request",
+    "note": "What ping sends. Real pings carry 56 data bytes; this example uses 8 to keep the dump readable.",
+    "fields": [
+     {
+      "n": "Type",
+      "x": "08",
+      "d": "8 = Echo request. 0 = Echo reply. 3 = Destination unreachable. 11 = Time exceeded."
+     },
+     {
+      "n": "Code",
+      "x": "00",
+      "d": "Sub-type. For type 3, code 4 means “fragmentation needed but DF set”."
+     },
+     {
+      "n": "Checksum",
+      "x": "5435",
+      "d": "Covers the ICMP header and data."
+     },
+     {
+      "n": "Identifier",
+      "x": "1234",
+      "d": "Lets the sender match replies to the right ping process."
+     },
+     {
+      "n": "Sequence number",
+      "x": "0001",
+      "d": "Increments for each request. Gaps show lost packets."
+     },
+     {
+      "n": "Data",
+      "x": "6162636465666768",
+      "d": "Echoed back unchanged in the reply.",
+      "k": "t"
+     }
+    ]
+   },
+   {
+    "tab": "Time exceeded",
+    "note": "What a router sends when TTL reaches zero. It quotes the start of the packet that died.",
+    "fields": [
+     {
+      "n": "Type",
+      "x": "0b",
+      "d": "11 = Time exceeded."
+     },
+     {
+      "n": "Code",
+      "x": "00",
+      "d": "0 = TTL expired in transit."
+     },
+     {
+      "n": "Checksum",
+      "x": "f4ff",
+      "d": "Example value."
+     },
+     {
+      "n": "Unused",
+      "x": "00000000",
+      "d": "Reserved, must be zero."
+     },
+     {
+      "n": "Original IP header",
+      "x": "4500005400004000010100000a000001ac0a0101",
+      "d": "The first 20 bytes of the discarded packet, so the sender can tell which one died. traceroute reads the router address from the outer IP header."
+     }
+    ]
+   }
+  ],
+  "actors": [
+   "You",
+   "Target"
+  ],
+  "steps": [
+   [
+    0,
+    1,
+    "Echo request (type 8)",
+    "ping sends an ICMP echo with an identifier, a sequence number and some data."
+   ],
+   [
+    1,
+    0,
+    "Echo reply (type 0)",
+    "The target copies the data back. Round-trip time is the gap between the two."
+   ],
+   [
+    0,
+    1,
+    "Packet with TTL 1",
+    "traceroute starts with TTL 1 to reach the first router only."
+   ],
+   [
+    1,
+    0,
+    "Time exceeded (type 11)",
+    "The first router drops it and replies, revealing its address. Then TTL 2, and so on."
+   ]
+  ]
+ },
+ {
+  "id": "udp",
+  "name": "UDP",
+  "full": "User Datagram Protocol",
+  "layer": "Transport",
+  "port": "IP protocol 17",
+  "tag": "Fast, simple, no promises.",
+  "intro": [
+   "UDP adds just two things to IP: port numbers, so a datagram reaches the right program, and an optional checksum. No connection, no retransmission, no ordering, no congestion control.",
+   "That makes it ideal when speed matters more than perfection, or when the application wants to do its own recovery: DNS, DHCP, video calls, games, and QUIC, the transport under HTTP/3."
+  ],
+  "ideas": [
+   [
+    "Message boundaries",
+    "UDP keeps each datagram intact. One send is one receive, unlike TCP’s byte stream."
+   ],
+   [
+    "The application owns reliability",
+    "DNS simply retries. Games send the latest state again. QUIC builds its own loss recovery on top."
+   ],
+   [
+    "Pseudo-header checksum",
+    "The checksum includes IP addresses, so a datagram delivered to the wrong host is detected."
+   ],
+   [
+    "Amplification",
+    "Because the source can be forged, a small request that triggers a large reply can be abused for DDoS. Servers limit response size."
+   ]
+  ],
+  "gotchas": [
+   "Datagrams larger than the path MTU get fragmented and are often dropped.",
+   "NAT and firewalls expire UDP “connections” after seconds, so long-lived flows need keepalives.",
+   "Never assume ordering or delivery."
+  ],
+  "qa": [
+   [
+    "Why does DNS use UDP?",
+    "One small request and one small reply are cheaper without a handshake. It falls back to TCP for large answers."
+   ],
+   [
+    "What does UDP add to IP?",
+    "Ports and a checksum."
+   ]
+  ],
+  "packets": [
+   {
+    "tab": "UDP datagram",
+    "note": "The whole UDP header is 8 bytes. Here it carries the DNS query from the previous lesson.",
+    "fields": [
+     {
+      "n": "Source port",
+      "x": "cd86",
+      "d": "Ephemeral port chosen by the OS. Replies come back to it."
+     },
+     {
+      "n": "Destination port",
+      "x": "0035",
+      "d": "53 = DNS."
+     },
+     {
+      "n": "Length",
+      "x": "0025",
+      "d": "Header plus payload: 8 + 29 = 37 bytes."
+     },
+     {
+      "n": "Checksum",
+      "x": "c4f3",
+      "d": "Covers the header, data and an IP pseudo-header (addresses, protocol, length). Optional in IPv4, mandatory in IPv6."
+     },
+     {
+      "n": "Payload",
+      "x": "1a2b01000001000000000000076578616d706c6503636f6d0000010001",
+      "d": "The DNS query. UDP adds no ordering, no retransmission and no connection."
+     }
+    ]
+   }
+  ],
+  "actors": [
+   "Client",
+   "Server"
+  ],
+  "steps": [
+   [
+    0,
+    1,
+    "Datagram :52614 → :53",
+    "The client sends a single self-contained message. Nothing was set up beforehand."
+   ],
+   [
+    1,
+    0,
+    "Datagram :53 → :52614",
+    "The server replies to the source port. If either was lost, nobody is told."
+   ]
+  ]
+ },
+ {
+  "id": "dns",
+  "name": "DNS",
+  "full": "Domain Name System",
+  "layer": "Application",
+  "port": "UDP/TCP 53",
+  "tag": "The internet’s phone book.",
+  "intro": [
+   "People remember names, networks route addresses. DNS translates example.com into 93.184.216.34. It is a distributed database: no single server knows everything, but each knows where to ask next.",
+   "Your device asks a recursive resolver. If the answer is not cached, the resolver walks the hierarchy: root servers, then the .com servers, then example.com’s own authoritative servers. The answer is cached for its TTL."
+  ],
+  "ideas": [
+   [
+    "Records",
+    "A and AAAA give addresses, CNAME an alias, MX mail servers, TXT arbitrary text (SPF, DKIM), NS the delegated name servers."
+   ],
+   [
+    "TTL trades freshness for speed",
+    "Short TTLs allow fast changes and cost more queries. Long TTLs are cheap and slow to update."
+   ],
+   [
+    "Name compression",
+    "Repeated names are replaced with a two-byte pointer back to the first occurrence."
+   ],
+   [
+    "Security",
+    "Plain DNS is unauthenticated. DNSSEC signs answers. DoH and DoT encrypt the transport."
+   ],
+   [
+    "EDNS0",
+    "Extends UDP size beyond 512 bytes and carries options such as client subnet."
+   ]
+  ],
+  "gotchas": [
+   "“It’s always DNS” is a joke because a wrong record or a stale cache looks like an outage.",
+   "Changing a record does not take effect everywhere until old TTLs expire.",
+   "A CNAME cannot coexist with other records at the same name, which is why the zone apex needs ALIAS tricks."
+  ],
+  "qa": [
+   [
+    "What is the difference between recursive and authoritative servers?",
+    "A recursive resolver finds answers on your behalf and caches them. An authoritative server holds the real records for a zone."
+   ],
+   [
+    "Why does the QNAME have no dots on the wire?",
+    "Each label is prefixed by its length and a zero byte ends the name, so dots are unnecessary."
+   ]
+  ],
+  "packets": [
+   {
+    "tab": "Query",
+    "note": "A recursive question for the A record of example.com, sent as a UDP datagram to port 53.",
+    "fields": [
+     {
+      "n": "Transaction ID",
+      "x": "1a2b",
+      "d": "Random 16-bit ID. The reply must echo it. Predictable IDs enable cache poisoning."
+     },
+     {
+      "n": "Flags",
+      "x": "0100",
+      "d": "0x0100 = standard query with Recursion Desired. Bit 15 = 0 means query."
+     },
+     {
+      "n": "Questions",
+      "x": "0001",
+      "d": "One question."
+     },
+     {
+      "n": "Answer RRs",
+      "x": "0000",
+      "d": "None in a query."
+     },
+     {
+      "n": "Authority RRs",
+      "x": "0000",
+      "d": "None."
+     },
+     {
+      "n": "Additional RRs",
+      "x": "0000",
+      "d": "None. EDNS0 would add an OPT record here."
+     },
+     {
+      "n": "QNAME",
+      "x": "076578616d706c6503636f6d00",
+      "d": "Labels, each prefixed by its length: 7 “example”, 3 “com”, then a 0 byte ends the name. No dots on the wire."
+     },
+     {
+      "n": "QTYPE",
+      "x": "0001",
+      "d": "1 = A (IPv4 address). 28 = AAAA, 15 = MX, 16 = TXT."
+     },
+     {
+      "n": "QCLASS",
+      "x": "0001",
+      "d": "1 = IN (Internet)."
+     }
+    ]
+   },
+   {
+    "tab": "Response",
+    "note": "The resolver’s answer. It repeats the question and adds one answer record.",
+    "fields": [
+     {
+      "n": "Transaction ID",
+      "x": "1a2b",
+      "d": "Matches the query."
+     },
+     {
+      "n": "Flags",
+      "x": "8180",
+      "d": "0x8180 = response, Recursion Desired and Recursion Available, no error (RCODE 0)."
+     },
+     {
+      "n": "Questions",
+      "x": "0001",
+      "d": "The question is echoed."
+     },
+     {
+      "n": "Answer RRs",
+      "x": "0001",
+      "d": "One answer follows."
+     },
+     {
+      "n": "Authority RRs",
+      "x": "0000",
+      "d": "None."
+     },
+     {
+      "n": "Additional RRs",
+      "x": "0000",
+      "d": "None."
+     },
+     {
+      "n": "QNAME",
+      "x": "076578616d706c6503636f6d00",
+      "d": "Same question as before."
+     },
+     {
+      "n": "QTYPE",
+      "x": "0001",
+      "d": "A."
+     },
+     {
+      "n": "QCLASS",
+      "x": "0001",
+      "d": "IN."
+     },
+     {
+      "n": "Answer name",
+      "x": "c00c",
+      "d": "Compression pointer: top two bits 11, offset 0x0c = byte 12, where the QNAME started. Saves repeating the name."
+     },
+     {
+      "n": "Type",
+      "x": "0001",
+      "d": "A record."
+     },
+     {
+      "n": "Class",
+      "x": "0001",
+      "d": "IN."
+     },
+     {
+      "n": "TTL",
+      "x": "00000e10",
+      "d": "Cache this answer for 3600 seconds."
+     },
+     {
+      "n": "RDLENGTH",
+      "x": "0004",
+      "d": "The address is 4 bytes."
+     },
+     {
+      "n": "RDATA",
+      "x": "5db8d822",
+      "d": "93.184.216.34, the IPv4 address."
+     }
+    ]
+   }
+  ],
+  "actors": [
+   "Browser",
+   "Resolver",
+   "Authoritative"
+  ],
+  "steps": [
+   [
+    0,
+    1,
+    "A? example.com",
+    "The browser or OS asks the configured resolver, usually learned from DHCP."
+   ],
+   [
+    1,
+    2,
+    "A? example.com (cache miss)",
+    "The resolver asks root and TLD servers for referrals, then the authoritative server."
+   ],
+   [
+    2,
+    1,
+    "93.184.216.34, TTL 3600",
+    "The authoritative server answers. The resolver caches the result."
+   ],
+   [
+    1,
+    0,
+    "93.184.216.34",
+    "The resolver returns the answer. For the next hour, repeats are answered from cache."
+   ]
+  ]
+ },
+ {
+  "id": "tcp",
+  "name": "TCP",
+  "full": "Transmission Control Protocol",
+  "layer": "Transport",
+  "port": "IP protocol 6",
+  "tag": "A reliable, ordered byte stream over an unreliable network.",
+  "intro": [
+   "TCP turns IP’s unreliable packets into a dependable stream. It numbers every byte, acknowledges what arrives, resends what is lost, reorders what comes out of order and slows down when the network is congested.",
+   "Before any data flows, the two sides agree on starting sequence numbers with a three-way handshake: SYN, SYN-ACK, ACK. Closing uses FIN in each direction."
+  ],
+  "ideas": [
+   [
+    "Sequence and acknowledgement",
+    "They count bytes, not segments. An ACK of N means “everything before byte N has arrived”."
+   ],
+   [
+    "Flow control",
+    "The receiver advertises a window, the buffer space it has left. The sender may not exceed it."
+   ],
+   [
+    "Congestion control",
+    "The sender grows its sending rate until loss or delay appears, then backs off (slow start, congestion avoidance, CUBIC, BBR)."
+   ],
+   [
+    "Retransmission",
+    "Timeouts and duplicate ACKs trigger resends. SACK reports exactly which ranges arrived."
+   ],
+   [
+    "Head-of-line blocking",
+    "One lost segment stalls everything behind it. This is a main motivation for QUIC."
+   ],
+   [
+    "Closing",
+    "Each side closes its direction with FIN. TIME_WAIT keeps the port reserved so stray packets cannot confuse a new connection."
+   ]
+  ],
+  "gotchas": [
+   "Many short connections spend most time in handshakes. Reuse them.",
+   "A SYN flood fills the server’s half-open queue. SYN cookies defend against it.",
+   "Nagle’s algorithm and delayed ACKs together can add 40 ms stalls for small writes."
+  ],
+  "qa": [
+   [
+    "Why is the initial sequence number random?",
+    "To stop attackers guessing it and injecting packets, and to avoid confusion with old connections on the same ports."
+   ],
+   [
+    "What does an acknowledgement number mean?",
+    "The next byte the receiver expects. Everything before it has arrived."
+   ]
+  ],
+  "packets": [
+   {
+    "tab": "SYN",
+    "note": "First step of the three-way handshake, from client to server. No payload.",
+    "fields": [
+     {
+      "n": "Source port",
+      "x": "c93a",
+      "d": "51514, an ephemeral client port."
+     },
+     {
+      "n": "Destination port",
+      "x": "01bb",
+      "d": "443, HTTPS."
+     },
+     {
+      "n": "Sequence number",
+      "x": "9e1f2a30",
+      "d": "Initial sequence number, random to resist spoofing."
+     },
+     {
+      "n": "Acknowledgement number",
+      "x": "00000000",
+      "d": "0 because ACK is not set."
+     },
+     {
+      "n": "Data offset",
+      "x": "a0",
+      "d": "Header length in 32-bit words: 10 × 4 = 40 bytes. The low nibble is reserved."
+     },
+     {
+      "n": "Flags",
+      "x": "02",
+      "d": "0x02 = SYN only. “I want to open a connection and my sequence numbers start here.”"
+     },
+     {
+      "n": "Window",
+      "x": "faf0",
+      "d": "Receive window: how many bytes the sender of this segment can accept. Scaled by the window-scale option."
+     },
+     {
+      "n": "Checksum",
+      "x": "38ff",
+      "d": "Covers header, data and the IP pseudo-header."
+     },
+     {
+      "n": "Urgent pointer",
+      "x": "0000",
+      "d": "Unused unless the URG flag is set."
+     },
+     {
+      "n": "Option: MSS",
+      "x": "020405b4",
+      "d": "Maximum segment size 1460 = 1500 MTU − 20 IP − 20 TCP."
+     },
+     {
+      "n": "Option: SACK permitted",
+      "x": "0402",
+      "d": "Allows selective acknowledgements, so one lost segment does not force resending everything after it."
+     },
+     {
+      "n": "Option: Timestamps",
+      "x": "080a4f1c3a2100000000",
+      "d": "TSval 0x4f1c3a21, TSecr 0. Used for RTT measurement and protection against old duplicates."
+     },
+     {
+      "n": "Option: NOP",
+      "x": "01",
+      "d": "Padding so the next option is aligned."
+     },
+     {
+      "n": "Option: Window scale",
+      "x": "030307",
+      "d": "Shift count 7: multiply the window by 2^7 = 128, so 64240 means about 8 MB."
+     }
+    ]
+   },
+   {
+    "tab": "SYN-ACK",
+    "note": "Second step. The third step is a plain ACK from the client, after which data can flow.",
+    "fields": [
+     {
+      "n": "Source port",
+      "x": "01bb",
+      "d": "443, the server port."
+     },
+     {
+      "n": "Destination port",
+      "x": "c93a",
+      "d": "51514, back to the client’s port."
+     },
+     {
+      "n": "Sequence number",
+      "x": "7c4b1e02",
+      "d": "The server’s own random initial sequence number."
+     },
+     {
+      "n": "Acknowledgement number",
+      "x": "9e1f2a31",
+      "d": "Client ISN + 1. A SYN consumes one sequence number."
+     },
+     {
+      "n": "Data offset",
+      "x": "a0",
+      "d": "Header length in 32-bit words: 10 × 4 = 40 bytes. The low nibble is reserved."
+     },
+     {
+      "n": "Flags",
+      "x": "12",
+      "d": "0x12 = SYN + ACK. The server agrees and opens its own direction."
+     },
+     {
+      "n": "Window",
+      "x": "fe88",
+      "d": "Receive window: how many bytes the sender of this segment can accept. Scaled by the window-scale option."
+     },
+     {
+      "n": "Checksum",
+      "x": "0169",
+      "d": "Covers header, data and the IP pseudo-header."
+     },
+     {
+      "n": "Urgent pointer",
+      "x": "0000",
+      "d": "Unused unless the URG flag is set."
+     },
+     {
+      "n": "Option: MSS",
+      "x": "020405b4",
+      "d": "Server MSS, 1460."
+     },
+     {
+      "n": "Option: SACK permitted",
+      "x": "0402",
+      "d": "Agreed."
+     },
+     {
+      "n": "Option: Timestamps",
+      "x": "080a1d5e7c404f1c3a21",
+      "d": "TSval is the server clock; TSecr echoes the client’s 0x4f1c3a21."
+     },
+     {
+      "n": "Option: NOP",
+      "x": "01",
+      "d": "Alignment."
+     },
+     {
+      "n": "Option: Window scale",
+      "x": "030308",
+      "d": "Server shift count 8."
+     }
+    ]
+   }
+  ],
+  "actors": [
+   "Client",
+   "Server"
+  ],
+  "steps": [
+   [
+    0,
+    1,
+    "SYN, seq = x",
+    "The client picks a random initial sequence number and proposes options such as MSS and window scale."
+   ],
+   [
+    1,
+    0,
+    "SYN-ACK, seq = y, ack = x + 1",
+    "The server picks its own sequence number and acknowledges the client’s."
+   ],
+   [
+    0,
+    1,
+    "ACK, ack = y + 1",
+    "The client confirms. The connection is established after one and a half round trips."
+   ],
+   [
+    0,
+    1,
+    "Data, seq = x + 1",
+    "Each segment’s sequence number is the position of its first byte."
+   ],
+   [
+    1,
+    0,
+    "ACK, ack = x + 1 + len",
+    "The acknowledgement names the next byte expected. Missing data stays unacknowledged and is resent."
+   ]
+  ]
+ },
+ {
+  "id": "tls",
+  "name": "TLS",
+  "full": "Transport Layer Security",
+  "layer": "Application",
+  "port": "Runs over TCP (usually 443)",
+  "tag": "Privacy, integrity and identity for any connection.",
+  "intro": [
+   "TLS wraps a connection so that nobody on the path can read or change it, and so that the client knows it is talking to the real server. It does this by agreeing a shared secret using public-key cryptography, then encrypting everything with fast symmetric ciphers.",
+   "TLS 1.3 needs one round trip. The client guesses the key exchange group and sends its public key in the first message, so the server can finish key setup in its first reply."
+  ],
+  "ideas": [
+   [
+    "Forward secrecy",
+    "Each connection uses fresh ephemeral keys. Recording traffic today and stealing the server key tomorrow does not reveal it."
+   ],
+   [
+    "Certificates",
+    "A chain from the server certificate to a trusted root proves the name. The client checks signature, validity dates, name and revocation status."
+   ],
+   [
+    "AEAD",
+    "Each record is encrypted and authenticated together. Tampering is detected."
+   ],
+   [
+    "Resumption and 0-RTT",
+    "Returning clients can reuse a session ticket to start faster. 0-RTT data can be replayed, so only use it for safe requests."
+   ],
+   [
+    "SNI and ECH",
+    "The server name is visible in ClientHello unless Encrypted Client Hello is used."
+   ]
+  ],
+  "gotchas": [
+   "An expired or mismatched certificate is the most common TLS failure.",
+   "TLS terminating at a load balancer means traffic behind it is plain unless re-encrypted.",
+   "Pinning certificates in apps can lock out users when certificates rotate."
+  ],
+  "qa": [
+   [
+    "Why does TLS use both asymmetric and symmetric crypto?",
+    "Asymmetric crypto establishes a shared secret safely but is slow. Symmetric encryption then protects the data quickly."
+   ],
+   [
+    "What does the certificate prove?",
+    "That a trusted authority vouched that this public key belongs to this domain name."
+   ]
+  ],
+  "packets": [
+   {
+    "tab": "ClientHello",
+    "note": "The first handshake message, sent in plain text. After the server’s reply everything else is encrypted. Random values here are illustrative.",
+    "fields": [
+     {
+      "n": "Record type",
+      "x": "16",
+      "d": "22 = Handshake. 23 = Application data, 21 = Alert."
+     },
+     {
+      "n": "Record version",
+      "x": "0301",
+      "d": "Legacy value for compatibility. The real version is in an extension."
+     },
+     {
+      "n": "Record length",
+      "x": "008a",
+      "d": "Bytes in this record."
+     },
+     {
+      "n": "Handshake type",
+      "x": "01",
+      "d": "1 = ClientHello."
+     },
+     {
+      "n": "Handshake length",
+      "x": "000086",
+      "d": "Three-byte length."
+     },
+     {
+      "n": "client_version",
+      "x": "0303",
+      "d": "0x0303 = TLS 1.2 (legacy). TLS 1.3 clients say so in supported_versions."
+     },
+     {
+      "n": "random",
+      "x": "0b30557a9fc4e90e33587da2c7ec11365b80a5caef14395e83a8cdf2173c6186",
+      "d": "32 bytes the server mixes into the keys."
+     },
+     {
+      "n": "session_id length",
+      "x": "00",
+      "d": "Empty here. Many clients send 32 bytes for middlebox compatibility."
+     },
+     {
+      "n": "cipher_suites",
+      "x": "0006130113021303",
+      "d": "Length 6, then 0x1301 TLS_AES_128_GCM_SHA256, 0x1302 TLS_AES_256_GCM_SHA384, 0x1303 TLS_CHACHA20_POLY1305_SHA256."
+     },
+     {
+      "n": "compression",
+      "x": "0100",
+      "d": "One method: none. Compression was removed after the CRIME attack."
+     },
+     {
+      "n": "extensions length",
+      "x": "0057",
+      "d": "Total bytes of extensions."
+     },
+     {
+      "n": "server_name (SNI)",
+      "x": "00000010000e00000b6578616d706c652e636f6d",
+      "d": "Type 0, the host name example.com in clear text. Tells a shared server which certificate to use. Encrypted Client Hello hides it."
+     },
+     {
+      "n": "supported_versions",
+      "x": "002b0003020304",
+      "d": "Type 0x002b: this client speaks TLS 1.3 (0x0304)."
+     },
+     {
+      "n": "supported_groups",
+      "x": "000a00040002001d",
+      "d": "Type 0x000a: x25519 (0x001d) for key exchange."
+     },
+     {
+      "n": "signature_algorithms",
+      "x": "000d0006000404030804",
+      "d": "Type 0x000d: ecdsa_secp256r1_sha256 (0x0403) and rsa_pss_rsae_sha256 (0x0804)."
+     },
+     {
+      "n": "key_share",
+      "x": "003300260024001d0020073c71a6db10457aafe4194e83b8ed22578cc1f62b6095caff34699ed3083d72",
+      "d": "Type 0x0033: the client’s x25519 public key, sent up front so the handshake takes one round trip."
+     }
+    ]
+   },
+   {
+    "tab": "ServerHello",
+    "note": "The server picks parameters and sends its own key share. After this both sides can derive keys; the certificate and Finished messages are already encrypted.",
+    "fields": [
+     {
+      "n": "Record type",
+      "x": "16",
+      "d": "Handshake."
+     },
+     {
+      "n": "Record version",
+      "x": "0303",
+      "d": "Legacy TLS 1.2 value."
+     },
+     {
+      "n": "Record length",
+      "x": "007a",
+      "d": "Illustrative."
+     },
+     {
+      "n": "Handshake type",
+      "x": "02",
+      "d": "2 = ServerHello."
+     },
+     {
+      "n": "Handshake length",
+      "x": "000076",
+      "d": "Illustrative."
+     },
+     {
+      "n": "server_version",
+      "x": "0303",
+      "d": "Legacy value."
+     },
+     {
+      "n": "random",
+      "x": "03203d5a7794b1ceeb0825425f7c99b6d3f00d2a4764819ebbd8f5122f4c6986",
+      "d": "Server random."
+     },
+     {
+      "n": "session_id length",
+      "x": "00",
+      "d": "Echoes the client’s session id (empty here)."
+     },
+     {
+      "n": "cipher_suite",
+      "x": "1301",
+      "d": "Chosen: TLS_AES_128_GCM_SHA256."
+     },
+     {
+      "n": "compression",
+      "x": "00",
+      "d": "None."
+     },
+     {
+      "n": "supported_versions",
+      "x": "002b00020304",
+      "d": "Confirms TLS 1.3."
+     },
+     {
+      "n": "key_share",
+      "x": "00330024001d002005427fbcf93673b0ed2a67a4e11e5b98d5124f8cc9064380bdfa3774b1ee2b68",
+      "d": "The server’s x25519 public key. The shared secret is derived from both keys."
+     }
+    ]
+   }
+  ],
+  "actors": [
+   "Client",
+   "Server"
+  ],
+  "steps": [
+   [
+    0,
+    1,
+    "ClientHello + key share",
+    "Supported versions, cipher suites, the server name (SNI) and an x25519 public key, in clear text."
+   ],
+   [
+    1,
+    0,
+    "ServerHello + key share",
+    "The server picks parameters and sends its key. From here, both sides derive the same secret."
+   ],
+   [
+    1,
+    0,
+    "{Certificate, Verify, Finished}",
+    "Encrypted already. The certificate proves identity and the signature proves the server holds the private key."
+   ],
+   [
+    0,
+    1,
+    "{Finished}",
+    "The client verifies the certificate chain, then confirms the handshake transcript. Application data can flow."
+   ]
+  ]
+ },
+ {
+  "id": "http",
+  "name": "HTTP",
+  "full": "Hypertext Transfer Protocol",
+  "layer": "Application",
+  "port": "TCP 80",
+  "tag": "The request and response language of the web.",
+  "intro": [
+   "HTTP is a simple conversation: the client sends a request naming a method and a resource, and the server returns a status code, headers and usually a body. Every web page, API call and file download follows this pattern.",
+   "HTTP/1.1 is plain text. HTTP/2 sends the same ideas as binary frames multiplexed on one connection, and HTTP/3 runs them over QUIC. The meaning of methods, status codes and headers stays the same."
+  ],
+  "ideas": [
+   [
+    "Methods",
+    "GET reads, POST creates or submits, PUT replaces, PATCH changes, DELETE removes. GET, PUT and DELETE are meant to be idempotent."
+   ],
+   [
+    "Status classes",
+    "1xx info, 2xx success, 3xx redirect, 4xx client mistake, 5xx server failure."
+   ],
+   [
+    "Caching",
+    "Cache-Control, ETag and Last-Modified let clients and CDNs reuse responses safely."
+   ],
+   [
+    "Statelessness",
+    "Each request stands alone. Cookies and tokens carry session state."
+   ],
+   [
+    "Evolution",
+    "HTTP/2 multiplexes requests and compresses headers. HTTP/3 removes TCP head-of-line blocking."
+   ]
+  ],
+  "gotchas": [
+   "Plain HTTP is readable and modifiable by anyone on the path. Use HTTPS.",
+   "A missing Content-Length or chunked encoding mistake leaves the client waiting forever.",
+   "A retried POST can create duplicates. Use idempotency keys."
+  ],
+  "qa": [
+   [
+    "What is the difference between 301 and 302?",
+    "301 is a permanent redirect that clients may cache. 302 is temporary."
+   ],
+   [
+    "Why is Host required in HTTP/1.1?",
+    "One IP address can serve many sites, and Host tells the server which one is wanted."
+   ]
+  ],
+  "packets": [
+   {
+    "tab": "Request",
+    "note": "HTTP/1.1 is plain text over a TCP connection. Every line ends in CR LF (0d 0a); a blank line ends the headers.",
+    "fields": [
+     {
+      "n": "Request line",
+      "x": "474554202f696e6465782e68746d6c20485454502f312e310d0a",
+      "d": "Method, target and version. GET asks for a representation and must not change state.",
+      "k": "t"
+     },
+     {
+      "n": "Host",
+      "x": "486f73743a206578616d706c652e636f6d0d0a",
+      "d": "Required in HTTP/1.1. Lets one IP address serve many sites.",
+      "k": "t"
+     },
+     {
+      "n": "User-Agent",
+      "x": "557365722d4167656e743a206375726c2f382e352e300d0a",
+      "d": "Identifies the client software.",
+      "k": "t"
+     },
+     {
+      "n": "Accept",
+      "x": "4163636570743a202a2f2a0d0a",
+      "d": "Media types the client can handle.",
+      "k": "t"
+     },
+     {
+      "n": "End of headers",
+      "x": "0d0a",
+      "d": "An empty line. Anything after it is the body.",
+      "k": "t"
+     }
+    ]
+   },
+   {
+    "tab": "Response",
+    "note": "The server replies with a status line, headers and a body whose length is given by Content-Length.",
+    "fields": [
+     {
+      "n": "Status line",
+      "x": "485454502f312e3120323030204f4b0d0a",
+      "d": "Version, status code and reason phrase. 2xx success, 3xx redirect, 4xx client error, 5xx server error.",
+      "k": "t"
+     },
+     {
+      "n": "Content-Type",
+      "x": "436f6e74656e742d547970653a20746578742f68746d6c3b20636861727365743d5554462d380d0a",
+      "d": "How to interpret the body.",
+      "k": "t"
+     },
+     {
+      "n": "Content-Length",
+      "x": "436f6e74656e742d4c656e6774683a2031330d0a",
+      "d": "Body size in bytes, so the client knows where it ends on a reused connection.",
+      "k": "t"
+     },
+     {
+      "n": "Connection",
+      "x": "436f6e6e656374696f6e3a206b6565702d616c6976650d0a",
+      "d": "Keep the TCP connection open for the next request.",
+      "k": "t"
+     },
+     {
+      "n": "End of headers",
+      "x": "0d0a",
+      "d": "Blank line.",
+      "k": "t"
+     },
+     {
+      "n": "Body",
+      "x": "48656c6c6f2c20776f726c6421",
+      "d": "Exactly 13 bytes.",
+      "k": "t"
+     }
+    ]
+   }
+  ],
+  "actors": [
+   "Client",
+   "Server"
+  ],
+  "steps": [
+   [
+    0,
+    1,
+    "GET /index.html",
+    "Method, path, version and headers such as Host."
+   ],
+   [
+    1,
+    0,
+    "200 OK + headers + body",
+    "Status line, Content-Type, Content-Length and then the body."
+   ],
+   [
+    0,
+    1,
+    "GET /style.css (same connection)",
+    "Keep-alive lets the next request reuse the TCP connection."
+   ],
+   [
+    1,
+    0,
+    "304 Not Modified",
+    "If the client sent If-None-Match and the content is unchanged, the server skips the body."
+   ]
+  ]
+ },
+ {
+  "id": "https",
+  "name": "HTTPS",
+  "full": "HTTP over TLS",
+  "layer": "Application",
+  "port": "TCP 443",
+  "tag": "HTTP inside a TLS tunnel.",
+  "intro": [
+   "HTTPS is not a new protocol. It is ordinary HTTP carried inside a TLS connection. First TCP connects, then TLS handshakes, then the browser sends the same requests you saw in the HTTP lesson, but encrypted.",
+   "An observer on the network can see the destination address, roughly how much data moves and (unless ECH is used) the server name. They cannot see the path, headers, cookies or body."
+  ],
+  "ideas": [
+   [
+    "Round trips add up",
+    "TCP + TLS 1.3 costs two round trips before the first request. HTTP/3 over QUIC folds this into one."
+   ],
+   [
+    "HSTS",
+    "A header that tells browsers to use HTTPS only for a site, preventing downgrade attacks."
+   ],
+   [
+    "What is visible",
+    "IP addresses, timing, size and SNI. Not URLs, headers or content."
+   ],
+   [
+    "Mixed content",
+    "An HTTPS page that loads a script over HTTP lets an attacker modify the page. Browsers block it."
+   ]
+  ],
+  "gotchas": [
+   "A padlock means the connection is private, not that the site is trustworthy.",
+   "Certificates expire. Automate renewal.",
+   "Corporate proxies that inspect HTTPS install their own root certificate."
+  ],
+  "qa": [
+   [
+    "Can your ISP see which pages you visit on HTTPS?",
+    "Not the paths. It sees the IP and usually the domain through SNI."
+   ],
+   [
+    "Why is HTTPS slower to start than HTTP?",
+    "Extra handshake round trips and cryptographic work. Connection reuse and resumption reduce the cost."
+   ]
+  ],
+  "packets": [
+   {
+    "tab": "Encrypted request",
+    "note": "After the handshake, HTTP is sent inside TLS application-data records. On the wire this is all an observer sees. Bytes are illustrative.",
+    "fields": [
+     {
+      "n": "Record type",
+      "x": "17",
+      "d": "23 = Application data. TLS 1.3 always uses this outer type, even for encrypted handshake messages."
+     },
+     {
+      "n": "Record version",
+      "x": "0303",
+      "d": "Fixed legacy value."
+     },
+     {
+      "n": "Record length",
+      "x": "0024",
+      "d": "20 ciphertext bytes + 16 byte tag."
+     },
+     {
+      "n": "Ciphertext",
+      "x": "135ca5ee3780c9125ba4ed367fc8115aa3ec357e",
+      "d": "The encrypted HTTP request plus a one-byte true content type. The size leaks roughly how large the request is."
+     },
+     {
+      "n": "Authentication tag",
+      "x": "638cb5de07305982abd4fd264f78a1ca",
+      "d": "AEAD tag. If a single bit is changed in transit, decryption fails and the connection is dropped."
+     }
+    ]
+   },
+   {
+    "tab": "Inside the tunnel",
+    "note": "What the server sees after decrypting: the same HTTP you saw earlier.",
+    "fields": [
+     {
+      "n": "Request line",
+      "x": "474554202f696e6465782e68746d6c20485454502f320d0a",
+      "d": "Shown in HTTP/1.1 text form. In HTTP/2 the same fields travel as compressed binary frames.",
+      "k": "t"
+     },
+     {
+      "n": "Host",
+      "x": "686f73743a206578616d706c652e636f6d0d0a",
+      "d": "Also visible to the server in SNI, but not to the network.",
+      "k": "t"
+     }
+    ]
+   }
+  ],
+  "actors": [
+   "Browser",
+   "Server"
+  ],
+  "steps": [
+   [
+    0,
+    1,
+    "TCP handshake",
+    "SYN, SYN-ACK, ACK: one round trip."
+   ],
+   [
+    0,
+    1,
+    "TLS ClientHello",
+    "The browser starts TLS."
+   ],
+   [
+    1,
+    0,
+    "TLS ServerHello … Finished",
+    "The server proves its identity and keys are agreed."
+   ],
+   [
+    0,
+    1,
+    "Encrypted GET /",
+    "The request is inside application-data records."
+   ],
+   [
+    1,
+    0,
+    "Encrypted 200 OK",
+    "The response is protected the same way."
+   ]
+  ]
+ },
+ {
+  "id": "smtp",
+  "name": "SMTP",
+  "full": "Simple Mail Transfer Protocol",
+  "layer": "Application",
+  "port": "TCP 25 / 587 / 465",
+  "tag": "How email is sent and relayed.",
+  "intro": [
+   "SMTP moves a message from a sender to a recipient’s mail server, often via several relays. It is a text dialogue: the client states who the mail is from and to, then sends the message, and the server answers each step with a numeric code.",
+   "Receiving and reading mail is a different job, done by POP3 or IMAP."
+  ],
+  "ideas": [
+   [
+    "Envelope versus headers",
+    "MAIL FROM and RCPT TO are routing instructions. The From and To headers are what the reader sees. They can differ."
+   ],
+   [
+    "Store and forward",
+    "Each server queues and retries if the next hop is down."
+   ],
+   [
+    "STARTTLS",
+    "Upgrades a plain connection to TLS after EHLO. Port 465 uses TLS from the start."
+   ],
+   [
+    "Authentication",
+    "SPF, DKIM and DMARC let receivers check that a message really comes from the claimed domain."
+   ]
+  ],
+  "gotchas": [
+   "Open relays get abused for spam.",
+   "Mail to a large provider needs correct reverse DNS and SPF/DKIM or it lands in spam.",
+   "4xx means retry later, 5xx means give up and bounce."
+  ],
+  "qa": [
+   [
+    "Why can the visible From differ from MAIL FROM?",
+    "They serve different purposes: one for delivery and bounces, one for display. This is why DMARC aligns them."
+   ],
+   [
+    "What ends the DATA section?",
+    "A line containing only a dot."
+   ]
+  ],
+  "packets": [
+   {
+    "tab": "Client commands",
+    "note": "SMTP is a text dialogue on port 25 (server to server) or 587 (mail submission). Each line ends with CR LF.",
+    "fields": [
+     {
+      "n": "EHLO",
+      "x": "45484c4f20636c69656e742e6578616d706c652e6f72670d0a",
+      "d": "Introduces the client and asks for extensions.",
+      "k": "t"
+     },
+     {
+      "n": "MAIL FROM",
+      "x": "4d41494c2046524f4d3a3c616c696365406578616d706c652e6f72673e0d0a",
+      "d": "The envelope sender. Bounces go here. It need not match the From header.",
+      "k": "t"
+     },
+     {
+      "n": "RCPT TO",
+      "x": "5243505420544f3a3c626f62406578616d706c652e636f6d3e0d0a",
+      "d": "The envelope recipient. Repeat for each recipient.",
+      "k": "t"
+     },
+     {
+      "n": "DATA",
+      "x": "444154410d0a",
+      "d": "Start of the message. The server answers 354.",
+      "k": "t"
+     },
+     {
+      "n": "Message",
+      "x": "5375626a6563743a2048656c6c6f0d0a0d0a486920426f622e0d0a2e0d0a",
+      "d": "Headers, blank line, body. A line with only a dot ends the message.",
+      "k": "t"
+     },
+     {
+      "n": "QUIT",
+      "x": "515549540d0a",
+      "d": "Close politely.",
+      "k": "t"
+     }
+    ]
+   },
+   {
+    "tab": "Server replies",
+    "note": "Three-digit codes: 2xx success, 3xx send more, 4xx try again later, 5xx permanent failure. A hyphen after the code means more lines follow.",
+    "fields": [
+     {
+      "n": "Greeting",
+      "x": "323230206d61696c2e6578616d706c652e636f6d2045534d54502072656164790d0a",
+      "d": "Sent on connect.",
+      "k": "t"
+     },
+     {
+      "n": "EHLO reply",
+      "x": "3235302d6d61696c2e6578616d706c652e636f6d0d0a3235302d5354415254544c530d0a32353020384249544d494d450d0a",
+      "d": "Capabilities. STARTTLS lets the client upgrade to encryption.",
+      "k": "t"
+     },
+     {
+      "n": "MAIL / RCPT",
+      "x": "323530204f4b0d0a",
+      "d": "Accepted.",
+      "k": "t"
+     },
+     {
+      "n": "DATA",
+      "x": "33353420456e6420646174612077697468203c43523e3c4c463e2e3c43523e3c4c463e0d0a",
+      "d": "Go ahead.",
+      "k": "t"
+     },
+     {
+      "n": "Queued",
+      "x": "323530204f4b3a20717565756564206173203446324131430d0a",
+      "d": "The server took responsibility for delivery.",
+      "k": "t"
+     }
+    ]
+   }
+  ],
+  "actors": [
+   "Client",
+   "Server"
+  ],
+  "steps": [
+   [
+    1,
+    0,
+    "220 ready",
+    "The server greets."
+   ],
+   [
+    0,
+    1,
+    "EHLO client.example.org",
+    "The client introduces itself."
+   ],
+   [
+    0,
+    1,
+    "MAIL FROM / RCPT TO",
+    "The envelope: who it is from and who it is for."
+   ],
+   [
+    0,
+    1,
+    "DATA … .",
+    "The message headers and body, ended by a lone dot."
+   ],
+   [
+    1,
+    0,
+    "250 queued",
+    "The server accepts responsibility."
+   ]
+  ]
+ },
+ {
+  "id": "pop3",
+  "name": "POP3",
+  "full": "Post Office Protocol v3",
+  "layer": "Application",
+  "port": "TCP 110 / 995",
+  "tag": "Download the mail, then it’s yours.",
+  "intro": [
+   "POP3 is the simplest way to read mail: log in, list messages, download them and usually delete them from the server. After that, the mail lives on one device.",
+   "It was designed for dial-up connections where you connected briefly and read offline. It is still used, but IMAP suits several devices better."
+  ],
+  "ideas": [
+   [
+    "Three states",
+    "Authorisation, Transaction and Update."
+   ],
+   [
+    "Simple and stateless between sessions",
+    "No folders, no flags. Just a list of messages."
+   ],
+   [
+    "Leave on server",
+    "Clients can keep copies on the server for some days so other devices can fetch them too."
+   ]
+  ],
+  "gotchas": [
+   "Plain POP3 exposes the password. Use port 995.",
+   "Deleting after download means a second device sees nothing.",
+   "No sync of read or unread status."
+  ],
+  "qa": [
+   [
+    "Why does POP3 struggle with multiple devices?",
+    "It has no shared state such as flags or folders and often deletes mail after download."
+   ],
+   [
+    "When are deletions applied?",
+    "At QUIT, in the update state."
+   ]
+  ],
+  "packets": [
+   {
+    "tab": "Session",
+    "note": "POP3 on port 110 (995 with TLS) downloads mail. Server replies begin with +OK or -ERR.",
+    "fields": [
+     {
+      "n": "Greeting",
+      "x": "2b4f4b20504f5033207365727665722072656164790d0a",
+      "d": "From the server on connect.",
+      "k": "t"
+     },
+     {
+      "n": "USER",
+      "x": "5553455220626f620d0a",
+      "d": "Username.",
+      "k": "t"
+     },
+     {
+      "n": "PASS",
+      "x": "50415353202a2a2a2a2a2a2a2a0d0a",
+      "d": "Password in clear text unless TLS is used. Never send this unprotected.",
+      "k": "t"
+     },
+     {
+      "n": "STAT",
+      "x": "535441540d0a",
+      "d": "Ask how many messages and how many bytes.",
+      "k": "t"
+     },
+     {
+      "n": "STAT reply",
+      "x": "2b4f4b203220353132300d0a",
+      "d": "Two messages, 5120 bytes.",
+      "k": "t"
+     },
+     {
+      "n": "RETR",
+      "x": "5245545220310d0a",
+      "d": "Download message 1. The reply is multi-line, ended by a lone dot.",
+      "k": "t"
+     },
+     {
+      "n": "DELE",
+      "x": "44454c4520310d0a",
+      "d": "Mark for deletion. Deletion is applied at QUIT.",
+      "k": "t"
+     },
+     {
+      "n": "QUIT",
+      "x": "515549540d0a",
+      "d": "End the session and apply deletions.",
+      "k": "t"
+     }
+    ]
+   }
+  ],
+  "actors": [
+   "Client",
+   "Server"
+  ],
+  "steps": [
+   [
+    1,
+    0,
+    "+OK ready",
+    "The server greets."
+   ],
+   [
+    0,
+    1,
+    "USER / PASS",
+    "Authenticate. Without TLS these cross the network in clear text."
+   ],
+   [
+    0,
+    1,
+    "STAT, LIST",
+    "Ask how many messages exist and their sizes."
+   ],
+   [
+    0,
+    1,
+    "RETR 1",
+    "Download message 1."
+   ],
+   [
+    0,
+    1,
+    "DELE 1, QUIT",
+    "Mark it deleted. The server applies deletions at QUIT."
+   ]
+  ]
+ },
+ {
+  "id": "imap",
+  "name": "IMAP",
+  "full": "Internet Message Access Protocol",
+  "layer": "Application",
+  "port": "TCP 143 / 993",
+  "tag": "Mail that stays on the server and syncs everywhere.",
+  "intro": [
+   "IMAP keeps messages on the server and lets many clients see the same mailbox: folders, read flags, drafts and searches stay in sync. Clients fetch only what they need, such as headers first, then the body when you open a message.",
+   "Commands carry a tag so several can be in flight. The server answers each with a tagged result and may send untagged updates at any time."
+  ],
+  "ideas": [
+   [
+    "Tags",
+    "A client can send several commands without waiting; the tags match replies to commands."
+   ],
+   [
+    "IDLE",
+    "Holds a connection open so the server can push “new mail” in real time."
+   ],
+   [
+    "UIDs",
+    "Stable message identifiers let a client resume sync after reconnecting."
+   ],
+   [
+    "Partial fetch",
+    "Download only part of a large message."
+   ]
+  ],
+  "gotchas": [
+   "Large mailboxes need careful sync strategies, or logins become slow.",
+   "Server-side search is powerful but server dependent.",
+   "Some servers limit simultaneous connections per account."
+  ],
+  "qa": [
+   [
+    "How is IMAP different from POP3?",
+    "IMAP keeps state on the server and supports several clients, folders and flags. POP3 mostly downloads and deletes."
+   ],
+   [
+    "What does IDLE do?",
+    "It lets the server notify the client of changes without polling."
+   ]
+  ],
+  "packets": [
+   {
+    "tab": "Session",
+    "note": "IMAP on port 143 (993 with TLS) keeps mail on the server. Each command has a tag so replies can be matched.",
+    "fields": [
+     {
+      "n": "Greeting",
+      "x": "2a204f4b20494d415034726576312072656164790d0a",
+      "d": "Untagged lines start with *.",
+      "k": "t"
+     },
+     {
+      "n": "LOGIN",
+      "x": "61303031204c4f47494e20626f62202a2a2a2a2a2a2a2a0d0a",
+      "d": "Tag a001, command, arguments.",
+      "k": "t"
+     },
+     {
+      "n": "Tagged reply",
+      "x": "61303031204f4b204c4f47494e20636f6d706c657465640d0a",
+      "d": "The tag proves which command finished.",
+      "k": "t"
+     },
+     {
+      "n": "SELECT",
+      "x": "613030322053454c45435420494e424f580d0a",
+      "d": "Open a mailbox.",
+      "k": "t"
+     },
+     {
+      "n": "Untagged data",
+      "x": "2a2033204558495354530d0a",
+      "d": "The mailbox has 3 messages. Sent as data, not as a reply.",
+      "k": "t"
+     },
+     {
+      "n": "FETCH",
+      "x": "6130303320464554434820312028464c41475320424f44595b4845414445525d290d0a",
+      "d": "Fetch only the flags and headers of message 1, not the whole body.",
+      "k": "t"
+     },
+     {
+      "n": "LOGOUT",
+      "x": "61303034204c4f474f55540d0a",
+      "d": "End the session.",
+      "k": "t"
+     }
+    ]
+   }
+  ],
+  "actors": [
+   "Client",
+   "Server"
+  ],
+  "steps": [
+   [
+    1,
+    0,
+    "* OK ready",
+    "Untagged greeting."
+   ],
+   [
+    0,
+    1,
+    "a001 LOGIN",
+    "Authenticate."
+   ],
+   [
+    0,
+    1,
+    "a002 SELECT INBOX",
+    "Open a mailbox."
+   ],
+   [
+    1,
+    0,
+    "* 3 EXISTS, a002 OK",
+    "Untagged data first, then the tagged completion."
+   ],
+   [
+    0,
+    1,
+    "a003 FETCH 1 (BODY[HEADER])",
+    "Fetch just the headers."
+   ]
+  ]
+ },
+ {
+  "id": "ftp",
+  "name": "FTP",
+  "full": "File Transfer Protocol",
+  "layer": "Application",
+  "port": "TCP 21 (+ data port)",
+  "tag": "The classic file transfer protocol with two connections.",
+  "intro": [
+   "FTP separates control from data. Commands and replies travel on one connection (port 21). Every file or directory listing opens a new data connection. This was elegant in 1971 and awkward for firewalls and NAT today.",
+   "In active mode the server connects back to the client. In passive mode the server opens a port and the client connects to it, which works better through NAT."
+  ],
+  "ideas": [
+   [
+    "Control and data",
+    "Two sockets per session. It is why FTP needs firewall helpers."
+   ],
+   [
+    "Active and passive",
+    "Passive is almost always used now."
+   ],
+   [
+    "Reply codes",
+    "1xx preliminary, 2xx success, 3xx need more, 4xx temporary failure, 5xx failure."
+   ],
+   [
+    "Successors",
+    "SFTP (over SSH) and FTPS (FTP over TLS) add security. SFTP is a different protocol."
+   ]
+  ],
+  "gotchas": [
+   "Credentials and files are readable on the wire.",
+   "Firewalls must allow the passive port range.",
+   "ASCII versus binary mode once corrupted files by changing line endings."
+  ],
+  "qa": [
+   [
+    "Why is FTP awkward with NAT?",
+    "The server sends IP and port numbers inside the control channel, which NAT does not rewrite, and the data connection uses new ports."
+   ],
+   [
+    "Is SFTP the same as FTP over TLS?",
+    "No. SFTP runs over SSH. FTPS is FTP wrapped in TLS."
+   ]
+  ],
+  "packets": [
+   {
+    "tab": "Control channel",
+    "note": "FTP uses two connections. Commands travel on port 21; files travel on a separate data connection.",
+    "fields": [
+     {
+      "n": "Greeting",
+      "x": "32323020465450207365727665722072656164790d0a",
+      "d": "On connect.",
+      "k": "t"
+     },
+     {
+      "n": "USER",
+      "x": "5553455220616e6f6e796d6f75730d0a",
+      "d": "Username.",
+      "k": "t"
+     },
+     {
+      "n": "PASS",
+      "x": "50415353206775657374406578616d706c652e636f6d0d0a",
+      "d": "Sent in clear text. Use SFTP or FTPS instead.",
+      "k": "t"
+     },
+     {
+      "n": "PASV",
+      "x": "504153560d0a",
+      "d": "Ask the server to open a data port for the client to connect to.",
+      "k": "t"
+     },
+     {
+      "n": "PASV reply",
+      "x": "32323720456e746572696e672050617373697665204d6f6465202839332c3138342c3231362c33342c3139352c3830290d0a",
+      "d": "IP 93.184.216.34 and port 195 × 256 + 80 = 50000.",
+      "k": "t"
+     },
+     {
+      "n": "RETR",
+      "x": "524554522066696c652e7478740d0a",
+      "d": "Download. The bytes arrive on the data connection to port 50000.",
+      "k": "t"
+     },
+     {
+      "n": "Done",
+      "x": "323236205472616e7366657220636f6d706c6574650d0a",
+      "d": "Sent on the control channel when the data connection closes.",
+      "k": "t"
+     }
+    ]
+   }
+  ],
+  "actors": [
+   "Client",
+   "Server"
+  ],
+  "steps": [
+   [
+    0,
+    1,
+    "USER / PASS",
+    "Over the control connection. Credentials are plain text."
+   ],
+   [
+    0,
+    1,
+    "PASV",
+    "Ask for a passive data port."
+   ],
+   [
+    1,
+    0,
+    "227 (…,195,80)",
+    "The server announces IP and port 50000."
+   ],
+   [
+    0,
+    1,
+    "RETR file.txt",
+    "Request the file."
+   ],
+   [
+    1,
+    0,
+    "Data connection: file bytes",
+    "The file flows on a separate connection to the announced port."
+   ],
+   [
+    1,
+    0,
+    "226 Transfer complete",
+    "Reported on the control connection."
+   ]
+  ]
+ },
+ {
+  "id": "ssh",
+  "name": "SSH",
+  "full": "Secure Shell",
+  "layer": "Application",
+  "port": "TCP 22",
+  "tag": "An encrypted tunnel for logins, commands and files.",
+  "intro": [
+   "SSH gives you a secure remote shell and much more: file transfer (SFTP, scp), port forwarding and agent forwarding. It replaced telnet, rlogin and FTP for administration.",
+   "The connection proceeds in three stages: exchange version banners, negotiate algorithms and derive keys (key exchange), then authenticate the user, usually with a public key."
+  ],
+  "ideas": [
+   [
+    "Host keys and trust on first use",
+    "The first time you connect you accept the server’s fingerprint. After that, a changed key triggers a loud warning."
+   ],
+   [
+    "Public-key authentication",
+    "The private key never leaves your machine. The server holds the public half in authorized_keys."
+   ],
+   [
+    "Channels",
+    "Shell, commands, forwarded ports and SFTP are multiplexed over one TCP connection."
+   ],
+   [
+    "Port forwarding",
+    "Tunnel a local port to a remote service through the encrypted connection."
+   ]
+  ],
+  "gotchas": [
+   "“Host key verification failed” means the server’s key changed: a rebuilt machine, or an attacker.",
+   "Password logins invite brute-force attacks. Prefer keys.",
+   "Agent forwarding on untrusted hosts lets them use your keys while you are connected."
+  ],
+  "qa": [
+   [
+    "Why does SSH send a banner before encrypting?",
+    "Both sides first agree which protocol version they speak, then negotiate the algorithms for the encrypted phase."
+   ],
+   [
+    "What is the cookie in KEXINIT?",
+    "Sixteen random bytes that feed into key derivation, so each session’s keys differ."
+   ]
+  ],
+  "packets": [
+   {
+    "tab": "Banner",
+    "note": "Both sides send an identification string before anything is encrypted.",
+    "fields": [
+     {
+      "n": "Identification",
+      "x": "5353482d322e302d4f70656e5353485f392e360d0a",
+      "d": "Protocol version 2.0, then the software name and version.",
+      "k": "t"
+     }
+    ]
+   },
+   {
+    "tab": "KEXINIT",
+    "note": "Truncated: the real packet is about 1.5 KB and lists every algorithm the client supports. The length field below is the full length.",
+    "fields": [
+     {
+      "n": "packet_length",
+      "x": "000005fc",
+      "d": "Length of everything after this field."
+     },
+     {
+      "n": "padding_length",
+      "x": "07",
+      "d": "Random padding to a multiple of the block size."
+     },
+     {
+      "n": "Message type",
+      "x": "14",
+      "d": "20 = SSH_MSG_KEXINIT."
+     },
+     {
+      "n": "Cookie",
+      "x": "a41c9d07e63b52f81d4c7a90b3e6285f",
+      "d": "16 random bytes that feed the session key so each connection differs."
+     },
+     {
+      "n": "kex_algorithms length",
+      "x": "00000011",
+      "d": "Length of the first name-list."
+     },
+     {
+      "n": "kex_algorithms",
+      "x": "637572766532353531392d736861323536",
+      "d": "Key-exchange methods in preference order, comma separated. The real list has several.",
+      "k": "t"
+     },
+     {
+      "n": "…",
+      "x": "",
+      "d": "Then name-lists for host key, ciphers, MACs and compression, then first_kex_packet_follows and reserved."
+     }
+    ]
+   }
+  ],
+  "actors": [
+   "Client",
+   "Server"
+  ],
+  "steps": [
+   [
+    0,
+    1,
+    "SSH-2.0-OpenSSH_9.6",
+    "Banners are exchanged first, in clear text, both ways."
+   ],
+   [
+    0,
+    1,
+    "KEXINIT",
+    "Each side lists supported algorithms and sends a random cookie."
+   ],
+   [
+    1,
+    0,
+    "Key exchange + host key signature",
+    "They compute a shared secret. The server signs the exchange with its host key."
+   ],
+   [
+    0,
+    1,
+    "NEWKEYS, then user auth",
+    "From here everything is encrypted. The client proves who it is with a key."
+   ],
+   [
+    0,
+    1,
+    "Open channel (shell, exec, SFTP)",
+    "Many channels share one encrypted connection."
+   ]
+  ]
+ }
+]

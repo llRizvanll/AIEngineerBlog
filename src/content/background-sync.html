@@ -1,0 +1,371 @@
+
+      <div class="tldr">
+        <h3>If you only read this</h3>
+        <ol>
+          <li>You can't keep an app alive in the background. Make every step safe to kill and resume.</li>
+          <li>The UI reads only the local database. A write goes to the DB and an <code>outbox</code> in one transaction.</li>
+          <li>A sync engine pushes the outbox with idempotent <code>op_id</code>s and pulls changes by a server sequence cursor.</li>
+          <li>Files travel separately: hashed, split into parts, uploaded straight to object storage, checkpointed per part.</li>
+          <li>The OS runs the work: WorkManager on Android; BGTaskScheduler and background URLSession on iOS. React Native keeps this native.</li>
+        </ol>
+      </div>
+
+      <div class="callout" style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap"><span><b class="t">Prefer reels?</b>Read this whole topic as 10 short courses, one paragraph at a time.</span><a class="btn" href="/reels">Read as reels →</a></div>
+
+      <section id="s-story" data-toc="The basement upload">
+        <h2><span class="n">01</span>The basement upload</h2>
+        <p>A field engineer finishes an inspection in a basement with one bar of signal. She taps Submit on 40 photos, watches a spinner, and swipes the app away to take a call.</p>
+        <p>In most apps those photos are now in limbo. In a well-built one, nothing is lost. The upload pauses. The OS wakes the app when signal returns. Only the parts that never reached the server are sent again, and she never has to think about it.</p>
+        <p>This post is about building the second app, and about explaining how you built it to a hiring panel.</p>
+      </section>
+
+      <section id="s-rule" data-toc="The rule the OS enforces">
+        <h2><span class="n">02</span>The rule the OS enforces</h2>
+        <p>Both platforms protect battery and memory by stopping apps that are not on screen. Here is what your code can do in each state.</p>
+        <div class="tbl"><table>
+          <thead><tr><th>State</th><th>Android</th><th>iOS</th><th>Your code can</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Foreground</td><td>Runs</td><td>Runs</td><td>Do anything</td></tr>
+            <tr><td class="k">Just backgrounded</td><td>Runs briefly, then cached</td><td>A few seconds via <code>beginBackgroundTask</code></td><td>Finish the current write</td></tr>
+            <tr><td class="k">Suspended</td><td>Cached process, no guarantee</td><td>Frozen, no code runs</td><td>Nothing</td></tr>
+            <tr><td class="k">Killed</td><td>Memory pressure, Force Stop, OEM battery killers</td><td>Memory pressure, user swipe</td><td>Nothing. Only disk survives</td></tr>
+            <tr><td class="k">Woken by OS</td><td>WorkManager job, FCM message</td><td>BGTask, URLSession event, silent push</td><td>Run a short, bounded job</td></tr>
+          </tbody>
+        </table></div>
+        <div class="rule">If it isn't on disk, it doesn't exist.</div>
+        <p>Every design decision below follows from that line. Pending edits live in a table. Upload progress lives in a table. The sync position lives in a table. The process is disposable.</p>
+      </section>
+
+      <section id="s-analogy" data-toc="Explain it like a restaurant">
+        <h2><span class="n">03</span>Explain it like a restaurant</h2>
+        <p>When an interviewer says "explain it to me simply", use a busy restaurant. Every part of the system has a counterpart that everyone already understands.</p>
+        <div class="analogy">
+          <div class="an"><span>The waiter writes the order on a pad before walking to the kitchen.</span><span class="arrow">→</span><span class="tech">Local write + outbox row, one transaction</span></div>
+          <div class="an"><span>Every ticket has a unique number. The kitchen ignores a ticket it already cooked.</span><span class="arrow">→</span><span class="tech">op_id idempotency on the server</span></div>
+          <div class="an"><span>The kitchen screen numbers every dish it sends out, in order.</span><span class="arrow">→</span><span class="tech">Server sequence number per partition</span></div>
+          <div class="an"><span>A waiter back from break asks "what happened since dish 1041?"</span><span class="arrow">→</span><span class="tech">Pull changes by cursor</span></div>
+          <div class="an"><span>The "86" board lists dishes taken off the menu.</span><span class="arrow">→</span><span class="tech">Tombstones for deletes</span></div>
+          <div class="an"><span>The manager says "we're full, come back in ten minutes, not all at once".</span><span class="arrow">→</span><span class="tech">429 + Retry-After + jitter</span></div>
+          <div class="an"><span>A catering order goes out tray by tray, each tray signed for.</span><span class="arrow">→</span><span class="tech">Multipart upload, checkpoint per part</span></div>
+          <div class="an"><span>A waiter's shift ends mid-order. The next waiter picks up the same pad.</span><span class="arrow">→</span><span class="tech">Process killed, job resumes from disk</span></div>
+        </div>
+        <div class="callout"><b class="t">Say it out loud</b>"Think of a restaurant. The waiter writes every order on a numbered ticket before going to the kitchen, so nothing is lost if he's interrupted. The kitchen ignores duplicate tickets and numbers every dish it sends out. Anyone coming back from a break just asks what happened since the last number they saw. My sync engine works the same way: local outbox, idempotent op IDs, and a server sequence cursor."</div>
+      </section>
+
+      <section id="s-arch" data-toc="The architecture on one screen">
+        <h2><span class="n">04</span>The architecture on one screen</h2>
+        <p>The local database is the hub. The UI only reads it. Workers that the OS schedules move its changes to and from the backend, and file bytes skip the API entirely.</p>
+        <figure class="fig">
+          <svg viewBox="0 0 720 470" role="img" aria-label="Architecture: UI reads the local DB, workers sync it with a stateless backend, file bytes go straight to object storage">
+            <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="ah" d="M0 0L10 5L0 10z"/></marker></defs>
+            <rect class="grp" x="8" y="8" width="704" height="262" rx="12"/>
+            <text class="tag" x="24" y="30">ON THE DEVICE</text>
+            <rect class="bx" x="24" y="44" width="200" height="50" rx="9"/><text class="t" x="124" y="66" text-anchor="middle">UI</text><text class="s" x="124" y="83" text-anchor="middle">Compose · SwiftUI · React</text>
+            <rect class="bx" x="260" y="44" width="200" height="50" rx="9"/><text class="t" x="360" y="66" text-anchor="middle">ViewModel / store</text><text class="s" x="360" y="83" text-anchor="middle">one-way data flow</text>
+            <rect class="bx" x="496" y="44" width="200" height="50" rx="9"/><text class="t" x="596" y="66" text-anchor="middle">Repository</text><text class="s" x="596" y="83" text-anchor="middle">row + outbox, one txn</text>
+            <path class="ln" d="M224 69H258" marker-end="url(#ah)"/><path class="ln" d="M460 69H494" marker-end="url(#ah)"/>
+            <path class="ln" d="M596 94V124" marker-end="url(#ah)"/><path class="ln" d="M124 124V96" marker-end="url(#ah)"/>
+            <text class="s" x="132" y="114">observe</text><text class="s" x="604" y="114">write</text>
+            <rect class="hot" x="24" y="126" width="672" height="46" rx="9"/><text class="t" x="360" y="146" text-anchor="middle">Local SQLite: the single source of truth</text><text class="s" x="360" y="163" text-anchor="middle">entities · outbox · sync cursor · file-transfer parts</text>
+            <path class="ln" d="M124 202V174" marker-start="url(#ah)" marker-end="url(#ah)"/><path class="ln" d="M360 202V174" marker-start="url(#ah)" marker-end="url(#ah)"/>
+            <rect class="bx" x="24" y="204" width="200" height="50" rx="9"/><text class="t" x="124" y="226" text-anchor="middle">Transfer manager</text><text class="s" x="124" y="243" text-anchor="middle">hash · parts · resume</text>
+            <rect class="bx" x="260" y="204" width="200" height="50" rx="9"/><text class="t" x="360" y="226" text-anchor="middle">Sync engine</text><text class="s" x="360" y="243" text-anchor="middle">push outbox · pull cursor</text>
+            <rect class="bx" x="496" y="204" width="200" height="50" rx="9"/><text class="t" x="596" y="226" text-anchor="middle">OS scheduler</text><text class="s" x="596" y="243" text-anchor="middle">WorkManager · BGTask</text>
+            <path class="ln" d="M496 229H462" marker-end="url(#ah)"/><path class="ln" d="M260 229H226" marker-end="url(#ah)"/>
+            <path class="ln" d="M124 254V344" marker-end="url(#ah)"/><path class="ln" d="M360 254V344" marker-start="url(#ah)" marker-end="url(#ah)"/>
+            <text class="s" x="132" y="300">bytes, presigned URLs</text><text class="s" x="368" y="300">HTTPS push / pull</text>
+            <path class="ln" d="M596 344V256" marker-end="url(#ah)"/><text class="s" x="604" y="300">push hint</text>
+            <rect class="grp" x="8" y="320" width="704" height="140" rx="12"/>
+            <text class="tag" x="24" y="340">IN THE CLOUD</text>
+            <rect class="bx" x="24" y="346" width="200" height="50" rx="9"/><text class="t" x="124" y="368" text-anchor="middle">S3 + CDN</text><text class="s" x="124" y="385" text-anchor="middle">multipart · Range reads</text>
+            <rect class="bx" x="260" y="346" width="200" height="50" rx="9"/><text class="t" x="360" y="368" text-anchor="middle">Sync API (stateless)</text><text class="s" x="360" y="385" text-anchor="middle">dedupe op_id · pages</text>
+            <rect class="bx" x="496" y="346" width="200" height="50" rx="9"/><text class="t" x="596" y="368" text-anchor="middle">FCM / APNs notifier</text><text class="s" x="596" y="385" text-anchor="middle">coalesced hints</text>
+            <rect class="bx" x="260" y="404" width="436" height="44" rx="9"/><text class="t" x="478" y="424" text-anchor="middle">Postgres + change log</text><text class="s" x="478" y="440" text-anchor="middle">per-partition sequence numbers · CDC to workers</text>
+          </svg>
+          <figcaption>Five boxes do the work: local DB, repository, sync engine, transfer manager and the OS scheduler.</figcaption>
+        </figure>
+      </section>
+
+      <section id="sim" data-toc="Kill it yourself">
+        <h2><span class="n">05</span>Kill it yourself</h2>
+        <p>This is a working model of the design. Add notes, attach a video, cut the network and kill the app. Watch what survives in SQLite and what the server receives.</p>
+        <div class="sim" id="simulator">
+          <div class="sim-top" role="group" aria-label="Simulator controls">
+            <button id="b-note" type="button">Add a note</button>
+            <button id="b-video" type="button">Attach 96 MB video</button>
+            <button id="b-net" type="button" class="on" aria-pressed="true">Network: online</button>
+            <button id="b-kill" type="button" class="danger">Swipe-kill app</button>
+            <button id="b-wake" type="button">OS wakes app</button>
+            <button id="b-remote" type="button">Edit on another device</button>
+            <button id="b-replay" type="button">Replay last request</button>
+            <button id="b-reset" type="button">Reset</button>
+          </div>
+          <div class="sim-grid">
+            <div class="phone" id="phone">
+              <div class="sb"><span>9:41</span><span id="sb-net">5G</span></div>
+              <h5>Site notes</h5>
+              <div class="notes" id="notes"></div>
+              <div class="vid" id="vid" hidden>
+                <div style="display:flex;justify-content:space-between;gap:6px"><span>pump-room.mov</span><span class="badge pending" id="vid-badge">0/12</span></div>
+                <div class="parts" id="parts"></div>
+              </div>
+              <div class="dead-ov"><b>Process killed</b><span>RAM is gone. SQLite, the outbox and saved upload parts are still on disk.</span></div>
+            </div>
+            <div class="panes">
+              <div class="pane">
+                <h6><span>SQLite · outbox</span><span id="ob-count">0</span></h6>
+                <div class="ob" id="outbox"></div>
+              </div>
+              <div class="pane">
+                <h6><span>SQLite · sync state</span></h6>
+                <div class="kv"><span>cursor</span><b id="kv-cursor">1041</b></div>
+                <div class="kv"><span>parts saved</span><b id="kv-parts">none</b></div>
+                <div class="kv"><span>process</span><b id="kv-proc">alive</b></div>
+                <div class="kv"><span>MB re-sent</span><b id="kv-resent">0</b></div>
+              </div>
+              <div class="pane" style="grid-column:1/-1">
+                <h6><span>Server · change log</span><span id="srv-seq">seq 1041</span></h6>
+                <div class="ob" id="srvlog"></div>
+              </div>
+              <div class="log" id="log" aria-live="polite"></div>
+            </div>
+          </div>
+          <div class="sim-foot"><span>Newest log line on top. Everything here runs in your browser.</span><span id="sim-hint">Try: attach the video, kill the app at 50%, then wake it.</span></div>
+        </div>
+        <h3>Five things to try</h3>
+        <ol class="tries">
+          <li>Turn the network off and add three notes. They show instantly and wait in the outbox.</li>
+          <li>Attach the video, kill the app halfway, then press <b>OS wakes app</b>. Only missing parts upload.</li>
+          <li>Press <b>Replay last request</b>. The server spots the repeated <code>op_id</code> and writes nothing new.</li>
+          <li>Kill the app, then <b>Edit on another device</b>. Nothing arrives until the OS wakes the app.</li>
+          <li>Watch <code>cursor</code>. It only moves after a page of changes is safely applied.</li>
+        </ol>
+      </section>
+
+      <section id="s-protocol" data-toc="Sync in four moves">
+        <h2><span class="n">06</span>Sync in four moves</h2>
+        <div class="steps">
+          <div class="step"><b>1</b><h4>Write locally</h4><p>Row + outbox entry in one transaction. UI updates now.</p></div>
+          <div class="step"><b>2</b><h4>Push</h4><p>Send outbox ops with <code>op_id</code>. Server dedupes and orders them.</p></div>
+          <div class="step"><b>3</b><h4>Pull</h4><p>Ask for changes since the cursor, one page at a time.</p></div>
+          <div class="step"><b>4</b><h4>Commit</h4><p>Apply the page and save the new cursor in the same transaction.</p></div>
+        </div>
+        <p>Push first, so the server sees your edits before it answers what changed. Here is the whole contract.</p>
+<pre><code><span class="c">// push: idempotent by op_id</span>
+<span class="k">POST</span> /v1/sync/push
+{ <span class="s">"ops"</span>: [{ <span class="s">"op_id"</span>: <span class="s">"018f3c7a-9b"</span>, <span class="s">"entity"</span>: <span class="s">"note"</span>, <span class="s">"id"</span>: <span class="s">"n-77"</span>,
+            <span class="s">"type"</span>: <span class="s">"update"</span>, <span class="s">"base_version"</span>: 12, <span class="s">"fields"</span>: { <span class="s">"title"</span>: <span class="s">"Pump room B"</span> } }] }
+<span class="c">→ { "results": [{ "op_id": "018f3c7a-9b", "status": "applied", "version": 13, "seq": 1042 }] }</span>
+
+<span class="c">// pull: ordered by server sequence, never by timestamps</span>
+<span class="k">GET</span> /v1/sync/pull?cursor=c_1041&amp;limit=500
+<span class="c">→ { "changes": [ { "seq": 1042, "entity": "note", "id": "n-77", "version": 13, "fields": { … } },
+                 { "seq": 1043, "entity": "note", "id": "n-12", "deleted": true } ],
+    "next_cursor": "c_1043", "has_more": false }</span></code></pre>
+        <div class="callout"><b class="t">Why not updated_at?</b>Device and server clocks drift, and two rows written in the same millisecond can both be skipped. A server sequence gives one total order and a safe place to resume.</div>
+      </section>
+
+      <section id="s-conflict" data-toc="Pick a conflict strategy">
+        <h2><span class="n">07</span>Pick a conflict strategy</h2>
+        <p>There is no single right answer. Choose per entity by asking what a lost edit would cost. Pick an example.</p>
+        <div class="chooser">
+          <div class="chips" id="conf-chips" role="group" aria-label="Entity examples"></div>
+          <div class="out" id="conf-out" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section id="s-files" data-toc="Moving huge files">
+        <h2><span class="n">08</span>Moving huge files</h2>
+        <p>Records and bytes are different problems, so they get different pipelines. A file upload is a small state machine, and every state is a value in a table.</p>
+        <div class="states" aria-label="Upload states">
+          <span>Captured</span><em>→</em><span>Hashed</span><em>→</em><span>Already on server?</span><em>→</em><span>Uploading parts</span><em>⇄</em><span class="hot">Paused</span><em>→</em><span>Completing</span><em>→</em><span class="ok">Done</span>
+        </div>
+        <ul>
+          <li><b>Copy first.</b> Copy the file into app storage. A gallery URI can disappear.</li>
+          <li><b>Hash it.</b> SHA-256 lets the server say "I already have this" and verify the result.</li>
+          <li><b>Split it.</b> S3 multipart parts of 8–16 MB (minimum 5 MB, except the last).</li>
+          <li><b>Go direct.</b> Presigned part URLs send bytes straight to storage, never through your API.</li>
+          <li><b>Checkpoint.</b> Save each part's ETag the moment it lands. A kill costs one part at most.</li>
+        </ul>
+        <h3>What a checkpoint saves you</h3>
+        <div class="calc" id="calc">
+          <div class="inputs">
+            <label for="c-size">File size <output id="o-size">2 GB</output><input id="c-size" type="range" min="1" max="20" value="2"></label>
+            <label for="c-part">Part size <output id="o-part">16 MB</output><input id="c-part" type="range" min="5" max="64" step="1" value="16"></label>
+            <label for="c-kill">Killed at <output id="o-kill">70%</output><input id="c-kill" type="range" min="5" max="95" step="5" value="70"></label>
+          </div>
+          <div class="bars">
+            <div class="barrow"><span>Restart from zero</span><span class="track"><i id="bar-a"></i></span><span class="v" id="v-a"></span></div>
+            <div class="barrow"><span>Resume from saved parts</span><span class="track"><i id="bar-b" class="good"></i></span><span class="v" id="v-b"></span></div>
+          </div>
+          <div class="sum" id="calc-sum"></div>
+        </div>
+      </section>
+
+      <section id="s-platforms" data-toc="Platform playbook">
+        <h2><span class="n">09</span>Platform playbook</h2>
+        <p>Same design, three runtimes. The tools differ, and so do the traps.</p>
+        <div class="tabs" id="ptabs">
+          <div class="tablist" role="tablist" aria-label="Platforms">
+            <button role="tab" id="t-and" aria-controls="p-and" aria-selected="true" type="button">Android</button>
+            <button role="tab" id="t-ios" aria-controls="p-ios" aria-selected="false" type="button" tabindex="-1">iOS</button>
+            <button role="tab" id="t-rn" aria-controls="p-rn" aria-selected="false" type="button" tabindex="-1">React Native</button>
+          </div>
+          <div class="tabpanel" role="tabpanel" id="p-and" aria-labelledby="t-and">
+            <div class="tbl"><table><thead><tr><th>Need</th><th>Use</th></tr></thead><tbody>
+              <tr><td>Sync soon after an edit</td><td>WorkManager one-time, expedited, unique name</td></tr>
+              <tr><td>Periodic catch-up</td><td>PeriodicWorkRequest (15 min minimum), network constraint</td></tr>
+              <tr><td>Huge transfer the user started</td><td>User-initiated data transfer job (API 34+), or a typed foreground service</td></tr>
+              <tr><td>Server has new data</td><td>FCM data message → enqueue sync work</td></tr>
+            </tbody></table></div>
+<pre><code><span class="k">class</span> UploadWorker(ctx: Context, p: WorkerParameters) : CoroutineWorker(ctx, p) {
+  <span class="k">override suspend fun</span> doWork(): Result {
+    <span class="k">val</span> t = repo.get(inputData.getString(<span class="s">"fileId"</span>)!!) ?: <span class="k">return</span> Result.success()
+    <span class="k">for</span> (part <span class="k">in</span> t.missingParts()) {          <span class="c">// resume from the DB</span>
+      <span class="k">if</span> (isStopped) <span class="k">return</span> Result.retry()
+      repo.markPartDone(t.id, part.n, repo.put(part))  <span class="c">// checkpoint each part</span>
+    }
+    repo.complete(t.id); <span class="k">return</span> Result.success()
+  }
+}</code></pre>
+            <ul>
+              <li>Android 14+ requires a declared foreground-service type, and Android 15 caps <code>dataSync</code> services at about 6 hours a day.</li>
+              <li>Doze and App Standby Buckets slow down rarely used apps. OEMs like Xiaomi and Oppo kill harder, so test on them.</li>
+              <li>Force Stop cancels all scheduled work until the user opens the app again.</li>
+            </ul>
+          </div>
+          <div class="tabpanel" role="tabpanel" id="p-ios" aria-labelledby="t-ios" hidden>
+            <div class="tbl"><table><thead><tr><th>Need</th><th>Use</th></tr></thead><tbody>
+              <tr><td>Finish what the user just did</td><td><code>beginBackgroundTask</code> (seconds)</td></tr>
+              <tr><td>Quick catch-up</td><td><code>BGAppRefreshTask</code> (~30 s, OS picks the time)</td></tr>
+              <tr><td>Heavy work</td><td><code>BGProcessingTask</code>, usually overnight while charging</td></tr>
+              <tr><td>Huge files</td><td>Background <code>URLSession</code>, one upload task per part file</td></tr>
+              <tr><td>User-started long task</td><td><code>BGContinuedProcessingTask</code> (iOS 26+) with system progress</td></tr>
+            </tbody></table></div>
+<pre><code>BGTaskScheduler.shared.register(forTaskWithIdentifier: <span class="s">"com.app.sync"</span>, using: <span class="k">nil</span>) { task <span class="k">in</span>
+  scheduleNextSync()                                  <span class="c">// always re-schedule first</span>
+  <span class="k">let</span> work = Task { <span class="k">await</span> SyncEngine.shared.runOnce(budget: .seconds(25)) }
+  task.expirationHandler = { work.cancel() }          <span class="c">// the OS wants its time back</span>
+  Task { _ = <span class="k">await</span> work.result; task.setTaskCompleted(success: !work.isCancelled) }
+}</code></pre>
+            <ul>
+              <li>A swipe-kill cancels background URLSession transfers. Resume from your saved parts on next launch.</li>
+              <li>With <code>.complete</code> file protection the DB is unreadable while locked. Use <code>completeUntilFirstUserAuthentication</code> for sync stores.</li>
+              <li>Silent pushes are throttled. Treat them as hints, never as a schedule.</li>
+            </ul>
+          </div>
+          <div class="tabpanel" role="tabpanel" id="p-rn" aria-labelledby="t-rn" hidden>
+            <p>The JS runtime is not reliably alive in the background. Keep scheduling, transfers and the sync engine native, and let JS observe the database.</p>
+            <div class="tbl"><table><thead><tr><th>Layer</th><th>Lives in</th></tr></thead><tbody>
+              <tr><td>Screens, navigation, UI state</td><td>JS / TypeScript</td></tr>
+              <tr><td>DB access for UI</td><td>JSI database (WatermelonDB or op-sqlite)</td></tr>
+              <tr><td>Sync engine, scheduling, transfers</td><td>Native modules, or a shared KMP / Rust core</td></tr>
+              <tr><td>Progress and status</td><td>Native writes SQLite, JS observes</td></tr>
+            </tbody></table></div>
+<pre><code><span class="c">// JS writes locally, asks native to sync, returns at once</span>
+<span class="k">await</span> db.write(<span class="k">async</span> () =&gt; {
+  <span class="k">const</span> note = <span class="k">await</span> notes.create(n =&gt; { n.title = title; n.syncState = <span class="s">'pending'</span> });
+  <span class="k">await</span> outbox.create(o =&gt; { o.opId = uuidv7(); o.entityId = note.id; o.op = <span class="s">'create'</span> });
+});
+SyncModule.requestSync({ reason: <span class="s">'user_edit'</span> });   <span class="c">// WorkManager / BGTask underneath</span></code></pre>
+            <ul>
+              <li>Never move file bytes through JS. Pass a file URI to native code.</li>
+              <li>Headless JS exists only on Android, so it can't be your cross-platform plan.</li>
+              <li>App Center CodePush was retired in March 2025. EAS Update is the usual replacement.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="s-scale" data-toc="Scaling the backend">
+        <h2><span class="n">10</span>Scaling the backend</h2>
+        <p>The backend scales because no request needs server memory of a client. The client carries its cursor, every write is idempotent, and bytes bypass the API. Add each stage when a signal says you need it.</p>
+        <div class="road">
+          <div class="stage"><b>1 · MVP</b><small>under 10k users</small><ul><li>one Postgres</li><li>monolith sync API</li><li>presigned S3</li></ul></div>
+          <div class="stage"><b>2 · Growth</b><small>10k–500k users</small><ul><li>read replicas</li><li>Redis for op_id dedupe</li><li>push hints + CDN</li></ul></div>
+          <div class="stage"><b>3 · Scale</b><small>500k–5M users</small><ul><li>partitioned change log</li><li>CDC to Kafka</li><li>CDN snapshots for first install</li></ul></div>
+          <div class="stage"><b>4 · Large</b><small>5M+ users</small><ul><li>sharded DB</li><li>multi-region cells</li><li>data residency</li></ul></div>
+        </div>
+        <div class="gates"><div></div><div>gate: reads saturate the primary</div><div>gate: first sync too slow</div><div>gate: one region hurts everyone</div></div>
+        <div class="callout"><b class="t">Back-of-envelope</b>1M daily users × 10 syncs a day ≈ 115 requests per second on average; plan for 5–10× at peak. 1M users × 20 MB a day = 20 TB of uploads a day, all of it straight to object storage.</div>
+      </section>
+
+      <section id="s-myths" data-toc="Myths that cost offers">
+        <h2><span class="n">11</span>Myths that cost offers</h2>
+        <p>Tap a card to see what's actually true.</p>
+        <div class="myths" id="myths"></div>
+      </section>
+
+      <section id="s-kit" data-toc="Interview kit">
+        <h2><span class="n">12</span>Interview kit</h2>
+        <div class="kitbox">
+          <div class="tabs" id="pitch-tabs" style="margin:0">
+            <div class="tablist" role="tablist" aria-label="Pitch length">
+              <button role="tab" id="t-30" aria-controls="p-30" aria-selected="true" type="button">30 seconds</button>
+              <button role="tab" id="t-2m" aria-controls="p-2m" aria-selected="false" type="button" tabindex="-1">2 minutes</button>
+              <button role="tab" id="t-wb" aria-controls="p-wb" aria-selected="false" type="button" tabindex="-1">Whiteboard</button>
+            </div>
+            <div class="tabpanel pitch" role="tabpanel" id="p-30" aria-labelledby="t-30"><p id="pitch-30">I design for the app being killed. The UI reads only a local SQLite database, every write lands in an outbox in the same transaction, and a sync engine pushes it with idempotent op IDs and pulls changes by a server sequence cursor. Files go separately as checkpointed multipart uploads straight to S3. The OS runs it all: WorkManager on Android, BGTaskScheduler and background URLSession on iOS.</p><button class="copy" type="button" data-copy="pitch-30">Copy</button></div>
+            <div class="tabpanel pitch" role="tabpanel" id="p-2m" aria-labelledby="t-2m" hidden><p id="pitch-2m">Mobile OSes stop background apps to save battery, so I never try to stay alive. I persist intent instead. A user edit writes the row and an outbox entry in one SQLite transaction, so the UI is instant and works offline. When the OS runs our job, the sync engine pushes outbox ops with client-generated op IDs, which the server dedupes, so retries are always safe. Then it pulls changes after its cursor, a server-assigned sequence, and saves the new cursor in the same transaction as the data. Conflicts are chosen per entity: last-write-wins for low-value fields, a 409 and merge for important records, operations for counters. Large files are hashed, split into parts and uploaded through presigned URLs, with each part checkpointed, so a kill costs one part at most. On Android that's WorkManager and user-initiated data transfer jobs; on iOS, BGTaskScheduler and background URLSession; in React Native the same native modules, with JS only observing the DB. The backend is stateless with a partitioned change log, CDN snapshots for first install and coalesced push hints, so it scales horizontally.</p><button class="copy" type="button" data-copy="pitch-2m">Copy</button></div>
+            <div class="tabpanel pitch" role="tabpanel" id="p-wb" aria-labelledby="t-wb" hidden><ol id="pitch-wb"><li>Draw the phone. Inside: UI, local DB (big, in the middle), outbox.</li><li>Draw the OS scheduler waking a sync engine and a transfer manager.</li><li>Draw the backend: gateway, stateless sync API, Postgres with a change log.</li><li>Draw S3 off to the side, with an arrow from the phone that skips the API.</li><li>Draw the push notifier pointing back at the OS scheduler.</li><li>Walk one edit end to end, then kill the app halfway and show it resume.</li></ol><button class="copy" type="button" data-copy="pitch-wb">Copy</button></div>
+          </div>
+        </div>
+
+        <h3>Worked examples to reach for</h3>
+        <p>When a panel says "give me a concrete example", pick the one closest to their product.</p>
+        <div class="examples">
+          <div class="ex">
+            <header><h4>Field inspection app</h4><span class="nums">200k technicians · 2 GB photos each per week</span></header>
+            <p>That's about 400 TB of uploads a week, so bytes must go direct to S3 with dedupe by hash and lifecycle rules to cheaper storage. Sync only each technician's assigned jobs. Prefetch job packs on Wi-Fi and charging. Compress photos on device before upload.</p>
+            <div class="trap"><b>The follow-up they'll ask</b>"What if a tech is offline for three weeks?" Deletes are tombstones with a 90-day TTL. Past that, the server returns 410 and the app rebuilds from a CDN snapshot, then pulls deltas.</div>
+          </div>
+          <div class="ex">
+            <header><h4>Clinic booking app</h4><span class="nums">appointment slots · patient notes · offline front desk</span></header>
+            <p>Bookings are server-authoritative: the app proposes a slot offline and shows "pending confirmation". Notes use 409-and-merge so no clinician's edit is lost. Patient data is encrypted at rest with keys in Keystore or Keychain.</p>
+            <div class="trap"><b>The follow-up they'll ask</b>"Two receptionists book the same slot offline." The server accepts the first and returns 409 for the second. The app shows the conflict and offers the next free slot.</div>
+          </div>
+          <div class="ex">
+            <header><h4>Retail point of sale</h4><span class="nums">stores keep selling during an outage</span></header>
+            <p>Sales write to a local ledger. Inventory changes are operations ("−2 units"), not new totals, so two tills never overwrite each other. Every sale carries an op_id, so replaying after reconnect can't double-charge or double-count.</p>
+            <div class="trap"><b>The follow-up they'll ask</b>"Can you take cards offline?" Only as store-and-forward with a per-transaction limit, which is a business risk decision. Say who signs off on that risk.</div>
+          </div>
+        </div>
+
+        <h3>Rapid-fire answers</h3>
+        <details><summary>How do you keep the app running in the background?</summary><div>You don't. Both OSes will stop it. Persist intent on disk and let WorkManager or BGTaskScheduler run short, resumable jobs.</div></details>
+        <details><summary>What survives a kill?</summary><div>Only disk: SQLite rows, the outbox, the cursor and saved upload parts. Anything in memory is gone.</div></details>
+        <details><summary>Push or poll?</summary><div>Both. A coalesced push hint triggers a pull. A periodic job and app-foreground sync are the fallback, because push is best effort.</div></details>
+        <details><summary>How do deletes reach a device that was offline?</summary><div>Tombstones in the change log with a TTL. If the device's cursor is older than the TTL, the server returns 410 and the device rebuilds from a snapshot.</div></details>
+        <details><summary>How do you stop a retry storm after an outage?</summary><div>Full-jitter exponential backoff on clients, 429 with Retry-After on the server, rate limits per device, and push fan-out spread over minutes.</div></details>
+        <details><summary>How do you know sync is healthy?</summary><div>p95 freshness (time since last successful sync), outbox depth, upload completion rate, conflict rate and background-task expirations, split by app version and device model.</div></details>
+        <details><summary>What would you build first with three months?</summary><div>Outbox, cursor pull, last-write-wins, presigned multipart uploads, OS scheduling and basic telemetry. CRDTs, snapshots and real-time channels wait until the metrics ask for them.</div></details>
+
+        <h3>Check yourself</h3>
+        <div class="quiz" id="quiz"></div>
+        <p class="score" id="score" aria-live="polite"></p>
+      </section>
+
+      <section id="s-gloss" data-toc="Glossary and reading">
+        <h2><span class="n">13</span>Glossary and further reading</h2>
+        <dl class="gloss">
+          <dt>Outbox</dt><dd>A local table of pending changes, written in the same transaction as the data.</dd>
+          <dt>op_id</dt><dd>A client-generated ID per change. The server uses it to ignore duplicates.</dd>
+          <dt>Cursor</dt><dd>The last server sequence number the device has applied. It asks for changes after it.</dd>
+          <dt>Tombstone</dt><dd>A record saying "this was deleted", kept long enough for offline devices to learn it.</dd>
+          <dt>Presigned URL</dt><dd>A short-lived URL that lets the device upload one object straight to storage.</dd>
+          <dt>Multipart upload</dt><dd>A large file sent as numbered parts, then assembled by the storage service.</dd>
+          <dt>UIDT job</dt><dd>Android's user-initiated data transfer job, for long transfers the user started.</dd>
+          <dt>Background URLSession</dt><dd>iOS transfers run by a system daemon, outside your app's process.</dd>
+        </dl>
+        <ul>
+          <li><a target="_blank" rel="noopener" href="https://developer.android.com/develop/background-work/background-tasks/persistent">Android: persistent work with WorkManager</a></li>
+          <li><a target="_blank" rel="noopener" href="https://developer.android.com/develop/background-work/background-tasks/uidt">Android: user-initiated data transfer jobs</a></li>
+          <li><a target="_blank" rel="noopener" href="https://developer.apple.com/documentation/backgroundtasks">Apple: Background Tasks framework</a></li>
+          <li><a target="_blank" rel="noopener" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpuoverview.html">AWS: uploading objects using multipart upload</a></li>
+          <li><a target="_blank" rel="noopener" href="https://tus.io/">tus: an open protocol for resumable uploads</a></li>
+        </ul>
+        <div class="next">
+          <div><div class="kicker">Next in the series</div><b>02 · SQLite at a million rows</b></div>
+          <div class="btns"><a class="btn ghost" href="/series">All posts</a><a class="btn" href="/series/sqlite">Next →</a></div>
+        </div>
+      </section>

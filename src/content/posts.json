@@ -1,0 +1,1111 @@
+[
+ {
+  "id": "sqlite",
+  "num": "02",
+  "mins": 14,
+  "title": "SQLite at a million rows",
+  "tags": "Android · iOS · SQLite",
+  "dek": "The local database is the product. Here is the schema, the pragmas, the paging and the migration rules that keep it fast at a million rows and safe for users who skip eleven app updates.",
+  "rule": "Design the database for the worst user, not the median one: a million rows, a month offline, and an app that was killed mid-write.",
+  "tldr": [
+   "Turn on WAL, keep transactions short and put the outbox in the same transaction as the data.",
+   "Page with keyset (seek) queries on an indexed key. OFFSET gets slower with every page.",
+   "Migrations must work from any old version, never touch the outbox destructively, and be tested on real old files."
+  ],
+  "secs": [
+   {
+    "h": "Start with the access pattern, not the entity",
+    "p": [
+     "Most slow mobile databases are not slow because SQLite is slow. They are slow because the schema mirrors the server's tables instead of the screens. Write down the five queries your screens run most, then design tables and indexes for them.",
+     "A field-service list screen asks one question: jobs assigned to me, not completed, sorted by due date, newest edits first, 30 at a time. That query needs a composite index on (assignee_id, status, due_at, id). If the index does not match the query, you scan a million rows to show thirty."
+    ],
+    "code": [
+     "A schema built for the list screen",
+     "sql",
+     "CREATE TABLE job (\n  id          TEXT PRIMARY KEY,          -- UUIDv7, generated on the device\n  assignee_id TEXT NOT NULL,\n  status      INTEGER NOT NULL,          -- small ints index better than strings\n  title       TEXT NOT NULL,\n  due_at      INTEGER NOT NULL,          -- unix ms, UTC\n  updated_at  INTEGER NOT NULL,\n  server_seq  INTEGER,                   -- NULL until the server has acknowledged it\n  deleted     INTEGER NOT NULL DEFAULT 0 -- tombstone, so sync can delete\n) WITHOUT ROWID;\n\nCREATE INDEX job_list ON job (assignee_id, status, due_at, id) WHERE deleted = 0;\n\nCREATE TABLE outbox (\n  seq        INTEGER PRIMARY KEY AUTOINCREMENT,\n  op_id      TEXT NOT NULL UNIQUE,       -- idempotency key\n  entity     TEXT NOT NULL,\n  entity_id  TEXT NOT NULL,\n  payload    BLOB NOT NULL,\n  attempts   INTEGER NOT NULL DEFAULT 0,\n  created_at INTEGER NOT NULL\n);\n\nCREATE TABLE sync_state (key TEXT PRIMARY KEY, value TEXT NOT NULL); -- cursor lives here"
+    ],
+    "callout": [
+     "Say it out loud",
+     "A partial index (WHERE deleted = 0) keeps tombstones out of the index the UI uses, so deleting a million rows does not slow the list down."
+    ]
+   },
+   {
+    "h": "WAL, pragmas and short transactions",
+    "p": [
+     "Write-ahead logging lets readers keep reading while one writer appends to the log. That is exactly what a sync engine writing in the background and a UI reading on the main thread need. Android's Room and most iOS wrappers such as GRDB enable it for you, but you should know what it does.",
+     "The rules that matter more than any setting: one writer at a time, transactions measured in milliseconds, and never hold a transaction open across a network call. A sync batch of 500 rows is committed in chunks, not in one two-second transaction that blocks the user's tap."
+    ],
+    "table": {
+     "head": [
+      "Setting",
+      "Typical value",
+      "Why"
+     ],
+     "rows": [
+      [
+       "journal_mode",
+       "WAL",
+       "Readers do not block the writer and vice versa."
+      ],
+      [
+       "synchronous",
+       "NORMAL with WAL",
+       "Durable enough against app crashes; a power cut can lose the last commits but never corrupt the file."
+      ],
+      [
+       "busy_timeout",
+       "3000–5000 ms",
+       "Wait for the writer instead of failing with SQLITE_BUSY."
+      ],
+      [
+       "foreign_keys",
+       "ON",
+       "Off by default per connection. Turn it on every time you open."
+      ],
+      [
+       "wal_autocheckpoint",
+       "1000 pages (default)",
+       "Large bulk imports may checkpoint manually so the WAL file does not grow without bound."
+      ],
+      [
+       "auto_vacuum",
+       "INCREMENTAL",
+       "Lets you reclaim space in small steps after bulk deletes instead of one giant VACUUM."
+      ]
+     ]
+    },
+    "callout": [
+     "Common mistake",
+     "Opening several connections that all write. SQLite still has one writer, so you get lock contention for no gain. Use one write connection and a small pool of read connections."
+    ]
+   },
+   {
+    "h": "Paging a million rows without OFFSET",
+    "p": [
+     "OFFSET 30000 LIMIT 30 makes SQLite walk and throw away 30,000 rows before returning thirty. It also shifts when rows are inserted, so users see duplicates and gaps. Keyset paging remembers the last row seen and asks for rows after it. The cost is the same on page 1 and page 10,000."
+    ],
+    "code": [
+     "Keyset paging",
+     "sql",
+     "-- first page\nSELECT id, title, due_at FROM job\nWHERE assignee_id = ? AND status = 1 AND deleted = 0\nORDER BY due_at, id\nLIMIT 30;\n\n-- next page: pass the last row's (due_at, id)\nSELECT id, title, due_at FROM job\nWHERE assignee_id = ? AND status = 1 AND deleted = 0\n  AND (due_at, id) > (?, ?)       -- row-value comparison, SQLite 3.15+\nORDER BY due_at, id\nLIMIT 30;"
+    ],
+    "p2": [
+     "On Android, Paging 3 with Room does keyset-like loading for you through a PagingSource and invalidates when the table changes. On iOS, GRDB's ValueObservation or a cursor you keep in a view model does the same job. In React Native, a native module or op-sqlite query feeds a FlashList. The principle is the same everywhere: never let the UI hold the whole table."
+    ]
+   },
+   {
+    "h": "Full-text search with FTS5",
+    "p": [
+     "Searching with LIKE '%term%' cannot use an index and scans everything. FTS5 builds an inverted index. For synced data, use an external-content table so you do not store the text twice, and keep it fresh with triggers.",
+     "Two practical details. First, tokenise for your users: the unicode61 tokenizer with remove_diacritics handles most European text, and the trigram tokenizer helps substring search and languages without spaces, at a size cost. Second, update the index in the same transaction as the row, or searches will return rows that no longer exist."
+    ],
+    "code": [
+     "FTS5 over the job table",
+     "sql",
+     "CREATE VIRTUAL TABLE job_fts USING fts5(\n  title, notes,\n  content='job', content_rowid='rowid',\n  tokenize='unicode61 remove_diacritics 2'\n);\n\nCREATE TRIGGER job_ai AFTER INSERT ON job BEGIN\n  INSERT INTO job_fts(rowid, title, notes) VALUES (new.rowid, new.title, new.notes);\nEND;\nCREATE TRIGGER job_ad AFTER DELETE ON job BEGIN\n  INSERT INTO job_fts(job_fts, rowid, title, notes) VALUES ('delete', old.rowid, old.title, old.notes);\nEND;\n-- WITHOUT ROWID tables need a rowid; keep a hidden integer key if you want external content.\n\nSELECT j.id, snippet(job_fts, 0, '[', ']', '…', 8)\nFROM job_fts JOIN job j ON j.rowid = job_fts.rowid\nWHERE job_fts MATCH 'leak* NEAR/3 valve' ORDER BY rank LIMIT 20;"
+    ],
+    "callout": [
+     "Gotcha",
+     "External-content FTS tables need a real rowid. If you chose WITHOUT ROWID for the main table, either keep a separate integer key or store the text in the FTS table directly."
+    ]
+   },
+   {
+    "h": "Migrations for users who skip eleven versions",
+    "p": [
+     "Server migrations run once on your schedule. Mobile migrations run whenever the user finally opens the app, possibly from a version two years old, on a phone with 200 MB free. That changes the rules.",
+     "Rule one: every migration runs from every older version, in order, inside a transaction. Rule two: never drop or rewrite the outbox in a migration, because unsynced work is the one thing you cannot regenerate. Rule three: heavy rewrites (adding a column to a table with millions of rows is cheap, rebuilding a table is not) run in the background in batches, with the app working on the old shape until the new one is ready.",
+     "Test with real files. Keep a folder of database snapshots from every released version and run the full migration chain against each of them in CI. Add a crash-loop guard: if a migration fails twice, export the outbox to a file, start with a clean database, then replay the exported operations. A user losing their cache is annoying; a user losing unsynced inspections is a headline."
+    ],
+    "code": [
+     "Expand, migrate, contract",
+     "sql",
+     "-- Release N: expand. Add the new column, nullable. Old code ignores it.\nALTER TABLE job ADD COLUMN priority INTEGER;\n\n-- Release N (background, 1000 rows at a time): backfill.\nUPDATE job SET priority = 0 WHERE rowid IN (\n  SELECT rowid FROM job WHERE priority IS NULL LIMIT 1000);\n\n-- Release N+2: contract. Only after telemetry shows no old versions use the old shape.\n-- (SQLite can DROP COLUMN since 3.35, but rebuilding is still the safe path on older OS versions.)"
+    ]
+   },
+   {
+    "h": "Disk, battery and the long tail",
+    "list": [
+     "Retention: keep a rolling window of completed work (for example 90 days) and let older rows be fetched on demand. A phone is a cache with an opinion, not an archive.",
+     "Blobs stay out of the database. Store files on disk and keep the path, size and hash in a row. Large BLOBs make the WAL and backups heavy.",
+     "Encryption: SQLCipher or the platform's file protection when the data is sensitive. Keep the key in the Android Keystore or iOS Keychain and decide what happens on a lost passcode.",
+     "Reclaiming space: with auto_vacuum incremental, run PRAGMA incremental_vacuum(500) after large deletes, during charging and idle time.",
+     "Observability: log slow queries over 100 ms with their plan (EXPLAIN QUERY PLAN) in debug builds and sampled in production."
+    ]
+   }
+  ],
+  "qa": [
+   [
+    "Why WAL and what does it not fix?",
+    "Readers and the single writer stop blocking each other, which suits a UI reading while sync writes. It does not allow two concurrent writers and does not make long transactions acceptable."
+   ],
+   [
+    "A list screen takes 900 ms to open on a 600k-row table. Where do you look?",
+    "The query plan first. Usually a missing or wrong composite index, an OFFSET, a sort not covered by the index, or loading too many columns including large text. Fix with a matching index and keyset paging, then measure again."
+   ],
+   [
+    "How do you migrate a table with 5 million rows without freezing the app?",
+    "Add columns nullable (cheap), backfill in small batches in the background, keep the app reading both shapes until done, and only then add constraints or drop the old column."
+   ],
+   [
+    "How do you keep the outbox safe across migrations?",
+    "Migrations never rewrite or drop it. Operation payloads are versioned so newer code can still read old ones, and a failed migration exports the outbox before resetting anything."
+   ],
+   [
+    "Room, GRDB, SQLDelight, WatermelonDB or raw SQLite?",
+    "Pick by team and platform. Room on Android and GRDB on iOS give compile-time safety and observation. SQLDelight suits shared KMP code. WatermelonDB or op-sqlite suit React Native. The schema and sync rules matter more than the wrapper."
+   ]
+  ],
+  "next": "conflicts"
+ },
+ {
+  "id": "conflicts",
+  "num": "03",
+  "mins": 15,
+  "title": "Conflict resolution without losing an edit",
+  "tags": "Sync · CRDT · UX",
+  "dek": "Two people edit the same record while offline. Something has to decide what the record becomes. The decision is a product choice first and an algorithm second.",
+  "rule": "Choose a conflict policy per field and per entity, tell the user when you chose for them, and never silently drop an edit.",
+  "tldr": [
+   "Last-write-wins is fine for low-value fields and dangerous for everything else. Use hybrid logical clocks, not device clocks.",
+   "For important records, send the version you edited from and let the server answer 409 with the current state. Merge by field, ask the user only when the same field clashes.",
+   "Counters and sets want operations or CRDTs. Collaborative text wants a real CRDT library."
+  ],
+  "secs": [
+   {
+    "h": "Why conflicts exist at all",
+    "p": [
+     "A conflict is two edits made from the same starting point that both want to become the next version. Online apps avoid them by making one person wait. Offline-first apps cannot wait, so they accept both edits and reconcile later.",
+     "The honest question is not which algorithm is best. It is: what would a reasonable user expect to happen? If two technicians change the same job's status, one of them is wrong. If a supervisor edits the title while a technician adds a photo, nothing is wrong and nothing should be lost."
+    ]
+   },
+   {
+    "h": "Four policies and when to use each",
+    "table": {
+     "head": [
+      "Policy",
+      "How it works",
+      "Use for",
+      "Risk"
+     ],
+     "rows": [
+      [
+       "Last-write-wins",
+       "Highest timestamp wins per field",
+       "Profile fields, preferences, read marks",
+       "Silent loss when clocks or intent differ"
+      ],
+      [
+       "Reject and merge (409)",
+       "Client sends base_version; server refuses if stale; client merges and retries",
+       "Business records with several editors",
+       "Needs a merge UI for true clashes"
+      ],
+      [
+       "Operations",
+       "Send 'add 2' not 'set 7'; server applies in order",
+       "Counters, balances, inventory, tags",
+       "Needs idempotent, ordered operations"
+      ],
+      [
+       "CRDT",
+       "Data structure where merges always converge",
+       "Collaborative text, lists, shared whiteboards",
+       "Metadata growth and learning curve"
+      ]
+     ]
+    },
+    "callout": [
+     "Principal-level answer",
+     "Name the policy per entity and per field in one table, then say who owns each decision: product for the rule, engineering for the mechanism."
+    ]
+   },
+   {
+    "h": "Last-write-wins done properly",
+    "p": [
+     "Phone clocks are wrong. People change them, batteries die, time zones shift. If you compare device timestamps, a phone set a day ahead wins every conflict forever.",
+     "A hybrid logical clock (HLC) fixes this. It combines the wall clock with a counter and moves forward whenever it sees a larger timestamp from the server. Two properties matter: it never goes backwards, and it stays close to real time. Store one HLC per field, so edits to different fields never conflict."
+    ],
+    "code": [
+     "A hybrid logical clock",
+     "kotlin",
+     "class Hlc(private var wall: Long = 0, private var counter: Int = 0, val node: String) {\n    @Synchronized fun now(physical: Long): String {\n        if (physical > wall) { wall = physical; counter = 0 } else counter++\n        return format()\n    }\n    @Synchronized fun observe(remote: String, physical: Long): String {\n        val (rw, rc) = parse(remote)\n        val newWall = maxOf(wall, rw, physical)\n        counter = when {\n            newWall == wall && newWall == rw -> maxOf(counter, rc) + 1\n            newWall == wall -> counter + 1\n            newWall == rw -> rc + 1\n            else -> 0\n        }\n        wall = newWall\n        return format()\n    }\n    // fixed-width so strings sort correctly: wall(13) - counter(4) - node\n    private fun format() = wall.toString().padStart(13, '0') + \"-\" + counter.toString().padStart(4, '0') + \"-\" + node\n}"
+    ]
+   },
+   {
+    "h": "Optimistic concurrency with a 409",
+    "p": [
+     "For records people care about, the client sends the version it edited from. The server compares it with the current version. If they match, it applies the change. If not, it answers 409 with the current record, and the client decides.",
+     "The client does a three-way merge: the base version it started from, its own edit and the server's current record. For each field, if only one side changed it, take that change. If both changed it to the same value, fine. If both changed it differently, that field is a true conflict."
+    ],
+    "code": [
+     "Three-way merge, field by field",
+     "ts",
+     "type Merge<T> = { merged: T; clashes: (keyof T)[] };\n\nfunction threeWay<T extends Record<string, unknown>>(base: T, mine: T, theirs: T): Merge<T> {\n  const merged = { ...theirs };\n  const clashes: (keyof T)[] = [];\n  for (const k of Object.keys(mine) as (keyof T)[]) {\n    const mineChanged = mine[k] !== base[k];\n    const theirsChanged = theirs[k] !== base[k];\n    if (mineChanged && !theirsChanged) merged[k] = mine[k];\n    else if (mineChanged && theirsChanged && mine[k] !== theirs[k]) clashes.push(k);\n  }\n  return { merged, clashes };   // no clashes: retry silently. Clashes: show the user both values.\n}"
+    ],
+    "callout": [
+     "UX rule",
+     "Silent auto-merge for fields that changed on one side only. A small banner for clashes: 'Priya also changed Status. Keep yours or theirs?' Never a modal that blocks unrelated work."
+    ]
+   },
+   {
+    "h": "Operations and CRDTs",
+    "p": [
+     "A counter edited as 'set stock to 7' loses updates. Edited as 'subtract 1', it never does. Sending intent instead of results is the simplest way to avoid conflicts, and it fits inventory, balances, likes and tags. The requirement is that operations are idempotent (op_id) and the server applies them in a defined order.",
+     "CRDTs go further: the data structure itself guarantees that replicas converge regardless of the order operations arrive in. An OR-Set handles add and remove of items. A sequence CRDT handles text. In practice you do not write these yourself. Yjs and Automerge are mature libraries, and on mobile you usually embed one for the collaborative field only, keeping the rest of the record on simpler rules.",
+     "The costs are real: metadata grows with edit history, so you need garbage collection or periodic snapshots, and debugging a merged document is harder than debugging a row. Use a CRDT where users genuinely edit the same text at once, not as a default."
+    ]
+   },
+   {
+    "h": "What the user sees",
+    "list": [
+     "Every row shows its sync state: saved on this phone, syncing, synced, needs attention.",
+     "Conflicts are visible and recoverable: a history of both versions for a few weeks, with a one-tap restore.",
+     "Deletes are tombstones. If one person deletes and another edits, the edit wins by default and the record comes back with a note, because resurrecting is cheaper than losing work.",
+     "Server-authoritative fields (price, status after approval) are read-only on the client once locked, so the conflict cannot arise."
+    ]
+   }
+  ],
+  "qa": [
+   [
+    "Why not just use the latest device timestamp?",
+    "Device clocks drift and can be set by the user. A hybrid logical clock stays close to real time, never goes backwards, and orders events from different devices deterministically."
+   ],
+   [
+    "Two users change different fields of the same record offline. What happens?",
+    "Nothing visible. Field-level versions or a three-way merge combine both edits automatically. Only the same field changed to different values is a conflict."
+   ],
+   [
+    "When do you pick a CRDT over a 409 merge?",
+    "When many users edit the same content at once and a manual conflict step would be unacceptable, such as shared text. For ordinary business records, version checks with a clear UI are simpler and easier to audit."
+   ],
+   [
+    "How do you handle a delete versus an edit?",
+    "Decide per entity. A common default is that the edit wins and the record is restored, with a notification to the deleter. For legal or financial records, deletes may be forbidden and replaced by a status."
+   ],
+   [
+    "How do you test conflict logic?",
+    "Property-based tests that apply the same set of operations in random orders and assert convergence, plus recorded two-device scenarios replayed against the real sync service."
+   ]
+  ],
+  "next": "uploads"
+ },
+ {
+  "id": "uploads",
+  "num": "04",
+  "mins": 16,
+  "title": "Uploading 4 GB on one bar of signal",
+  "tags": "Files · S3 · iOS · Android",
+  "dek": "A big upload on a mobile network is a series of small, resumable, verifiable steps. This is how to build them, and what iOS and Android will and will not let you do in the background.",
+  "rule": "Hash it, split it into parts, send parts straight to object storage, checkpoint each one, and finish with a server-side check.",
+  "tldr": [
+   "Never push file bytes through your API. Presigned part URLs send them straight to S3 or equivalent.",
+   "Checkpoint every part in SQLite. A kill costs at most one part.",
+   "iOS needs a background URLSession with file-based tasks; Android needs WorkManager or a user-initiated data transfer job."
+  ],
+  "secs": [
+   {
+    "h": "The shape of the problem",
+    "p": [
+     "A 4 GB video on a moving train sees minutes of signal, then none, then a different network. A single HTTP request cannot survive that. The design has to assume the upload will be interrupted dozens of times and cost almost nothing each time.",
+     "Four ideas combine to make it work: break the file into independent parts, upload each part with its own URL, record which parts are done, and verify the whole thing at the end."
+    ]
+   },
+   {
+    "h": "The protocol, end to end",
+    "seq": {
+     "actors": [
+      "App",
+      "Transfer manager",
+      "Your API",
+      "Object storage"
+     ],
+     "msgs": [
+      [
+       0,
+       1,
+       "Enqueue upload (file path)"
+      ],
+      [
+       1,
+       1,
+       "SHA-256 while reading, in chunks"
+      ],
+      [
+       1,
+       2,
+       "POST /uploads {sha256, size, parts}"
+      ],
+      [
+       2,
+       3,
+       "CreateMultipartUpload"
+      ],
+      [
+       2,
+       1,
+       "upload_id + presigned URLs",
+       "d"
+      ],
+      [
+       1,
+       3,
+       "PUT part 1 (8 MiB)"
+      ],
+      [
+       3,
+       1,
+       "ETag",
+       "d"
+      ],
+      [
+       1,
+       1,
+       "Checkpoint part 1 in SQLite"
+      ],
+      [
+       "note",
+       "Process killed. Hours later the OS wakes the job."
+      ],
+      [
+       1,
+       2,
+       "GET /uploads/id (what is done?)"
+      ],
+      [
+       2,
+       3,
+       "ListParts"
+      ],
+      [
+       2,
+       1,
+       "parts 1-12 done",
+       "d"
+      ],
+      [
+       1,
+       3,
+       "PUT parts 13…n"
+      ],
+      [
+       1,
+       2,
+       "POST /uploads/id/complete {etags}"
+      ],
+      [
+       2,
+       3,
+       "CompleteMultipartUpload"
+      ],
+      [
+       2,
+       1,
+       "verified · linked to record",
+       "d"
+      ]
+     ]
+    },
+    "p": [
+     "Notice who talks to whom. Your API never sees the bytes. It creates the upload, hands out time-limited URLs and, at the end, completes and verifies it. That is what lets 5 million phones upload at once without your servers becoming the bottleneck."
+    ]
+   },
+   {
+    "h": "Hashing, parts and limits",
+    "p": [
+     "Hash the file while reading it in chunks, so memory stays flat. Send the SHA-256 at the start. The server can answer 'already have it', which turns a duplicate upload into a no-op, and uses the hash at the end to verify integrity.",
+     "Choose the part size from the file size and the network. S3 multipart parts must be at least 5 MiB (except the last) and an upload can have at most 10,000 parts, so 8 to 16 MiB works well for gigabyte files: 4 GB at 8 MiB is 512 parts. Smaller parts lose less when interrupted and larger parts have less overhead, so adapt: start at 8 MiB and move up on Wi-Fi."
+    ],
+    "code": [
+     "Upload state the transfer manager persists",
+     "sql",
+     "CREATE TABLE upload (\n  id TEXT PRIMARY KEY, path TEXT NOT NULL, size INTEGER NOT NULL, sha256 TEXT NOT NULL,\n  upload_id TEXT, part_size INTEGER NOT NULL, state TEXT NOT NULL,  -- queued|hashing|uploading|completing|done|failed\n  attempts INTEGER NOT NULL DEFAULT 0, next_try_at INTEGER\n);\nCREATE TABLE upload_part (\n  upload_id TEXT NOT NULL, n INTEGER NOT NULL, etag TEXT, bytes INTEGER NOT NULL,\n  PRIMARY KEY (upload_id, n)          -- a row with an etag is a finished part\n);"
+    ],
+    "callout": [
+     "Check you get right",
+     "Verify with the server, not only the client. After complete, the server computes or compares the checksum and only then marks the file usable. Otherwise a corrupted part can sit in your storage with a green tick."
+    ]
+   },
+   {
+    "h": "Android: who is allowed to run this",
+    "list": [
+     "WorkManager runs resumable work with constraints (network, battery) and survives reboots. Use a foreground service with a progress notification for work the user is watching.",
+     "Android 14 added user-initiated data transfer jobs for large transfers the user started. They are exempt from the usual background limits, require a notification, and fit a 4 GB upload.",
+     "Doze and app standby delay jobs but do not cancel them. Some manufacturers add their own task killers, so treat background execution as best effort and resume instantly when the app opens.",
+     "Use OkHttp with a streaming request body for each part, reading from the file with an offset. Do not load a part into memory."
+    ]
+   },
+   {
+    "h": "iOS: the background URLSession rules",
+    "list": [
+     "Large background uploads must be file-based: URLSession.uploadTask(with:fromFile:) in a background configuration. The system process performs the transfer and keeps going when your app is suspended or terminated.",
+     "Create one task per part. Write each part to its own temporary file first (or use a file with byte ranges through a custom stream where supported), because tasks upload a file, not a slice of memory.",
+     "When a task finishes, iOS relaunches your app in the background and calls the application delegate's handler for the session identifier. Reconnect the session with the same identifier, handle the delegate callbacks, then call the completion handler.",
+     "Set isDiscretionary for non-urgent uploads so the system picks good moments, and decide explicitly about allowsCellularAccess and allowsExpensiveNetworkAccess.",
+     "BGTaskScheduler is for deciding what to do next (finalising, retrying, hashing). It is not the transfer engine."
+    ],
+    "callout": [
+     "Interview line",
+     "On iOS the upload is not my process. It belongs to the system. My job is to persist intent, hand over small file-based tasks and reconcile when I am relaunched."
+    ]
+   },
+   {
+    "h": "Downloads, Range requests and tus",
+    "p": [
+     "Resumable downloads use HTTP Range requests. Send If-Range with the ETag you saw, so that if the file changed on the server you restart instead of splicing two versions together. Write to a .part file, verify the hash, then rename atomically.",
+     "If you do not want to run multipart logic yourself, the open tus protocol and managed services such as Cloudflare Stream or Mux handle resumable uploads with a standard client. Build it yourself when you need control over cost, residency or integrity checks; adopt tus or a vendor when upload is not your differentiator."
+    ],
+    "code": [
+     "Resumable download sketch",
+     "kotlin",
+     "val have = partFile.length()\nval req = Request.Builder().url(url)\n    .header(\"Range\", \"bytes=\" + have + \"-\")\n    .header(\"If-Range\", savedEtag)            // restart if the object changed\n    .build()\nclient.newCall(req).execute().use { resp ->\n    when (resp.code) {\n        206 -> append(resp.body!!.source(), partFile)   // continue\n        200 -> { partFile.delete(); append(resp.body!!.source(), partFile) } // changed: start over\n        416 -> verifyAndRename(partFile)                // already complete\n        else -> throw RetryableHttp(resp.code)\n    }\n}"
+    ]
+   }
+  ],
+  "qa": [
+   [
+    "Why multipart with presigned URLs instead of one POST to your API?",
+    "Bytes bypass your servers, so cost and capacity do not depend on your API. Each part is independently retriable and resumable, and URLs expire, limiting abuse."
+   ],
+   [
+    "The app is killed at part 301 of 512. What happens?",
+    "On next run the transfer manager reads its checkpoint, asks the server which parts it has, uploads the missing ones and completes. At most one in-flight part is repeated."
+   ],
+   [
+    "How do you stop a user uploading the same video twice?",
+    "Send the SHA-256 first. If the server already has that content for the tenant, it links the existing object and returns done."
+   ],
+   [
+    "Why can't iOS upload a part straight from memory in the background?",
+    "Background sessions hand the transfer to a system daemon, which needs a file to read from. So parts are written to temporary files and uploaded with file-based tasks."
+   ],
+   [
+    "How do you handle a flaky captive-portal Wi-Fi that returns 200 with HTML?",
+    "Validate response status and expected headers such as the ETag. Treat anything unexpected as a retryable failure and back off with jitter."
+   ]
+  ],
+  "next": "rn"
+ },
+ {
+  "id": "rn",
+  "num": "05",
+  "mins": 13,
+  "title": "React Native after the JS runtime is gone",
+  "tags": "React Native · Turbo Modules · KMP",
+  "dek": "When the OS wakes your app to sync, there may be no JavaScript engine running at all. Build the parts that must run then in native code, and let React Native do what it is good at.",
+  "rule": "JavaScript renders and requests. Native code schedules, transfers and syncs. The database is the contract between them.",
+  "tldr": [
+   "The JS runtime is not reliably available in the background. Do not run sync or transfers in it.",
+   "Put the sync engine and transfer manager in native code or a shared Kotlin Multiplatform or Rust core. Expose a thin Turbo Module.",
+   "JS observes SQLite and sends intents. It never carries file bytes or holds the only copy of state."
+  ],
+  "secs": [
+   {
+    "h": "What actually happens when the OS wakes you",
+    "p": [
+     "On Android, WorkManager starts your Worker in the application process. The React instance may not exist, and booting it just to sync costs hundreds of milliseconds and memory the system may not give you. On iOS, a background URLSession relaunch or a BGTask starts the process without any UI and gives you seconds, not minutes.",
+     "Headless JS on Android and background-fetch libraries can run JavaScript in this situation, and they are fine for prototypes and small jobs. They share the same constraints: strict time limits, no guarantees, and a startup cost. For a sync engine that must be dependable, native is the answer."
+    ]
+   },
+   {
+    "h": "The split of responsibilities",
+    "table": {
+     "head": [
+      "Layer",
+      "Technology",
+      "Owns"
+     ],
+     "rows": [
+      [
+       "Screens and state",
+       "React Native, TypeScript",
+       "Rendering, navigation, forms, calling intents"
+      ],
+      [
+       "Bridge",
+       "Turbo Module (JSI) with a Codegen spec",
+       "Typed calls to native, events back to JS"
+      ],
+      [
+       "Sync engine, transfer manager, scheduling",
+       "Kotlin and Swift, or one shared KMP / Rust core",
+       "Outbox, cursors, retries, uploads, OS scheduling"
+      ],
+      [
+       "Storage",
+       "SQLite via a native module or op-sqlite",
+       "The single source of truth for both sides"
+      ]
+     ]
+    },
+    "p": [
+     "The database is the important line. Native code writes to it from the background. JS reads from it and subscribes to changes. Because both sides see the same rows, it does not matter whether the JS runtime was alive when the sync happened."
+    ]
+   },
+   {
+    "h": "A Turbo Module that only sends intent",
+    "p": [
+     "Define a typed spec in TypeScript. Codegen produces the native interfaces. The module exposes small, asynchronous calls and an event emitter for coarse updates. Large data never crosses the bridge: you pass IDs and file paths, not payloads."
+    ],
+    "code": [
+     "The JS side",
+     "ts",
+     "// NativeSyncEngine.ts\nimport type { TurboModule } from 'react-native';\nimport { TurboModuleRegistry } from 'react-native';\n\nexport interface Spec extends TurboModule {\n  requestSync(reason: string): Promise<void>;           // fire an intent\n  enqueueUpload(localPath: string, entityId: string): Promise<string>; // returns upload id\n  cancelUpload(uploadId: string): Promise<void>;\n  addListener(eventName: string): void;                  // required by NativeEventEmitter\n  removeListeners(count: number): void;\n}\nexport default TurboModuleRegistry.getEnforcing<Spec>('NativeSyncEngine');"
+    ],
+    "p2": [
+     "The native side delegates to the same engine the background job uses. That is the point: one engine, two entry points."
+    ],
+    "code2": [
+     "The Android side",
+     "kotlin",
+     "class NativeSyncEngineModule(ctx: ReactApplicationContext) : NativeSyncEngineSpec(ctx) {\n    private val engine = SyncEngine.get(ctx)            // same singleton the Worker uses\n    override fun getName() = \"NativeSyncEngine\"\n    override fun requestSync(reason: String, p: Promise) { engine.requestSync(reason); p.resolve(null) }\n    override fun enqueueUpload(path: String, entityId: String, p: Promise) =\n        p.resolve(engine.transfers.enqueue(path, entityId))\n    // engine.events -> emit coarse 'syncStateChanged' to JS. Data itself is read from SQLite.\n}\n\nclass SyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {\n    override suspend fun doWork(): Result =\n        if (SyncEngine.get(applicationContext).runOnce()) Result.success() else Result.retry()\n}"
+    ]
+   },
+   {
+    "h": "Observing the database from JS",
+    "p": [
+     "The screens need to update when native code writes. Two patterns work. A native table-change observer emits a lightweight event (table name, maybe an ID range) and the JS side re-runs its query. Or use a library with observation built in, such as WatermelonDB, or op-sqlite's reactive queries.",
+     "Keep lists on FlashList with stable keys and fixed item types, and select only the columns a row needs. If a screen opens slowly, the cause is almost always data shape and list configuration, not React Native itself."
+    ],
+    "callout": [
+     "Do not",
+     "Send large JSON arrays or base64 images over the bridge, run SQLite queries on the JS thread for big lists, or keep upload state only in a Redux store. A process death erases all three."
+    ]
+   },
+   {
+    "h": "Shared core: KMP or Rust",
+    "p": [
+     "Writing the sync engine twice invites divergence: the same bug in two languages with two fixes. Teams solve this with one shared core. Kotlin Multiplatform shares business logic across Android and iOS and is a natural fit if the Android team writes Kotlin. A Rust core with UniFFI bindings gives a small, dependency-free library for both platforms and also runs on a server, which helps when the sync protocol has a server half.",
+     "Share the sync protocol, merge rules, outbox and state machines. Keep platform scheduling (WorkManager, BGTaskScheduler) and platform networking (background URLSession) as thin adapters, because those are exactly the parts that differ."
+    ],
+    "table": {
+     "head": [
+      "Option",
+      "Good",
+      "Watch for"
+     ],
+     "rows": [
+      [
+       "Native twice",
+       "Simple tooling, platform-idiomatic",
+       "Two implementations drift; double the tests"
+      ],
+      [
+       "KMP",
+       "Kotlin team productivity, mature Android story",
+       "iOS integration and build times need care"
+      ],
+      [
+       "Rust + UniFFI",
+       "One tiny core, also usable server-side",
+       "Team needs Rust skills; async bridging takes effort"
+      ]
+     ]
+    }
+   },
+   {
+    "h": "Expo and the new architecture",
+    "p": [
+     "If you use Expo, config plugins and development builds let you add the native modules and background capabilities without ejecting. Expo's background task APIs are fine for light periodic work. The new architecture (Fabric and Turbo Modules, running on JSI) removes the old asynchronous JSON bridge, which makes the thin-module pattern faster, but it does not change the rule about where background work lives."
+    ]
+   }
+  ],
+  "qa": [
+   [
+    "Why not run the sync loop in JavaScript and keep one codebase?",
+    "The runtime may not exist when the OS wakes the app, startup costs time and memory, and background limits are strict. Native code starts instantly and is allowed to run."
+   ],
+   [
+    "How does a screen update after a background sync with no JS running?",
+    "Native writes to SQLite. When the app opens, the screen queries the database. If JS is alive, a change event triggers a re-query."
+   ],
+   [
+    "What crosses the Turbo Module boundary?",
+    "Small typed calls: intents, IDs, file paths and coarse state events. Never files or large payloads."
+   ],
+   [
+    "KMP or Rust for the shared core?",
+    "KMP if the team is Kotlin-first and the core is mostly business logic. Rust if you also want the core on the server or need a very small, strictly controlled library."
+   ],
+   [
+    "How do you test the bridge?",
+    "Unit-test the core with fakes, contract-test the module spec against both platforms, and run an end-to-end test that kills the app mid-sync and asserts it resumes."
+   ]
+  ],
+  "next": "backend"
+ },
+ {
+  "id": "backend",
+  "num": "06",
+  "mins": 16,
+  "title": "Scaling the sync backend to 5M devices",
+  "tags": "Backend · Postgres · Kafka",
+  "dek": "Five million phones that wake up at unpredictable moments, retry on failure and all arrive after an outage. This is the server design that stays up through it.",
+  "rule": "Keep the API stateless and cheap, put history in a partitioned change log, and protect the backend from its own clients.",
+  "tldr": [
+   "Per-tenant monotonically increasing sequence numbers make pulls simple and gaps detectable.",
+   "Move heavy reads to CDN snapshots and fan out via CDC, not by querying Postgres from every phone.",
+   "Clients are the biggest load generator. Use jitter, Retry-After, coalesced push hints and per-device rate limits."
+  ],
+  "secs": [
+   {
+    "h": "Do the arithmetic first",
+    "table": {
+     "head": [
+      "Quantity",
+      "Estimate",
+      "How"
+     ],
+     "rows": [
+      [
+       "Devices",
+       "5 million",
+       "given"
+      ],
+      [
+       "Daily active",
+       "≈ 2.5 million",
+       "50%"
+      ],
+      [
+       "Syncs per active device per day",
+       "≈ 24",
+       "hourly-ish plus app opens"
+      ],
+      [
+       "Average sync requests",
+       "≈ 700 per second",
+       "2.5M × 24 ÷ 86,400"
+      ],
+      [
+       "Peak (morning, after outage)",
+       "7,000 to 35,000 per second",
+       "10× to 50× average"
+      ],
+      [
+       "Pull payload",
+       "mostly empty",
+       "most syncs find nothing new"
+      ]
+     ]
+    },
+    "p": [
+     "Two things stand out. The average is modest, so the system is dominated by spikes. And most requests find nothing, so the cheapest possible answer to 'any changes?' is the most valuable thing you can build."
+    ]
+   },
+   {
+    "h": "The architecture",
+    "arch": {
+     "cols": 4,
+     "rows": 3,
+     "groups": [
+      [
+       "Edge",
+       0,
+       1,
+       0,
+       2
+      ],
+      [
+       "Core",
+       2,
+       3,
+       0,
+       2
+      ]
+     ],
+     "nodes": [
+      [
+       "dev",
+       "Phones",
+       "push · pull",
+       0,
+       0,
+       "c"
+      ],
+      [
+       "cdn",
+       "CDN",
+       "snapshots · files",
+       1,
+       0,
+       "s"
+      ],
+      [
+       "gw",
+       "API gateway",
+       "auth · limits",
+       0,
+       1,
+       "s"
+      ],
+      [
+       "push",
+       "Push notifier",
+       "FCM · APNs",
+       1,
+       1,
+       "s"
+      ],
+      [
+       "api",
+       "Sync API",
+       "stateless",
+       2,
+       0,
+       "s"
+      ],
+      [
+       "pg",
+       "Postgres",
+       "entities + change log",
+       3,
+       0,
+       "d"
+      ],
+      [
+       "kafka",
+       "Kafka",
+       "CDC stream",
+       2,
+       1,
+       "q"
+      ],
+      [
+       "snap",
+       "Snapshot builder",
+       "hourly per tenant",
+       3,
+       1,
+       "s"
+      ],
+      [
+       "s3",
+       "Object storage",
+       "snapshots · media",
+       2,
+       2,
+       "d"
+      ],
+      [
+       "cache",
+       "Redis",
+       "head seq · rate limits",
+       3,
+       2,
+       "d"
+      ]
+     ],
+     "edges": [
+      [
+       "dev",
+       "gw",
+       "HTTPS"
+      ],
+      [
+       "gw",
+       "api",
+       ""
+      ],
+      [
+       "api",
+       "pg",
+       "write"
+      ],
+      [
+       "pg",
+       "kafka",
+       "CDC"
+      ],
+      [
+       "kafka",
+       "push",
+       "changed"
+      ],
+      [
+       "kafka",
+       "snap",
+       ""
+      ],
+      [
+       "snap",
+       "s3",
+       ""
+      ],
+      [
+       "s3",
+       "cdn",
+       "origin"
+      ],
+      [
+       "push",
+       "dev",
+       "hint"
+      ]
+     ]
+    },
+    "p": [
+     "The sync API is stateless, so any instance can serve any request and you scale by adding instances. State lives in Postgres (source of truth), Redis (hot counters and rate limits) and object storage (snapshots)."
+    ]
+   },
+   {
+    "h": "The change log and the sequence number",
+    "p": [
+     "Every accepted write appends a row to a change log with a sequence number that is monotonically increasing per tenant (or per shard). A client's cursor is just 'the last sequence I have'. Pulling is a range scan: give me everything after N. Gaps are detectable: if you receive 101 then 103, you missed 102.",
+     "A global auto-increment is a bottleneck and a trap: transactions commit out of order, so a reader can see 105 before 104 commits and skip it forever. Allocate sequences per tenant inside the same transaction as the write, from a counter row, so ordering within the tenant is strict. Then readers use the highest committed sequence as a safe watermark."
+    ],
+    "code": [
+     "Write path in one transaction",
+     "sql",
+     "BEGIN;\n  -- idempotency: a repeat of op_id returns the stored result and does nothing else\n  INSERT INTO applied_op (tenant_id, op_id, result_seq) VALUES ($1, $2, NULL)\n    ON CONFLICT DO NOTHING;                         -- 0 rows means duplicate: return stored seq\n\n  UPDATE tenant_counter SET seq = seq + 1 WHERE tenant_id = $1 RETURNING seq;  -- allocate (row lock)\n\n  UPDATE job SET title = $3, version = version + 1 WHERE id = $4 AND version = $5; -- 0 rows: 409\n\n  INSERT INTO change_log (tenant_id, seq, entity, entity_id, op, payload)\n    VALUES ($1, $seq, 'job', $4, 'update', $6);\n  UPDATE applied_op SET result_seq = $seq WHERE tenant_id = $1 AND op_id = $2;\nCOMMIT;\n\n-- pull\nSELECT seq, entity, entity_id, op, payload FROM change_log\nWHERE tenant_id = $1 AND seq > $cursor ORDER BY seq LIMIT 500;"
+    ],
+    "callout": [
+     "Hot tenant",
+     "One huge tenant makes the counter row a hotspot. Shard large tenants into several logical streams, each with its own sequence, and let the cursor be a small vector."
+    ]
+   },
+   {
+    "h": "Partitioning, retention and the 410",
+    "p": [
+     "The change log grows forever unless you decide otherwise. Partition by time or tenant range so old partitions detach cheaply. Keep, say, 30 days of changes. A client that has been away longer than the retention window asks for changes older than the log has, and the server answers 410 Gone with a pointer to a snapshot.",
+     "A snapshot is a compact, ready-made copy of a tenant's data at a sequence number, built in the background and stored as files on a CDN. The client downloads it, loads it into SQLite and continues from the snapshot's sequence. This is also how a brand-new install syncs: from the CDN, not from Postgres."
+    ]
+   },
+   {
+    "h": "Fan-out without hammering Postgres",
+    "p": [
+     "Phones should not poll the database. When a change commits, Debezium captures it from the write-ahead log into Kafka. Consumers do three jobs: update the snapshot builder, update the cached head sequence in Redis so 'any changes?' is answered from memory, and send a push hint to devices of the affected users.",
+     "Push is a hint, not a payload: 'tenant 7 changed, sync when you can'. Coalesce hints (at most one per device per minute), because a burst of 500 changes should wake the phone once. Never rely on push for delivery. Cursor sync is the guarantee."
+    ],
+    "code": [
+     "The cheap 'anything new?' call",
+     "http",
+     "GET /v1/sync/head?tenant=t7            -> 200 {\"head\":88412}   (served from Redis, ~1 ms)\nClient compares with its cursor (88412). Equal: stop. Behind: GET /v1/sync/pull?cursor=88290"
+    ]
+   },
+   {
+    "h": "Protecting the API from its own clients",
+    "list": [
+     "Jitter everywhere: scheduled syncs, retry delays and reconnects use randomised exponential backoff, so a million phones do not act in the same second.",
+     "Honour Retry-After: the server tells clients when to come back, and the SDK obeys it.",
+     "Rate-limit per device and per tenant, and answer 429 early at the gateway before expensive work.",
+     "Shed load by priority: record pushes are more important than telemetry or background refresh. Drop the cheap, deferrable things first.",
+     "Backward compatibility: old app versions live for years. Version the protocol, keep unknown fields ignorable and enforce a minimum client version only when you must.",
+     "Observe the cursor: alert on devices whose cursor lags the head by more than a day, 410 rate, and push-to-sync latency."
+    ]
+   }
+  ],
+  "qa": [
+   [
+    "Why not use the database's global auto-increment as the cursor?",
+    "Concurrent transactions commit out of order, so readers can skip rows that commit later. Per-tenant sequences allocated in the writing transaction, with a safe watermark, avoid it."
+   ],
+   [
+    "After a 3-hour outage every phone retries at once. How do you survive?",
+    "Jittered backoff and Retry-After on the clients, a cheap cached head check, gateway rate limits, load shedding of low-priority traffic and pre-scaled capacity ahead of the expected wave."
+   ],
+   [
+    "How does a phone that was off for 60 days catch up?",
+    "It gets 410 for the cursor, downloads the latest CDN snapshot, loads it and then pulls the change log from the snapshot's sequence."
+   ],
+   [
+    "Why CDC rather than the API publishing events?",
+    "The change log commit is the single truth. CDC cannot miss or reorder a committed change and removes dual-write bugs between the database and the queue."
+   ],
+   [
+    "How do you shard when one tenant is enormous?",
+    "Split it into multiple sequence streams by a stable key, give each its own log and counter and use a vector cursor on the client."
+   ]
+  ],
+  "next": "interview"
+ },
+ {
+  "id": "interview",
+  "num": "07",
+  "mins": 12,
+  "title": "The principal engineer interview, mobile edition",
+  "tags": "Interviewing · Leadership",
+  "dek": "What panels are scoring when they ask you to design a mobile system, how to structure forty-five minutes, and how to tell decision stories that read as principal level.",
+  "rule": "A principal answer names the problem behind the problem, makes the trade-off explicit and talks about people and rollout, not only boxes.",
+  "tldr": [
+   "Spend the first five minutes on questions and numbers. Draw only after you know what you are drawing.",
+   "Go deep on one hard thing with a real mechanism, not five things at the surface.",
+   "Every decision comes with what you rejected, what it cost and how you would know it was wrong."
+  ],
+  "secs": [
+   {
+    "h": "What the panel is actually scoring",
+    "table": {
+     "head": [
+      "Signal",
+      "What it sounds like",
+      "What loses it"
+     ],
+     "rows": [
+      [
+       "Scoping",
+       "Asks about users, scale, offline needs, compliance. States assumptions.",
+       "Starts drawing in the first minute."
+      ],
+      [
+       "Judgement",
+       "'I chose X over Y because Z, and I would revisit if W.'",
+       "Lists technologies without choosing."
+      ],
+      [
+       "Depth",
+       "Explains the mechanism: how the cursor is advanced, what the 409 contains.",
+       "Stays at buzzword level."
+      ],
+      [
+       "Operability",
+       "Failure modes, monitoring, rollout, kill switches.",
+       "Only the happy path."
+      ],
+      [
+       "Leadership",
+       "Team shape, sequencing, who owns what, how to migrate.",
+       "Designs as if alone."
+      ],
+      [
+       "Communication",
+       "Clear structure, checks in, adapts to hints.",
+       "Monologue, or defensiveness when challenged."
+      ]
+     ]
+    }
+   },
+   {
+    "h": "Forty-five minutes, minute by minute",
+    "table": {
+     "head": [
+      "Minutes",
+      "Do",
+      "Say"
+     ],
+     "rows": [
+      [
+       "0–5",
+       "Clarify and estimate",
+       "'Before I draw, can I check a few things about users and scale?'"
+      ],
+      [
+       "5–15",
+       "High-level architecture",
+       "'Three parts: the device, the sync service and object storage. Here is how data moves.'"
+      ],
+      [
+       "15–30",
+       "Deep dive on the hardest part",
+       "'The risky bit is conflicts. Let me go through the mechanism.'"
+      ],
+      [
+       "30–40",
+       "Trade-offs, failures, rollout",
+       "'What breaks first is... we would know because... and we degrade by...'"
+      ],
+      [
+       "40–45",
+       "Team and evolution",
+       "'I would build it in three milestones with these owners.'"
+      ]
+     ]
+    },
+    "callout": [
+     "Practise it",
+     "Each round in the Interview room has the same shape, a timer, practice mode and a whiteboard. Run one every day for a week and speak out loud."
+    ]
+   },
+   {
+    "h": "Decision stories",
+    "p": [
+     "Panels at this level always ask about something you did. A strong story has five parts, told in about two minutes: the situation and what was at stake; the options you considered; the decision and who you had to convince; the result with numbers; and what you would change.",
+     "Prepare six stories you can bend to different questions. Good raw material, for a mobile principal: a sync or offline redesign, a major performance or crash-rate improvement, a build or release pipeline overhaul, a migration that ran without a big bang, a production incident you led, and a time you disagreed with a senior colleague and either changed your mind or theirs."
+    ],
+    "code": [
+     "A story skeleton you can fill in",
+     "text",
+     "Situation   : 4M users, crash-free sessions 98.1%, 30% of crashes in sync on Android 10-11.\nOptions     : (a) patch the worker, (b) move sync into a native engine with an outbox, (c) buy a sync SDK.\nDecision    : (b). Convinced the PM with a two-week spike: crash rate in spike -70%.\nCost        : 3 engineers, 2 quarters; froze two features.\nResult      : crash-free 99.6%, support tickets about lost data -85%, release cycle 2w -> 1w.\nRegret      : under-invested in migration tooling; the first 5% rollout needed a hotfix."
+    ]
+   },
+   {
+    "h": "Telling the difference between senior and principal",
+    "table": {
+     "head": [
+      "Dimension",
+      "Senior",
+      "Principal"
+     ],
+     "rows": [
+      [
+       "Scope",
+       "Solves the feature well",
+       "Changes how several teams build"
+      ],
+      [
+       "Trade-offs",
+       "Knows the options",
+       "Shows what each costs the organisation, not just the code"
+      ],
+      [
+       "Risk",
+       "Handles failure cases",
+       "Designs the rollout, the kill switch and the measure of success"
+      ],
+      [
+       "Influence",
+       "Persuades the team",
+       "Aligns product, platform and leadership with evidence"
+      ],
+      [
+       "Time horizon",
+       "This release",
+       "Two years, including how the design can be removed"
+      ]
+     ]
+    }
+   },
+   {
+    "h": "Mistakes that cost offers",
+    "list": [
+     "Naming five databases and no reason to choose between them.",
+     "Designing the server in detail and skipping the phone, in a mobile interview.",
+     "Never mentioning data loss, privacy, battery or the OS killing the app.",
+     "Arguing instead of exploring when the interviewer pushes back. A hint is an invitation to show how you think.",
+     "Saying 'we' for everything. Be precise about what you decided and what you built.",
+     "No numbers. Even rough ones show the design is grounded."
+    ]
+   },
+   {
+    "h": "A one-week plan",
+    "list": [
+     "Day 1: Offline field app round. Draw it twice from memory.",
+     "Day 2: Chat and Feed rounds. Focus on ordering and paging.",
+     "Day 3: Payments and Booking. Focus on idempotency and holds.",
+     "Day 4: Release platform round and your six decision stories.",
+     "Day 5: An AI round (assistant or RAG) with the AI deep dives.",
+     "Day 6: Revise the critical Q&A and fix your weakest section.",
+     "Day 7: A full mock with a friend, a timer and the whiteboard."
+    ]
+   }
+  ],
+  "qa": [
+   [
+    "You have 45 minutes and the prompt is 'design WhatsApp'. What are your first two minutes?",
+    "Clarify scope (one-to-one, groups, media, multi-device, end-to-end encryption), scale (users, messages per second) and non-functional goals (delivery guarantees, offline). Then state assumptions and propose the order you will cover things."
+   ],
+   [
+    "The interviewer says your design is over-engineered. What do you do?",
+    "Ask what they would cut and why, check the requirement it was serving, and offer a simpler version with the exact conditions under which you would grow into the complex one."
+   ],
+   [
+    "Tell me about a design decision you got wrong.",
+    "Describe the context, why the decision was reasonable then, how you detected the problem, what it cost and what process change followed. Ownership without drama."
+   ],
+   [
+    "How do you show leadership in a system design round?",
+    "Sequence the work into milestones, name owners and interfaces, say how you would de-risk the hardest part first, and describe how the team would know it works."
+   ]
+  ],
+  "next": "background-sync"
+ }
+]

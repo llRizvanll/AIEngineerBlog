@@ -1,0 +1,2936 @@
+[
+ {
+  "id": "c-cases",
+  "group": "learn",
+  "title": "Interview room",
+  "blurb": "Every mock round retold as a reel you can read in two minutes.",
+  "theme": {
+   "bg": "#101418",
+   "fg": "#f3f6f9",
+   "accent": "#ff6a35",
+   "muted": "#9aa6b4"
+  },
+  "reels": [
+   {
+    "id": "case-offline-field",
+    "title": "Offline-first inspection app with huge uploads",
+    "template": "read",
+    "tags": [
+     "mobile",
+     "interview"
+    ],
+    "pages": [
+     {
+      "h": "The question",
+      "p": "We’re building an app for 200,000 field technicians who inspect pipelines. They work underground for hours with no signal, capture 30 to 60 photos and short videos per job, and fill long forms. Supervisors must see results within minutes of a technician getting signal. Design the mobile and backend architecture."
+     },
+     {
+      "h": "In plain words",
+      "p": "An app that pipeline technicians carry to inspection sites. They open a job, walk the site, answer a long checklist, take photos and short videos as evidence, and submit. Supervisors in the office watch jobs arrive on a web dashboard and send back corrections. Think of a courier’s paper notebook. At every stop he writes everything down, and the office copies the notebook whenever he passes a phone booth. The notebook is the truth; the phone booth is a bonus."
+     },
+     {
+      "h": "Ask before you design",
+      "p": "“How long can a device stay offline?” Up to two weeks at remote sites. “Is a job edited by more than one person?” A technician owns the inspection; supervisors can change job details and instructions. “Which platforms, and what does the team know?” Android and iOS. The team is strong in React Native and Kotlin. “How big is the media?” Photos 3 to 5 MB, videos up to 500 MB."
+     },
+     {
+      "h": "Size it",
+      "p": "Active technicians per day: **120k** (60% of 200k). Jobs per day: **240k** (2 jobs each). Media ingress: **≈ 48 TB/day** (50 files × 4 MB × 240k jobs). Sync requests: **≈ 42 req/s avg, ~400 peak** (120k × 30 syncs ÷ 86,400, ×10 for peaks). Change log growth: **≈ 25 GB/day** (240k jobs × ~100 changes × 1 KB)."
+     },
+     {
+      "h": "The design in words",
+      "p": "The phone holds the truth for the technician’s work. Records sync through a small API; media goes straight to object storage; supervisors read the same change stream the phones write into. **SQLite on device.** The source of truth for screens. Jobs, form answers, an outbox of pending operations and a table of upload parts. Encrypted with SQLCipher because the phone can be lost. **Sync engine.** Native code (Kotlin and Swift, or one KMP module) so it runs without the JS runtime. Pushes the outbox with op_ids, then pulls changes after its cursor."
+     },
+     {
+      "h": "The decision they will probe",
+      "p": "**UI framework:** React Native, native sync core over Fully native apps. Team skills and speed; the parts that must run in background are native anyway. **Conflict policy:** Field-level merge over Last-write-wins. Supervisor and technician edit the same job; whole-record overwrite would lose work."
+     },
+     {
+      "h": "A follow-up to expect",
+      "p": "“A technician uploads the same photo twice. What happens?” The hash matches an existing object, so /files/init returns exists: true and the upload is skipped. The record just references the same media."
+     },
+     {
+      "h": "The front end",
+      "p": "The technician app is the hardest part of this system to get right. It must be fast with gloves on, readable in sunlight, and honest about what has and has not reached the office. The team uses React Native for screens, with native modules for everything that runs in the background. **Screens:** React Native (New Architecture, Fabric), FlashList, render state, collect input, never call the network. **View state:** Zustand stores + WatermelonDB observables, derive what each screen shows from the database. **Form engine:** JSON-schema checklist + react-hook-form, conditional questions, validation, per-field autosave."
+     },
+     {
+      "h": "What makes it principal-level",
+      "p": "A principal answer also sizes the system first, separates records from bytes, chooses merge rules per field, covers evidence integrity and the long-offline edge case, and explains why the sync core is native even in a React Native app."
+     }
+    ],
+    "cta": {
+     "label": "Open the full round",
+     "post": "case-offline-field"
+    }
+   },
+   {
+    "id": "case-chat",
+    "title": "Real-time chat with offline delivery",
+    "template": "read",
+    "tags": [
+     "mobile",
+     "interview"
+    ],
+    "pages": [
+     {
+      "h": "The question",
+      "p": "Design the messaging feature for a service marketplace: customers and providers chat one-to-one and in small groups of up to 50. Messages must arrive in order, show sent, delivered and read states, work offline, and support photos. Expect 5 million daily users."
+     },
+     {
+      "h": "In plain words",
+      "p": "Chat inside a services marketplace: customers and providers message each other one-to-one or in small groups, share photos, and see when messages are sent, delivered and read. Think of WhatsApp built into the booking app. Like a post office that numbers every letter in a conversation. Anyone holding letters 1 to 40 who receives letter 43 knows exactly which two to ask for."
+     },
+     {
+      "h": "Ask before you design",
+      "p": "“Group size limits?” 1:1 and groups up to 50. No broadcast channels. “End-to-end encryption?” Not in v1; encrypted in transit and at rest. “Multiple devices per user?” Yes, phone and tablet; history must match on both. “How long is history kept?” Forever for 1:1, two years for groups."
+     },
+     {
+      "h": "Size it",
+      "p": "Daily users: **5M**. Messages per day: **≈ 100M** (20 each). Average write rate: **≈ 1,150 msg/s** (100M ÷ 86,400). Peak write rate: **≈ 10k msg/s** (×8–10 at evening peaks). Concurrent sockets: **≈ 1M** (20% of daily users online at peak). Storage: **≈ 50 GB/day text** (100M × ~500 bytes with metadata)."
+     },
+     {
+      "h": "The design in words",
+      "p": "Clients hold a persistent socket to a gateway layer. A chat service orders and stores messages per conversation, and a fan-out step delivers to online devices or falls back to push. **WebSocket gateways.** Thin, stateful only for connections. A registry in Redis maps user and device to the gateway holding its socket, so any service can route a delivery. **Chat service.** Assigns each message a per-conversation sequence number, dedupes on the client message ID, and appends to the store. This is where ordering is decided."
+     },
+     {
+      "h": "The decision they will probe",
+      "p": "**Transport:** WebSocket over Long polling or MQTT. Bidirectional, widely supported, and gateways scale horizontally with a connection registry. **Fan-out:** On write over On read. Groups cap at 50, so writing to each recipient’s inbox is cheap and makes unread counts trivial."
+     },
+     {
+      "h": "A follow-up to expect",
+      "p": "“How do you show ‘typing…’?” Ephemeral events over the socket only, never stored, throttled to one every few seconds."
+     },
+     {
+      "h": "The front end",
+      "p": "The chat client is a small real-time system of its own: a connection manager, a local message store, an outbox for sends and a UI that never jumps or flickers as messages change state. **UI:** Jetpack Compose / SwiftUI, lists, composer, receipts. **ViewModels:** StateFlow / @Observable, map database queries to UI state. **Connection manager:** OkHttp WebSocket / URLSessionWebSocketTask, connect, heartbeat, reconnect with jitter, route events."
+     },
+     {
+      "h": "What makes it principal-level",
+      "p": "A principal answer sizes sockets and write rate, makes sends idempotent, orders by server sequence, treats socket delivery as an optimisation over cursor sync, and explains how the design changes for large channels and encryption."
+     }
+    ],
+    "cta": {
+     "label": "Open the full round",
+     "post": "case-chat"
+    }
+   },
+   {
+    "id": "case-feed",
+    "title": "Infinite feed with images and video",
+    "template": "read",
+    "tags": [
+     "mobile",
+     "interview"
+    ],
+    "pages": [
+     {
+      "h": "The question",
+      "p": "Design the home feed for a social shopping app: an endless scroll of posts with photos and short videos. It must open instantly, scroll at 60 fps on mid-range Android phones, and feel fresh. 20 million daily users."
+     },
+     {
+      "h": "In plain words",
+      "p": "The home screen of a social shopping app: an endless scroll of posts from brands and people you follow plus recommendations, with photos and short videos. It is the first thing users see and the place they spend most time. Like a newspaper vendor who keeps yesterday’s paper on the counter so you can start reading immediately, while today’s edition is being fetched from the van."
+     },
+     {
+      "h": "Ask before you design",
+      "p": "“Ranked or chronological?” Ranked, from people and brands the user follows plus recommendations. “What share of posts are video?” About 30%, mostly under 30 seconds. “Minimum device?” Android with 3 GB RAM, iPhone 11 and newer. “Do accounts with millions of followers exist?” Yes, a few thousand brands."
+     },
+     {
+      "h": "Size it",
+      "p": "Feed opens per day: **≈ 100M** (20M users × 5 sessions). Feed page requests: **≈ 3,500/s avg** (100M × 3 pages ÷ 86,400). Image egress: **≈ 2 PB/month** (mostly CDN cache hits). Cold start budget: **< 1.5 s to first post** (cached page shown first)."
+     },
+     {
+      "h": "The design in words",
+      "p": "The app renders a cached page instantly, then refreshes from a feed service that merges precomputed timelines with recommendations. Media comes from a CDN in sizes chosen for the device. **Local cache.** The last few pages of post data are stored, so opening the app shows yesterday’s feed in under a second while the fresh page loads. **Image loader.** Requests the exact width the screen needs from the CDN, decodes off the main thread, and keeps memory and disk caches with size limits."
+     },
+     {
+      "h": "The decision they will probe",
+      "p": "**Timeline build:** Hybrid fan-out over Pure push or pure pull. Balances cheap reads with bounded write amplification from huge accounts. **Image sizing:** Fixed width buckets over Exact pixel sizes. A handful of sizes keeps CDN hit rates high."
+     },
+     {
+      "h": "A follow-up to expect",
+      "p": "“How do you measure ‘opens instantly’?” Time to first post rendered, from process start, as p50 and p90 by device class, in production telemetry."
+     },
+     {
+      "h": "The front end",
+      "p": "For a feed, front-end engineering is the product. The client owns perceived speed, scroll smoothness, media memory and data use, and it produces the event stream that ranking depends on. **UI:** Compose LazyColumn / SwiftUI List or UICollectionView / FlashList, render items with stable keys and content types. **Paging:** Paging 3 RemoteMediator / custom cursor pager, load from DB, fetch next page, write to DB. **Images:** Coil / Nuke or Kingfisher / expo-image, sized requests, memory + disk cache, downsampling."
+     },
+     {
+      "h": "What makes it principal-level",
+      "p": "A principal answer sets performance budgets, explains hybrid fan-out with numbers, designs media for the device and network, and keeps the feed working when ranking fails."
+     }
+    ],
+    "cta": {
+     "label": "Open the full round",
+     "post": "case-feed"
+    }
+   },
+   {
+    "id": "case-payments",
+    "title": "Checkout and payments that never double-charge",
+    "template": "read",
+    "tags": [
+     "mobile",
+     "interview"
+    ],
+    "pages": [
+     {
+      "h": "The question",
+      "p": "Design checkout for a mobile commerce app processing 50,000 orders an hour at peak sales. Cards, UPI and wallets. Networks are flaky, users double-tap, and banks sometimes take minutes to confirm. No customer may ever be charged twice, and no order may be lost."
+     },
+     {
+      "h": "In plain words",
+      "p": "The checkout of a shopping app: confirm the cart, choose card, UPI or wallet, approve the payment, and get an order confirmation. During big sales it handles tens of thousands of orders an hour. Like ordering at a counter with a numbered token: if you ask twice, the cashier sees the same token number and doesn’t make a second order."
+     },
+     {
+      "h": "Ask before you design",
+      "p": "“Who processes payments?” A payment service provider (PSP) such as Stripe, Adyen or Razorpay. “Asynchronous methods?” UPI and some cards with 3-D Secure confirm minutes later via webhook. “Inventory reservation?” Stock must be held during payment for up to 10 minutes. “Refunds and partial captures?” Refunds yes, partial captures for split shipments later."
+     },
+     {
+      "h": "Size it",
+      "p": "Peak orders: **50k/hour ≈ 14/s**. Payment API calls: **≈ 60–80/s** (create, confirm, webhook, status polls). Webhook volume: **≈ 30/s at peak** (several events per payment). Reconciliation: **daily PSP settlement files** (match every captured payment)."
+     },
+     {
+      "h": "The design in words",
+      "p": "The app never decides whether a payment succeeded. It drives a server-side order state machine, and the PSP’s webhook is the source of truth for money. **Idempotency key.** The app creates a UUID when the user lands on the payment step and sends it with every attempt. The order service and the PSP both dedupe on it, so double taps and retries create one charge. **Order state machine.** created → payment_pending → paid → fulfilled, with failed, expired and refunded branches. Transitions are conditional updates, so two events can never both move an order."
+     },
+     {
+      "h": "The decision they will probe",
+      "p": "**Source of truth:** PSP webhook + sweeper over Client callback. Clients lie, crash and lose responses; only the PSP knows. **Card data:** PSP SDK tokenisation over Own card form. Keeps the app and backend out of most PCI DSS scope."
+     },
+     {
+      "h": "A follow-up to expect",
+      "p": "“How do you test this?” PSP sandbox with forced failures, contract tests for webhook payloads, and chaos tests that drop responses between every step."
+     },
+     {
+      "h": "The front end",
+      "p": "Checkout UI is mostly about honesty under uncertainty: never let users create a second charge, never claim success or failure before the server knows, and survive the app being killed while the user is in another app approving payment. **UI:** Compose / SwiftUI / React Native, checkout screens and result states. **Checkout ViewModel:** Kotlin sealed state machine, holds the idempotency key and order ID. **Saved state:** SavedStateHandle / SceneStorage / persisted store, keeps key and order ID across process death."
+     },
+     {
+      "h": "What makes it principal-level",
+      "p": "A principal answer makes idempotency explicit at every hop, models orders as a state machine with conditional transitions, treats timeouts as unknown, designs webhooks and reconciliation, and keeps card data out of scope."
+     }
+    ],
+    "cta": {
+     "label": "Open the full round",
+     "post": "case-payments"
+    }
+   },
+   {
+    "id": "case-booking",
+    "title": "Healthcare appointment booking without double-booking",
+    "template": "read",
+    "tags": [
+     "mobile",
+     "interview"
+    ],
+    "pages": [
+     {
+      "h": "The question",
+      "p": "Design a booking platform for 3,000 clinics: patients book slots in a mobile app, practitioners manage availability in a partner app, and admins configure clinics in a web dashboard. Popular slots open at 9 a.m. and sell out in seconds. Health data must be protected."
+     },
+     {
+      "h": "In plain words",
+      "p": "A platform where patients book appointments at clinics, practitioners manage their availability, and clinic admins configure services and hours. Popular slots open at 9 a.m. and are gone within seconds. Like a theatre box office that puts a ticket aside for five minutes while you get your wallet out. If you walk away, it goes back on sale."
+     },
+     {
+      "h": "Ask before you design",
+      "p": "“Can a slot hold more than one patient?” Most hold one; group sessions hold up to 20. “Payment at booking?” Optional deposit for some clinics. “Offline needs?” Practitioners must see today’s schedule without signal. “Regions and time zones?” Several cities across time zones; the clinic’s zone is authoritative."
+     },
+     {
+      "h": "Size it",
+      "p": "Clinics: **3,000**. Bookable slots: **≈ 1.5M/week** (3,000 × 10 practitioners × 50 slots). Peak booking attempts: **≈ 2,000/s** (9 a.m. release spikes). Successful bookings: **≈ 200k/day**."
+     },
+     {
+      "h": "The design in words",
+      "p": "Three apps share one booking core. The core turns contention into a short hold, then a confirmation, with every transition recorded for audit. **Slot model.** Availability rules (weekly hours, breaks, leave) generate concrete slot rows ahead of time. Each slot row has capacity, booked count and a version. **Holds.** Booking starts by placing a hold that expires in five minutes, decrementing remaining capacity atomically. Confirming converts the hold; expiry releases it."
+     },
+     {
+      "h": "The decision they will probe",
+      "p": "**Contention control:** Conditional update + hold TTL over Distributed lock. Atomic in one store; no lock to leak. **Search freshness:** Redis counts, eventually consistent over Query DB per search. Search volume far exceeds bookings; the write path is still exact."
+     },
+     {
+      "h": "A follow-up to expect",
+      "p": "“How do group sessions change the design?” Capacity is just higher; the same conditional update works. Waitlists become a queue per slot that promotes on cancellation."
+     },
+     {
+      "h": "The front end",
+      "p": "There are three front ends: the patient app, the partner app and the admin web dashboard. Each has a different job, but all must show availability honestly and react gracefully when someone else got there first. **Patient app:** React Native or native, search, slot picker, hold flow, my bookings. **Partner app:** Native with local DB, offline day view, check-in, notes. **Admin web:** React + TanStack Query, availability rules, services, reports."
+     },
+     {
+      "h": "What makes it principal-level",
+      "p": "A principal answer explains holds and expiry, avoids distributed locks, handles 9 a.m. spikes, gets time zones right, separates health data and designs notifications as a reliable pipeline."
+     }
+    ],
+    "cta": {
+     "label": "Open the full round",
+     "post": "case-booking"
+    }
+   },
+   {
+    "id": "case-release",
+    "title": "Mobile platform for 150 engineers: builds, releases, flags",
+    "template": "read",
+    "tags": [
+     "mobile",
+     "interview"
+    ],
+    "pages": [
+     {
+      "h": "The question",
+      "p": "You join as principal engineer. The company has one Android and one iOS app built by 150 engineers in 20 teams. Builds take 40 minutes, releases go out monthly and break often, and teams block each other. Design the mobile platform and release process for the next year."
+     },
+     {
+      "h": "In plain words",
+      "p": "Not a feature but the machine that ships every feature: how 150 engineers in 20 teams change one Android app and one iOS app safely every week, instead of monthly releases that break. Like a train timetable: the train leaves every Monday whether your carriage is ready or not, so nobody holds up the train, and unfinished carriages travel locked."
+     },
+     {
+      "h": "Ask before you design",
+      "p": "“Native or cross-platform?” Native Kotlin and Swift, with some React Native screens. “What breaks most often?” Merge conflicts, flaky UI tests and crashes found after release. “Can the server change UI?” Some screens are config-driven already. “Release approval process?” QA signs off manually before each release."
+     },
+     {
+      "h": "Size it",
+      "p": "Merge requests per day: **≈ 250** (150 engineers). CI minutes today: **≈ 10,000/day** (250 × 40 min). Target build time: **< 10 min p90** (with remote cache). Release cadence target: **weekly train** (staged rollout)."
+     },
+     {
+      "h": "The design in words",
+      "p": "The platform has three layers: code ownership through modules, fast and trustworthy CI, and a release system where risky changes ship dark behind flags. **Modules with owners.** Each team owns feature modules behind API modules, so teams depend on interfaces, not implementations. A CODEOWNERS file makes review routing automatic. **Affected-only CI.** The build graph tells CI which modules a change touches. Only those build and test, with a remote cache for everything else."
+     },
+     {
+      "h": "The decision they will probe",
+      "p": "**Cadence:** Weekly train over Release when ready. Predictable, smaller diffs, easier rollback. **Unfinished work:** Flags, ship dark over Long-lived branches. Merge conflicts and integration bugs drop sharply."
+     },
+     {
+      "h": "A follow-up to expect",
+      "p": "“How do you measure success after a year?” Build p90 under 10 minutes, weekly releases with no missed trains, crash-free above 99.8%, and lead time from merge to users under two weeks."
+     },
+     {
+      "h": "The front end",
+      "p": "In a platform round, the front end is the architecture of the app itself: how screens are split into modules, how they navigate without depending on each other, how a design system keeps 20 teams consistent, and how UI regressions are caught before users see them. **Navigation:** Compose Navigation type-safe routes / SwiftUI NavigationStack with route enums, decouple features. **Design system:** Compose components / SwiftUI views + tokens, consistency and accessibility by default. **Feature flags:** Firebase Remote Config, LaunchDarkly, in-house, ship dark, roll out, kill."
+     },
+     {
+      "h": "What makes it principal-level",
+      "p": "A principal answer ties architecture to team ownership, sets measurable targets, sequences the migration, designs rollout gates and kill switches, and explains how they would win adoption across 20 teams."
+     }
+    ],
+    "cta": {
+     "label": "Open the full round",
+     "post": "case-release"
+    }
+   },
+   {
+    "id": "case-ai-assistant",
+    "title": "An AI assistant inside a mobile app",
+    "template": "read",
+    "tags": [
+     "ai",
+     "interview"
+    ],
+    "pages": [
+     {
+      "h": "The question",
+      "p": "Our wellness booking app has 2 million daily users. Product wants an in-app assistant that answers questions about services, recommends practitioners, and can book, reschedule or cancel appointments by chat. Design it end to end: mobile client, backend, model usage, safety and cost."
+     },
+     {
+      "h": "In plain words",
+      "p": "A chat assistant inside a wellness booking app. Users ask questions in plain language (‘which physio near me does sports injuries?’) and can also say ‘move my Thursday massage to Friday evening’, and the assistant does it after they confirm. Like a capable new receptionist: she can look anything up and fill in forms for you, but she always reads the change back and waits for your ‘yes’ before pressing the button."
+     },
+     {
+      "h": "Ask before you design",
+      "p": "“Can the assistant take actions or only answer?” It can book, reschedule and cancel, with confirmation. “Which languages?” English and Hindi at launch. “Any medical advice?” No diagnosis or treatment advice; general wellness information only. “Latency expectation?” First words within about a second; full answers within a few seconds."
+     },
+     {
+      "h": "Size it",
+      "p": "Assistant users per day: **≈ 300k** (15% of 2M). Messages per day: **≈ 1.5M** (5 each). Input tokens per message: **≈ 2,500** (system prompt + history + retrieved facts). Output tokens per message: **≈ 250**. Daily tokens: **≈ 3.8B in · 0.4B out** (drives the cost model). Peak concurrency: **≈ 300 streams** (1.5M × 3 s avg ÷ 86,400 × 6 peak factor)."
+     },
+     {
+      "h": "The design in words",
+      "p": "The phone never talks to a model provider directly. An orchestrator owns prompts, tools, user context, safety checks and cost, and streams tokens back to the app. **Orchestrator.** Builds the prompt from a versioned template, the user’s recent messages, relevant facts from retrieval and the available tools. It runs the tool-call loop: the model asks for a function, the orchestrator executes it, and feeds the result back. **Model router.** Simple questions go to a small, fast model; multi-step booking flows go to a stronger one. Routing is the biggest single cost lever."
+     },
+     {
+      "h": "The decision they will probe",
+      "p": "**Where the model runs:** Hosted models via backend over On-device only. Needs tools, fresh data and stronger reasoning; on-device can handle simple rewrites later. **Actions:** Proposal + confirm card over Autonomous actions. Mistakes in bookings are costly and erode trust."
+     },
+     {
+      "h": "A follow-up to expect",
+      "p": "“How do you know it’s good before launch?” An evaluation set of a few hundred real-style conversations with expected tool calls and outcomes, scored automatically, plus human review of a sample. Gate releases on it."
+     },
+     {
+      "h": "The front end",
+      "p": "The assistant’s front end decides whether it feels magical or broken. It must stream text smoothly, show what the assistant is doing, present actions as clear cards, let users stop or retry, and stay usable when the AI path fails. **UI:** Compose / SwiftUI / React Native, message list, streaming bubble, cards. **Stream client:** OkHttp SSE / URLSession bytes / react-native-sse, parse events: token, tool, card, done, error. **Render buffer:** 50 ms batching, avoid re-layout per token."
+     },
+     {
+      "h": "What makes it principal-level",
+      "p": "A principal answer designs the tool layer with user-scoped permissions and human confirmation, defends against prompt injection, sizes tokens and cost, routes between models, and defines how quality is measured before and after launch."
+     }
+    ],
+    "cta": {
+     "label": "Open the full round",
+     "post": "case-ai-assistant"
+    }
+   },
+   {
+    "id": "case-on-device",
+    "title": "On-device AI versus cloud: a hybrid design",
+    "template": "read",
+    "tags": [
+     "ai",
+     "interview"
+    ],
+    "pages": [
+     {
+      "h": "The question",
+      "p": "We want three AI features in our app: smart replies in chat, summarising long service descriptions, and identifying products in photos. Leadership wants low cost and strong privacy. Decide what runs on the device and what runs in the cloud, and design how they work together."
+     },
+     {
+      "h": "In plain words",
+      "p": "Deciding where three AI features run: smart reply suggestions in chat, short summaries of long service descriptions, and recognising products in photos. Some phones can run AI models themselves; others need the cloud. Like a shop that answers simple questions at the counter and phones head office only for the hard ones, and still gives you a leaflet if the phone line is down."
+     },
+     {
+      "h": "Ask before you design",
+      "p": "“Which devices must be supported?” Android from 4 GB RAM and iOS from iPhone 12. “Must features work offline?” Smart replies and photo recognition should; summaries may need a network. “Can photos leave the device?” Only with consent; default is on-device. “App size limits?” The base download should not grow by more than 20 MB."
+     },
+     {
+      "h": "Size it",
+      "p": "Small text model on device: **≈ 1–3B params, 4-bit** (about 0.5–1.5 GB on disk). Image classifier: **≈ 5–20 MB** (fits in the app or downloads on demand). Device share able to run a local LLM: **varies widely** (measure with telemetry, not assumptions). Cloud cost avoided: **proportional to local share** (every on-device request is free at the margin)."
+     },
+     {
+      "h": "The design in words",
+      "p": "A capability check on the device decides, per feature and per device, whether to run locally, call the cloud, or fall back to a simpler non-AI behaviour. **AI router.** A small library every feature calls. It checks device capability (OS version, RAM, chip, whether a system model is present), user consent and remote rules, then picks local, cloud or fallback. **System models.** iOS 26 exposes an on-device language model through Apple’s Foundation Models framework, and supported Android devices expose Gemini Nano through ML Kit’s GenAI APIs. Using them costs no app size."
+     },
+     {
+      "h": "The decision they will probe",
+      "p": "**Smart replies:** On device over Cloud. Latency matters, works offline, private, and the task is small. **Summaries:** System model, else cloud over Cloud only. Free when available; cloud covers older phones."
+     },
+     {
+      "h": "A follow-up to expect",
+      "p": "“How do you update a bundled model without an app release?” Versioned model packs from a CDN, with the app declaring which model versions it supports."
+     },
+     {
+      "h": "The front end",
+      "p": "Here the front end owns the decision. The router is client code, and the UI must make three different execution paths feel like one feature, including downloads, consent and fallbacks. **UI:** Compose / SwiftUI, feature screens identical across paths. **AI router:** Kotlin / Swift library, capability check, consent, remote rules, timeouts. **System models:** Apple Foundation Models (iOS 26) · Gemini Nano via ML Kit GenAI, on-device text generation where available."
+     },
+     {
+      "h": "What makes it principal-level",
+      "p": "A principal answer designs a router with capability checks, remote rules and fallbacks, explains quantisation and fragmentation, makes privacy a design input, and decides per feature with clear criteria."
+     }
+    ],
+    "cta": {
+     "label": "Open the full round",
+     "post": "case-on-device"
+    }
+   },
+   {
+    "id": "case-rag",
+    "title": "Retrieval-augmented answers over company documents",
+    "template": "read",
+    "tags": [
+     "ai",
+     "interview"
+    ],
+    "pages": [
+     {
+      "h": "The question",
+      "p": "Our support and sales teams want an assistant that answers questions from 5 million internal documents: policies, product manuals, tickets and wiki pages. Answers must cite sources, respect who is allowed to see what, and stay current as documents change daily."
+     },
+     {
+      "h": "In plain words",
+      "p": "An internal assistant for support and sales staff that answers questions using the company’s own documents (policies, manuals, tickets and wiki pages) and always shows where each answer came from. Like a librarian who first fetches the three most relevant pages from the shelves you’re allowed into, then answers using only those pages, with sticky notes showing where each fact came from."
+     },
+     {
+      "h": "Ask before you design",
+      "p": "“Where do documents live?” Confluence, Google Drive, Zendesk and a policy portal. “Do permissions differ by document?” Yes, by team and region; some are restricted to managers. “How fresh must answers be?” Within an hour of a document changing. “Languages?” Mostly English, some Hindi."
+     },
+     {
+      "h": "Size it",
+      "p": "Documents: **5M**. Chunks: **≈ 50M** (~10 chunks of 500 tokens each). Vector storage: **≈ 200 GB raw** (50M × 1,024 dims × 4 bytes; much less with int8 or PQ). Daily changes: **≈ 50k documents** (re-embed only changed chunks). Queries: **≈ 20/s at peak** (5,000 users)."
+     },
+     {
+      "h": "The design in words",
+      "p": "Two pipelines: ingestion keeps a searchable, permission-aware index current; query time retrieves, filters, reranks and asks the model to answer only from what was retrieved. **Connectors.** Use each source’s change feed or webhooks, not nightly full crawls, so changes arrive within minutes. Deleted documents must be deleted from the index too. **Chunking.** Split along document structure (headings, sections, table boundaries) to roughly 300–800 tokens with a small overlap. Keep the title and section path with each chunk; it improves retrieval a lot."
+     },
+     {
+      "h": "The decision they will probe",
+      "p": "**Retrieval:** Hybrid vector + BM25 over Vectors only. Exact identifiers and codes are common in support content. **Permissions:** Filter at search time over Filter after generation. Restricted text must never reach the model."
+     },
+     {
+      "h": "A follow-up to expect",
+      "p": "“How do you handle tables and PDFs?” Layout-aware parsing; tables become row-wise text with headers repeated, and OCR for scans with a quality flag."
+     },
+     {
+      "h": "The front end",
+      "p": "The web front end turns retrieval into trust. Citations, source previews, honest ‘not found’ states and fast feedback matter as much as the model. **UI:** React + TypeScript, ask box, answer, citations, previews. **Server state:** TanStack Query, history, sources, feedback mutations. **Streaming:** fetch + ReadableStream (SSE), tokens and citation events."
+     },
+     {
+      "h": "What makes it principal-level",
+      "p": "A principal answer designs ingestion with change feeds and deletes, structure-aware chunking, hybrid retrieval with reranking, permission filtering inside search, and an evaluation plan that separates retrieval from generation."
+     }
+    ],
+    "cta": {
+     "label": "Open the full round",
+     "post": "case-rag"
+    }
+   },
+   {
+    "id": "case-llm-serving",
+    "title": "Serving an open LLM on your own GPU fleet",
+    "template": "read",
+    "tags": [
+     "ai",
+     "interview"
+    ],
+    "pages": [
+     {
+      "h": "The question",
+      "p": "For cost and data-residency reasons we will self-host a 70-billion-parameter open model for our assistant and internal tools. Expected load is 200 requests per second at peak, with about 2,000 input and 300 output tokens each. Design the serving platform on GPUs."
+     },
+     {
+      "h": "In plain words",
+      "p": "Running an open-source language model on the company’s own GPUs instead of paying an AI provider per request, for cost and data-residency reasons. It serves the assistant and internal tools at about 200 requests per second at peak. Like a busy restaurant kitchen where each chef cooks many orders at once, and the limit is not the chefs but counter space for orders in progress."
+     },
+     {
+      "h": "Ask before you design",
+      "p": "“Latency targets?” Time to first token under 1 second at p95; at least 30 tokens per second per stream. “Which GPUs are available?” 80 GB H100-class GPUs, 8 per node. “Is some traffic batch or offline?” Yes, nightly document processing can use spare capacity. “Quality tolerance for quantisation?” Acceptable if evaluation scores drop less than 1%."
+     },
+     {
+      "h": "Size it",
+      "p": "Weights at FP16: **≈ 140 GB** (70B × 2 bytes; needs at least 2 GPUs). Weights at FP8: **≈ 70 GB** (fits on 1 GPU but leaves little room for KV cache). KV cache per token: **≈ 0.3 MB at FP16** (2 × 80 layers × 8 KV heads × 128 dims × 2 bytes). KV cache per request: **≈ 0.7 GB** (2,300 tokens × 0.3 MB). Output tokens per second: **≈ 60k tok/s at peak** (200 req/s × 300 tokens). Input tokens per second: **≈ 400k tok/s** (prefill is compute-heavy)."
+     },
+     {
+      "h": "The design in words",
+      "p": "A gateway routes requests to model replicas. Each replica is an inference engine spanning a few GPUs with tensor parallelism; an autoscaler keeps warm capacity ahead of demand. **Inference engine.** vLLM (or TensorRT-LLM, SGLang) provides continuous batching, which adds new requests to the running batch every step, and PagedAttention, which stores the KV cache in pages so memory is not wasted on padding. **Tensor parallelism.** Each replica splits the model across 4 GPUs with tensor parallelism over NVLink. That leaves most memory for KV cache, which is what limits how many requests a replica serves at once."
+     },
+     {
+      "h": "The decision they will probe",
+      "p": "**Precision:** FP8 over FP16. Fits more KV cache per GPU; verify the quality drop on your evaluation set. **Parallelism:** TP=4 per replica over TP=2 or TP=8. Balances KV headroom and per-replica throughput; benchmark to confirm."
+     },
+     {
+      "h": "A follow-up to expect",
+      "p": "“When is self-hosting worth it?” When volume is steady and high enough to keep GPUs busy, or data residency requires it. At low or spiky volume, hosted APIs are usually cheaper."
+     },
+     {
+      "h": "The front end",
+      "p": "The users of this platform are other engineers and their apps. Its front end is the client SDK that apps use to stream from it reliably, and the operations console the platform team uses to see and control the fleet. **Client SDK:** TypeScript and Kotlin libraries, streaming, retries, cancellation, usage. **Console UI:** React + charting library, fleet, usage, rollouts. **Live data:** WebSocket or server-sent events from metrics API, update charts every few seconds."
+     },
+     {
+      "h": "What makes it principal-level",
+      "p": "A principal answer does the memory arithmetic, explains prefill versus decode, continuous batching and KV cache limits, picks parallelism and precision with evidence, scales on the right signal with warm pools, and frames when self-hosting pays off."
+     }
+    ],
+    "cta": {
+     "label": "Open the full round",
+     "post": "case-llm-serving"
+    }
+   },
+   {
+    "id": "case-ai-evals",
+    "title": "Shipping LLM features safely: evals, guardrails, monitoring",
+    "template": "read",
+    "tags": [
+     "ai",
+     "interview"
+    ],
+    "pages": [
+     {
+      "h": "The question",
+      "p": "Three teams are shipping LLM features: a support assistant, ticket summarisation, and marketing copy generation. Each has had embarrassing failures in production. As principal engineer, design the shared platform for evaluating, guarding and monitoring LLM features."
+     },
+     {
+      "h": "In plain words",
+      "p": "A shared platform so every team building AI features can test them before release, guard them in production, and see when they go wrong, much like unit tests, CI and monitoring do for normal code. Like a restaurant’s tasting routine: every recipe change is tasted against a checklist before it reaches customers, inspectors sample dishes during service, and every complaint becomes a new item on the checklist."
+     },
+     {
+      "h": "Ask before you design",
+      "p": "“What failures happened?” Made-up refund amounts, a summary that leaked a phone number, and off-brand copy. “Who changes prompts?” Engineers and product managers; changes go out weekly. “Which models?” Two hosted providers and one self-hosted model. “Human review capacity?” About 500 reviewed samples per week across teams."
+     },
+     {
+      "h": "Size it",
+      "p": "LLM calls per day: **≈ 3M** (three features). Evaluation set per feature: **300–1,000 cases** (grown from real failures). Online sampling for review: **≈ 0.02%** (500 human reviews per week). Release gate run: **< 15 minutes** (in CI on every prompt change)."
+     },
+     {
+      "h": "The design in words",
+      "p": "Prompts, models and settings are versioned artifacts. Every change runs an evaluation suite in CI; every production call passes guardrails and is traced; a sample flows to human review, and failures become new test cases. **Prompt registry.** Prompts, model names, temperatures and tool lists are stored as versioned artifacts with owners. Features reference a version, so a rollback is a config change. **Eval sets.** Hand-written and production-derived cases with expectations: exact fields that must match, facts that must appear, things that must never appear. Every incident adds cases."
+     },
+     {
+      "h": "The decision they will probe",
+      "p": "**Scoring:** Rules first, LLM judge second over LLM judge for everything. Cheaper, deterministic, and judges drift. **Release process:** CI gate + canary over Manual spot checks. Repeatable and catches regressions before users do."
+     },
+     {
+      "h": "A follow-up to expect",
+      "p": "“How do you evaluate an agent that takes multiple steps?” Score the trajectory: correct tool calls, correct arguments, and final state, not just the final message."
+     },
+     {
+      "h": "The front end",
+      "p": "The platform succeeds or fails on its tools. Reviewers need a fast labelling console, prompt authors need a diff-and-test editor, and teams need dashboards they actually open. **UI:** React + TypeScript, editor, review, dashboards. **Server state:** TanStack Query, runs, cases, labels with cache and optimistic updates. **Editor:** Monaco or CodeMirror, prompt templates with syntax and diff."
+     },
+     {
+      "h": "What makes it principal-level",
+      "p": "A principal answer versions prompts as code, builds layered scoring with calibrated judges, gates releases in CI, monitors online signals by version, closes the loop from incidents to test cases, and designs the platform so teams want to use it."
+     }
+    ],
+    "cta": {
+     "label": "Open the full round",
+     "post": "case-ai-evals"
+    }
+   }
+  ]
+ },
+ {
+  "id": "c-aihb",
+  "group": "learn",
+  "title": "AI handbook",
+  "blurb": "LLM internals, acceleration, retrieval, fine-tuning, agents and MCP.",
+  "theme": {
+   "bg": "#170f24",
+   "fg": "#f6f1ff",
+   "accent": "#b38cff",
+   "muted": "#a99bc2"
+  },
+  "reels": [
+   {
+    "id": "deep-llm-internals",
+    "title": "How an LLM works inside",
+    "template": "read",
+    "tags": [
+     "ai",
+     "deep dive"
+    ],
+    "pages": [
+     {
+      "h": "What it is",
+      "p": "A large language model is a function that takes a sequence of tokens and returns a probability for every possible next token. Generation repeats that function, appending one chosen token at a time. Almost every engineering concern, from latency and cost to hallucination and context limits, follows from this loop."
+     },
+     {
+      "h": "Follow one request",
+      "p": "A user asks the booking assistant: “Move my massage to Friday evening.” The orchestrator builds a prompt of about 2,400 tokens: system instructions, tool definitions, the last few turns and retrieved facts. The tokenizer turns that text into 2,400 integer IDs using a byte-pair-encoding vocabulary of roughly 100,000 to 200,000 entries. Each ID is looked up in an embedding table and becomes a vector of a few thousand numbers."
+     },
+     {
+      "h": "Inside it",
+      "p": "**Tokenizer.** Byte-pair encoding splits text into frequent sub-word pieces. Token counts drive price, latency and context limits, so always measure them with the provider’s tokenizer. **Self-attention.** Each token produces a query, key and value. Scores are queries times keys, scaled by √d, turned into weights by softmax, and used to mix values. Causal masking stops a token from seeing the future. Grouped-query attention shares keys and values across heads to shrink the KV cache. **MLP and mixture of experts.** A feed-forward network transforms each position independently. In mixture-of-experts models, a router sends each token to a few expert MLPs, so only part of the parameters run per token."
+     },
+     {
+      "h": "Generating a reply token by token",
+      "p": "Prefill is compute-bound and grows with prompt length; long prompts mean slower first tokens. Decode is memory-bandwidth-bound: each step reads all weights and the KV cache to produce one token. This is why output tokens usually cost more than input tokens, and why streaming improves perceived speed."
+     },
+     {
+      "h": "Tools to know",
+      "p": "**Dense vs mixture of experts:** Dense: every parameter runs per token. MoE: a few experts per token. MoE gives large-model quality at lower compute per token, at the cost of more memory. **Context length:** 8k · 32k · 128k · 1M tokens. Longer windows simplify prompts but cost more and do not replace retrieval for large corpora. **Reasoning models:** Spend extra tokens thinking before answering. Better on multi-step problems; slower and more expensive per answer."
+     },
+     {
+      "h": "Interview question",
+      "p": "“Why does a long prompt slow the first token but not later tokens as much?” Prefill processes all prompt tokens at once, which is compute-heavy. Later tokens reuse the KV cache and only process one new position each."
+     }
+    ],
+    "cta": {
+     "label": "Open the deep dive",
+     "post": "deep-llm-internals"
+    }
+   },
+   {
+    "id": "deep-inference-accel",
+    "title": "Making inference fast and cheap",
+    "template": "read",
+    "tags": [
+     "ai",
+     "deep dive"
+    ],
+    "pages": [
+     {
+      "h": "What it is",
+      "p": "Inference speed and cost come down to three limits: GPU compute during prefill, memory bandwidth during decode, and memory capacity for weights and KV cache. Every acceleration technique relaxes one of them: smaller numbers, fewer tokens, better batching, or guessing ahead."
+     },
+     {
+      "h": "A real optimisation story",
+      "p": "A support summariser on a self-hosted 70B model costs too much and p95 latency is 9 seconds. The team measures first: average prompt 6,000 tokens, output 250, GPU utilisation 35% because requests are processed one at a time per replica. Step one moves to vLLM with continuous batching and paged KV cache: throughput per GPU roughly triples and p95 drops, because the GPU now decodes many requests per step. Step two trims the prompt: ticket history is summarised once and cached, cutting input to 2,500 tokens and halving TTFT."
+     },
+     {
+      "h": "Inside it",
+      "p": "**Routing and distillation.** The cheapest token is one processed by a smaller model. Classify requests and send routine ones to a small model, often distilled from the large one on your task. **Context trimming and caching.** Input tokens dominate cost for retrieval-heavy apps. Summarise history, retrieve only relevant chunks, and keep stable prefixes identical so provider prompt caching or engine prefix caching applies. **Continuous batching.** Instead of waiting for a batch to finish, the server adds and removes requests every decode step, keeping the GPU full."
+     },
+     {
+      "h": "Speculative decoding step",
+      "p": "Speed-up depends on the acceptance rate, which is high for predictable text such as code and templated answers. Because the target model verifies every token, the output matches what it would have produced on its own."
+     },
+     {
+      "h": "Tools to know",
+      "p": "**Serving engines:** vLLM · SGLang · TensorRT-LLM · Hugging Face TGI · llama.cpp. vLLM or SGLang for general GPU serving; TensorRT-LLM for maximum NVIDIA performance; llama.cpp for CPU and edge. **Quantisation:** FP8 · AWQ · GPTQ · GGUF (llama.cpp). FP8 first on supported GPUs; INT4 when memory is the hard limit. **Kernels:** FlashAttention · fused kernels in engines. Usually provided by the engine; check versions match your GPU."
+     },
+     {
+      "h": "Interview question",
+      "p": "“Your LLM feature is too slow. Where do you start?” Measure TTFT versus TPOT. Slow first token means long prompts or queueing: trim context, cache prefixes, add capacity. Slow streaming means decode limits: batching, quantisation, speculative decoding or a smaller model."
+     }
+    ],
+    "cta": {
+     "label": "Open the deep dive",
+     "post": "deep-inference-accel"
+    }
+   },
+   {
+    "id": "deep-embeddings",
+    "title": "Embeddings and vector search",
+    "template": "read",
+    "tags": [
+     "ai",
+     "deep dive"
+    ],
+    "pages": [
+     {
+      "h": "What it is",
+      "p": "An embedding model turns text, images or audio into a vector so that similar meanings land close together. Vector search finds the nearest vectors quickly using approximate indexes. Together they power semantic search, recommendations, deduplication and the retrieval half of RAG."
+     },
+     {
+      "h": "Building semantic search for a service catalogue",
+      "p": "The wellness app has 40,000 services across 3,000 clinics. Keyword search fails on ‘something for a stiff neck after long flights’ because no listing contains those words. Each service is embedded from a short document: title, category, description and benefits. Vectors of 768 dimensions are stored in Postgres with pgvector and an HNSW index, alongside city, price and clinic ID for filtering."
+     },
+     {
+      "h": "Inside it",
+      "p": "**Embedding model.** Maps input to a fixed-length vector. Use the same model, version and preprocessing for documents and queries; changing models means re-embedding everything. **Similarity.** Usually cosine similarity, or dot product on normalised vectors. **Approximate index.** HNSW builds a navigable graph for fast, high-recall search; IVF partitions vectors into clusters; product quantisation compresses vectors to save memory at some recall cost."
+     },
+     {
+      "h": "A hybrid query",
+      "p": "Filters run inside both searches so results never include other cities. The reranker is where most of the precision comes from."
+     },
+     {
+      "h": "Tools to know",
+      "p": "**Embedding models:** Hosted embedding APIs · open models (e.g. BGE, E5, multilingual variants). Benchmark on your queries; check multilingual quality, dimension and cost. **Vector stores:** pgvector · OpenSearch · Qdrant · Weaviate · Milvus · Pinecone. Start in the database you run; move when scale or filtering demands. **Rerankers:** Cross-encoder models · hosted rerank APIs. Almost always worth it for top-k quality."
+     },
+     {
+      "h": "Interview question",
+      "p": "“Why combine keyword and vector search?” Vectors miss exact tokens like product codes; keywords miss paraphrases. Fusion gets both, and a reranker sorts the final list."
+     }
+    ],
+    "cta": {
+     "label": "Open the deep dive",
+     "post": "deep-embeddings"
+    }
+   },
+   {
+    "id": "deep-adapt-models",
+    "title": "Prompting, RAG or fine-tuning?",
+    "template": "read",
+    "tags": [
+     "ai",
+     "deep dive"
+    ],
+    "pages": [
+     {
+      "h": "What it is",
+      "p": "There are three main ways to make a general model fit your product: better prompts, retrieval of your data at query time, and changing the model’s weights. They solve different problems. Prompts and retrieval change what the model sees; fine-tuning changes how it behaves."
+     },
+     {
+      "h": "Choosing for three real features",
+      "p": "Feature one, a refund-policy assistant, needs current facts with citations and permissions. That is retrieval: policies change and must be quoted. Fine-tuning would freeze yesterday’s policy into weights. Feature two, ticket classification into 40 categories at 2 million tickets a day, needs speed and low cost more than broad reasoning. A small model fine-tuned with LoRA on 20,000 labelled tickets matches the large model’s accuracy on this task at a fraction of the cost."
+     },
+     {
+      "h": "Inside it",
+      "p": "**Start at the left.** Each step right costs more data, more engineering and more maintenance. Move right only when evaluation shows the previous step is not enough. **Supervised fine-tuning (SFT).** Train on input → ideal output pairs. Good for formats, classification, extraction and a consistent voice. **LoRA and QLoRA.** Train small low-rank adapter matrices instead of all weights. QLoRA does this on a 4-bit quantised base model, so large models can be tuned on modest GPUs. Many adapters can share one base model in serving."
+     },
+     {
+      "h": "A LoRA fine-tuning pipeline",
+      "p": "Hold out a test set that the model never sees, and compare against the cheapest baseline, not just the original prompt. Version the dataset, base model and adapter together."
+     },
+     {
+      "h": "Tools to know",
+      "p": "**Training libraries:** Hugging Face Transformers · PEFT · TRL · Axolotl · Unsloth. PEFT + TRL for LoRA, SFT and DPO; Unsloth or Axolotl for fast recipes. **Hosted fine-tuning:** Fine-tuning APIs from major providers and cloud platforms. When you want no training infrastructure and the base model is supported. **Serving adapters:** vLLM multi-LoRA · TGI. Serve many adapters on one base model."
+     },
+     {
+      "h": "Interview question",
+      "p": "“When would you fine-tune instead of RAG?” When the problem is behaviour, format or cost on a narrow, high-volume task, not missing facts. Facts that change belong in retrieval."
+     }
+    ],
+    "cta": {
+     "label": "Open the deep dive",
+     "post": "deep-adapt-models"
+    }
+   },
+   {
+    "id": "deep-agents-mcp",
+    "title": "Tool use, agents and MCP",
+    "template": "read",
+    "tags": [
+     "ai",
+     "deep dive"
+    ],
+    "pages": [
+     {
+      "h": "What it is",
+      "p": "Tool use lets a model call functions you define: it outputs a structured request, your code runs it, and the result goes back into the conversation. An agent is a loop of that pattern with a goal. The Model Context Protocol (MCP) standardises how AI applications connect to tools and data, so one integration works across many AI clients."
+     },
+     {
+      "h": "An operations agent in practice",
+      "p": "An on-call engineer asks the internal assistant: ‘Why did checkout errors spike at 14:00, and open an incident if it’s still happening?’ The assistant is an MCP host connected to MCP servers for metrics, logs, the deploy system and the incident tool. The model calls metrics.query and sees errors rising at 13:58. It calls deploys.list and finds a payments-service release at 13:55, then logs.search for that service and finds a timeout to the payment provider introduced by a config change."
+     },
+     {
+      "h": "Inside it",
+      "p": "**Tool calling.** You describe tools with names, descriptions and JSON schemas. The model returns a tool call with arguments; your code executes it and returns the result as a message. The model never runs code itself. **Agent loop.** Repeat: send messages and tools to the model, execute any tool calls, append results, stop when the model answers or a limit is hit. Limits on steps, time and tokens are mandatory. **MCP.** An open protocol introduced by Anthropic in late 2024 and adopted widely since. A host application runs MCP clients that connect to MCP servers. Servers expose tools (actions), resources (data to read) and prompts (templates). Messages use JSON-RPC 2.0 over local stdio or HTTP-based transports."
+     },
+     {
+      "h": "One agent loop over MCP",
+      "p": "The host, not the model, decides whether a call needs approval. Tool results are data; instructions inside them must not be followed blindly."
+     },
+     {
+      "h": "Tools to know",
+      "p": "**Protocols:** MCP (tools, resources, prompts) · provider tool-calling APIs. MCP to expose systems once for many clients; direct tool calling inside a single app. **Agent frameworks:** Provider agent SDKs · LangGraph · LlamaIndex · plain code. Plain code for simple loops; a framework when you need state machines, retries and persistence. **MCP servers:** Official SDKs (TypeScript, Python, others) · existing servers for GitHub, databases, docs. Wrap internal APIs as servers owned by the teams that own the APIs."
+     },
+     {
+      "h": "Interview question",
+      "p": "“What is MCP and why would you adopt it?” An open protocol for connecting AI applications to tools and data through servers that expose tools, resources and prompts over JSON-RPC. Teams build one server per system and every MCP-capable client can use it, instead of N×M custom integrations."
+     }
+    ],
+    "cta": {
+     "label": "Open the deep dive",
+     "post": "deep-agents-mcp"
+    }
+   },
+   {
+    "id": "deep-llm-integration",
+    "title": "Integrating LLMs into products",
+    "template": "read",
+    "tags": [
+     "ai",
+     "deep dive"
+    ],
+    "pages": [
+     {
+      "h": "What it is",
+      "p": "Most LLM features are ordinary software with one unreliable, slow, expensive dependency in the middle. The patterns that make them production-grade are the same ones you use for payments or search: a gateway, contracts, retries, fallbacks, caching, budgets and observability."
+     },
+     {
+      "h": "Adding AI to an existing app",
+      "p": "A product team wants to add three features in a quarter: listing description rewrite, review summaries and a support assistant. Instead of each team calling providers directly, the platform team ships an LLM gateway in two weeks. The gateway authenticates internal callers, looks up the prompt template version for the feature, routes to the configured model, enforces JSON schemas on output, retries once on transient errors, falls back to a second provider, and records tokens and cost per feature."
+     },
+     {
+      "h": "Inside it",
+      "p": "**Gateway.** One service owns provider keys, routing, retries, fallbacks, quotas and metering. Teams call a stable internal API instead of provider SDKs. **Prompt registry.** Templates stored with versions and owners; features reference a version, and rollbacks are configuration. **Structured output.** Ask for JSON that matches a schema, using the provider’s schema or tool features where available, then validate. Invalid output triggers one repair attempt, then a fallback."
+     },
+     {
+      "h": "A resilient LLM call",
+      "p": "Retries are bounded and fallback is automatic. The caller receives the same schema whichever provider answered."
+     },
+     {
+      "h": "Tools to know",
+      "p": "**Gateways:** In-house service · open-source LLM proxies · cloud AI gateways. In-house when you need custom policy; a proxy to start quickly. **Schemas:** JSON Schema · Zod · Pydantic. Define once, use for prompts, validation and types. **Observability:** OpenTelemetry · LLM tracing tools (e.g. Langfuse, LangSmith). Trace prompts, outputs, tokens and cost per feature."
+     },
+     {
+      "h": "Interview question",
+      "p": "“Why put a gateway in front of LLM providers?” Central keys, routing, retries, fallbacks, quotas, metering and policy. Teams ship features faster and the company can switch models without touching every service."
+     }
+    ],
+    "cta": {
+     "label": "Open the deep dive",
+     "post": "deep-llm-integration"
+    }
+   },
+   {
+    "id": "deep-ai-dev-accel",
+    "title": "Using AI to accelerate engineering teams",
+    "template": "read",
+    "tags": [
+     "ai",
+     "deep dive"
+    ],
+    "pages": [
+     {
+      "h": "What it is",
+      "p": "As a principal engineer you will be asked how AI changes the way your teams build software, and how you would roll it out responsibly. The answer covers tools, workflow changes, guardrails, measurement and culture, not just which assistant to buy."
+     },
+     {
+      "h": "Rolling out AI coding tools to 150 engineers",
+      "p": "Leadership wants AI tools for 150 mobile and backend engineers. You start with a four-week pilot in two teams: one mobile, one backend, with an enterprise plan that keeps code private and disables training on company data. Engineers use an IDE assistant for completion and chat, and an agentic coding tool such as Claude Code for multi-file changes: it reads the repo, runs Gradle and tests, and proposes diffs that engineers review. A repository-level instructions file captures conventions: module boundaries, test commands and banned APIs."
+     },
+     {
+      "h": "Inside it",
+      "p": "**Context is the multiplier.** Assistants perform far better with repository instructions, architecture docs and access to internal docs through MCP. Treat that context as maintained infrastructure. **Agents for multi-step changes.** Agentic tools can run builds and tests and iterate on failures. Keep them in sandboxes with the developer approving commands and diffs. **Human ownership.** Every merged line has a human owner who understands it. AI review supplements, never replaces, human approval."
+     },
+     {
+      "h": "An AI-assisted change",
+      "p": "The engineer defines done and owns the result. CI and human review are unchanged; AI shortens the loop before them."
+     },
+     {
+      "h": "Tools to know",
+      "p": "**IDE assistants:** GitHub Copilot · Cursor · JetBrains AI · others. Pick by IDE coverage, enterprise controls and model choice. **Coding agents:** Claude Code · other terminal and IDE agents. For multi-file changes, test fixing and codebase exploration. **Review:** AI review bots in CI. Comments only; humans approve."
+     },
+     {
+      "h": "Interview question",
+      "p": "“How would you roll out AI coding tools across teams?” A measured pilot with enterprise controls, instructions files and shared workflows, the same quality gates, before/after metrics including failure rates, then an honest review before scaling."
+     }
+    ],
+    "cta": {
+     "label": "Open the deep dive",
+     "post": "deep-ai-dev-accel"
+    }
+   }
+  ]
+ },
+ {
+  "id": "c-lld",
+  "group": "learn",
+  "title": "Under the hood",
+  "blurb": "Sync engine, transfer manager, background work and the server side.",
+  "theme": {
+   "bg": "#0c1b1f",
+   "fg": "#eefafb",
+   "accent": "#46d1c4",
+   "muted": "#8fb1b4"
+  },
+  "reels": [
+   {
+    "id": "deep-frontend-arch",
+    "title": "Front-end architecture for offline, real-time and AI apps",
+    "template": "read",
+    "tags": [
+     "mobile",
+     "deep dive"
+    ],
+    "pages": [
+     {
+      "h": "What it is",
+      "p": "In data-heavy mobile and web apps, the front end is not a thin skin. It owns the source of truth the user sees, the state machine of every screen, perceived performance, offline behaviour, real-time updates, streaming AI output and accessibility. Principal-level answers describe these layers as precisely as the backend."
+     },
+     {
+      "h": "One screen, end to end",
+      "p": "Take the job detail screen in the inspection app. When it opens, the ViewModel subscribes to a database query for the job, its answers and its media. The first frame renders from SQLite in about 50 ms, before any network activity. The technician changes an answer. The ViewModel sends an intent to the repository, which writes the answer and an outbox row in one transaction. The query emits again, the reducer produces a new immutable state with that field marked pending, and Compose recomposes only that row."
+     },
+     {
+      "h": "Inside it",
+      "p": "**Unidirectional data flow.** Views send intents; a ViewModel or store reduces intents and data changes into one immutable state object; views render it. This is MVI on Android, the same shape with @Observable models or TCA on iOS, and a Zustand or Redux store in React. **Observe, don’t fetch.** Screens subscribe to database queries. Network results are written to the database, which updates the screen. That gives offline support, instant reopening and one source of truth. **Effects.** One-off events such as navigation, toasts and haptics are separate from state, so rotating the device or recomposing does not repeat them."
+     },
+     {
+      "h": "A user action through the layers",
+      "p": "The view never waits for the network; the user sees their change in the same frame. The same observation path delivers local edits, sync results and real-time updates, so there is one code path to test."
+     },
+     {
+      "h": "Tools to know",
+      "p": "**State management:** MVI/UDF · TCA · Zustand · Redux Toolkit · TanStack Query. UDF everywhere; TanStack Query for server state on the web; a store for cross-screen UI state. **Local reactive data:** Room · GRDB · SwiftData · WatermelonDB · op-sqlite. Whatever gives observable queries on SQLite on your platform. **Lists:** LazyColumn · UICollectionView · FlashList · virtualised tables. Stable keys, content types, fixed or estimated sizes."
+     },
+     {
+      "h": "Interview question",
+      "p": "“How do you structure a screen in an offline-first app?” Unidirectional data flow: the view sends intents; the ViewModel writes through a repository and observes database queries; a reducer produces immutable state with explicit loading, empty, error, offline and per-row sync states; effects are separate."
+     }
+    ],
+    "cta": {
+     "label": "Open the deep dive",
+     "post": "deep-frontend-arch"
+    }
+   },
+   {
+    "id": "deep-sync-engine",
+    "title": "The sync engine",
+    "template": "read",
+    "tags": [
+     "mobile",
+     "deep dive"
+    ],
+    "pages": [
+     {
+      "h": "What it is",
+      "p": "The sync engine is a small runtime inside the app with one job: move local changes to the server and server changes into the local database. It has no UI and no business logic beyond merging. It must be safe to start, stop and kill at any line, because the OS will do all three."
+     },
+     {
+      "h": "A real-life run",
+      "p": "Priya, a field technician, edits twelve inspection jobs in a basement with no signal. Every save writes the job row and an outbox entry in one SQLite transaction, so the app feels instant. Meanwhile two supervisors change instructions on two of those same jobs from the office. At 4:12 pm she walks outside. The phone regains a network, WorkManager’s network constraint is met, and the scheduler calls run(reason = network_back, budget = 8 minutes). The coordinator takes the single-flight lock and reads the cursor c_88411 from disk."
+     },
+     {
+      "h": "Inside it",
+      "p": "**Coordinator.** Entry point. Takes a single-flight lock so two triggers never run two syncs, computes a deadline from the budget, runs push then pull, and maps exceptions to a result the scheduler understands: success, retry after N seconds, needs login, or disabled. **Push stage.** Reads the next batch of outbox rows that are ready (not waiting for a retry time), serialises them with op_ids and base versions, and handles each per-operation result inside one transaction. **Pull stage.** Loops over pages from the stored cursor until the server says has_more is false or the deadline arrives. A 410 Gone response switches it to the rebuild path."
+     },
+     {
+      "h": "The run loop",
+      "p": "Every arrow that changes local state ends in a transaction, so the run can be killed between any two arrows without losing or duplicating data. Push always runs before pull, so the server’s answer already reflects this device’s edits. The result tells the scheduler what to do next, which keeps retry policy in one place."
+     },
+     {
+      "h": "Tools to know",
+      "p": "**Local database:** Room · GRDB · SQLDelight · WatermelonDB · op-sqlite. Room or GRDB natively; SQLDelight for KMP; WatermelonDB for RN with its sync protocol. **Wire format:** JSON + gzip · Protobuf (Wire, swift-protobuf). Start with JSON; switch hot endpoints to Protobuf when payloads or parse time hurt on low-end phones. **Transport:** HTTPS request/response · WebSocket hint channel · gRPC. HTTPS for push and pull; a socket only to say ‘cursor moved’ while the app is open."
+     },
+     {
+      "h": "Interview question",
+      "p": "“Why is the engine single-flight?” Two concurrent runs could push the same outbox rows twice and apply pages out of order. A lock plus idempotent server writes keeps one logical sync at a time."
+     }
+    ],
+    "cta": {
+     "label": "Open the deep dive",
+     "post": "deep-sync-engine"
+    }
+   },
+   {
+    "id": "deep-transfer-manager",
+    "title": "The transfer manager",
+    "template": "read",
+    "tags": [
+     "mobile",
+     "deep dive"
+    ],
+    "pages": [
+     {
+      "h": "What it is",
+      "p": "The transfer manager moves large files between the phone and object storage. It hashes, splits, uploads and downloads files in parts that each succeed or fail on their own, records progress after every part, and keeps going across network switches, app kills and reboots."
+     },
+     {
+      "h": "A real-life run",
+      "p": "Arjun records a 412 MB walkthrough video of a pump room and taps Submit. The transfer manager copies the file into app storage while computing its SHA-256, so it reads the file once. It asks the server with POST /files/init; the hash is new, so the server starts a multipart upload and returns 52 presigned part URLs of 8 MB each, valid for 15 minutes. Four parts upload at a time. After each one, the ETag goes into the transfer_part table. At part 20 the phone moves from Wi-Fi to 4G: three in-flight parts fail, retry after a short jittered delay and succeed. At part 31 the URLs have expired, the server returns 403, and the manager asks for fresh URLs for parts 31 to 52 only."
+     },
+     {
+      "h": "Inside it",
+      "p": "**Public API.** enqueue(uri, owner, priority) returns a transfer ID immediately; observe(id) streams progress from the database; cancel(id) marks it cancelled so nothing restarts it. **Preparer.** Copies the file into app storage, because content URIs and photo-library references can disappear, and computes SHA-256 in the same pass. Optional transcoding happens here, before any bytes leave the phone. **Part planner.** Chooses part size from file size and network: at least 5 MB (the S3 minimum for all but the last part), usually 8–16 MB, and large enough to stay under 10,000 parts."
+     },
+     {
+      "h": "The run loop",
+      "p": "The hash is computed once, during the copy, and reused for deduplication and final verification. Each part commits independently, so any interruption costs only the parts in flight. Expired URLs are a normal event, refreshed in bulk, never a failure."
+     },
+     {
+      "h": "Tools to know",
+      "p": "**Upload protocol:** S3 multipart with presigned URLs · GCS resumable uploads · Azure block blobs · tus. Use your cloud’s native protocol; tus when you need a vendor-neutral, open resumable protocol. **Integrity:** SHA-256 of the whole file · per-part checksums (S3 supports CRC32C, SHA-256 and others). Whole-file hash for dedupe and evidence; per-part checksums to catch corruption in transit. **Concurrency:** 1 · 2–4 · adaptive. Two on cellular, four on Wi-Fi; drop to one when the battery is low."
+     },
+     {
+      "h": "Interview question",
+      "p": "“Why copy the file before uploading?” Picker and gallery URIs can be revoked or the user can edit the photo. A private copy with a recorded hash is the only stable source for a transfer that may take hours."
+     }
+    ],
+    "cta": {
+     "label": "Open the deep dive",
+     "post": "deep-transfer-manager"
+    }
+   },
+   {
+    "id": "deep-background-layer",
+    "title": "The background-work layer",
+    "template": "read",
+    "tags": [
+     "mobile",
+     "deep dive"
+    ],
+    "pages": [
+     {
+      "h": "What it is",
+      "p": "The background-work layer is a thin adapter between your app and the OS scheduler. It turns many triggers (app open, network back, push, timers, user actions) into a few well-behaved jobs, gives each job a time budget, and hands results back to the OS so it keeps trusting your app."
+     },
+     {
+      "h": "A real-life run",
+      "p": "In one minute, Meera’s phone produces five reasons to sync: she edits a booking, the app goes to the background, Wi-Fi reconnects, a push arrives saying her clinic changed a time, and the periodic job comes due. A naive app would start five syncs. The trigger hub coalesces them. On Android, each trigger enqueues unique work named sync with a KEEP policy, so only one job exists. On iOS, the edit starts a short background task to finish the write, and the rest schedule one app refresh request."
+     },
+     {
+      "h": "Inside it",
+      "p": "**Trigger hub.** Accepts trigger(reason, priority). It collapses duplicates within a short window and decides the job type: an immediate expedited job after a user edit, a constrained job for background catch-up, or a user-initiated transfer job. **Android adapter.** Enqueues unique work with WorkManager, sets constraints and backoff, uses expedited work with a fallback when quota runs out, and schedules user-initiated data transfer jobs for big uploads on Android 14+. **iOS adapter.** Registers BGTask identifiers at launch, schedules BGAppRefreshTask and BGProcessingTask requests, wraps the expiration handler, and starts a short background task when the app is backgrounded mid-write."
+     },
+     {
+      "h": "The run loop",
+      "p": "Three triggers become one job because the work name is unique and the policy is KEEP. Network work never happens inside the push callback; the callback only enqueues. The worker always returns a result, so the OS keeps scheduling the app normally."
+     },
+     {
+      "h": "Tools to know",
+      "p": "**Android scheduling:** WorkManager · JobScheduler · AlarmManager · foreground service. WorkManager for almost everything; UIDT jobs for long user transfers; avoid exact alarms for sync. **iOS scheduling:** BGTaskScheduler · background URLSession · silent push · beginBackgroundTask. Refresh tasks for catch-up, URLSession for bytes, short tasks to finish writes. **Push:** FCM data messages · APNs background notifications. Use as a hint with collapse keys; never as the only path."
+     },
+     {
+      "h": "Interview question",
+      "p": "“Why put an adapter between engines and the OS?” The engines become platform-agnostic and testable, and all OS quirks, quotas and telemetry live in one small place per platform."
+     }
+    ],
+    "cta": {
+     "label": "Open the deep dive",
+     "post": "deep-background-layer"
+    }
+   },
+   {
+    "id": "deep-server-sync",
+    "title": "The server sync service",
+    "template": "read",
+    "tags": [
+     "mobile",
+     "deep dive"
+    ],
+    "pages": [
+     {
+      "h": "What it is",
+      "p": "The server sync service is the other half of the protocol. It accepts pushes idempotently, applies merge rules, assigns every change a sequence number in a per-tenant change log, serves pulls by cursor with permission filtering, and builds snapshots for new devices."
+     },
+     {
+      "h": "A real-life run",
+      "p": "A supervisor and a technician edit job j-81 within the same second. Both pushes reach different API pods. Each push is a transaction: check the op_id table, apply field-level merge against the current row, update the row, allocate the next sequence number for the tenant, and insert into the change log. The technician’s push changes answers.valve_3 from base version 4. The supervisor changed only instructions. Both apply cleanly. Sequence numbers 88412 and 88413 are assigned. A third push, a retry of the technician’s request after a lost response, finds its op_id already recorded and returns the stored result without writing anything."
+     },
+     {
+      "h": "Inside it",
+      "p": "**Push handler.** For each operation: look up the op_id; if present, return the stored result. Otherwise load the row, run the entity’s merge rule, write the row, allocate a sequence and insert a change-log row, all in one transaction, then store the op_id result. **Change log.** An append-only table keyed by (tenant_id, seq), partitioned by tenant hash and by time. Each row stores the entity, ID, version, changed fields or a tombstone flag, and the ACL tags needed to filter pulls. **Pull handler.** A range read on (tenant_id, seq > cursor) ordered by seq, joined with the user’s permissions, limited by bytes as well as rows."
+     },
+     {
+      "h": "The run loop",
+      "p": "The op_id check, the row update and the change-log insert share one transaction, so a retry can never create a second change. Downstream systems read committed changes from the WAL rather than being called from the request path. The other device learns about the change from a hint, but the pull is what guarantees it."
+     },
+     {
+      "h": "Tools to know",
+      "p": "**Sequence allocation:** Per-tenant counter row · global sequence + watermark · WAL position (LSN). Per-tenant counter for most products; a watermark when one tenant is too hot to serialise. **Change store:** Postgres table · Cassandra/Scylla · DynamoDB stream. Postgres until write volume per tenant forces a wide-column store. **Idempotency store:** Unique table in the same database · Redis. Same database when you need it inside the transaction; Redis as a fast front cache."
+     },
+     {
+      "h": "Interview question",
+      "p": "“Why can a global sequence make pulls skip data?” Sequence numbers are allocated when a transaction asks for them, not when it commits. A later number can commit first, a client pulls past it, and the earlier one appears behind its cursor. Per-tenant serialisation or a safe watermark fixes it."
+     }
+    ],
+    "cta": {
+     "label": "Open the deep dive",
+     "post": "deep-server-sync"
+    }
+   }
+  ]
+ },
+ {
+  "id": "c-found",
+  "group": "learn",
+  "title": "Foundations",
+  "blurb": "What the OS does to your app, and why offline-first is the answer.",
+  "theme": {
+   "bg": "#0d1a28",
+   "fg": "#f2f5f9",
+   "accent": "#ff6a35",
+   "muted": "#9fb0c3"
+  },
+  "reels": [
+   {
+    "id": "f-lifecycle",
+    "title": "What the OS actually does to your app",
+    "template": "read",
+    "tags": [
+     "lifecycle"
+    ],
+    "pages": [
+     {
+      "h": "The deal you never signed",
+      "p": "Phones run on small batteries and limited memory, so Android and iOS both treat apps that are off screen as candidates for removal. Your process is a guest. The OS decides how long it stays, and it rarely asks first."
+     },
+     {
+      "h": "Android",
+      "p": "When the user leaves your app, Android keeps the process cached for a while, then kills it without warning when memory runs short. **Doze**, **App Standby Buckets** and OEM battery managers on phones like Xiaomi or Oppo add further limits on when background work may run."
+     },
+     {
+      "h": "iOS",
+      "p": "iOS **suspends** your app a few seconds after it leaves the screen. Suspended means frozen: no timers, no network callbacks, no code at all. Later the system may terminate it to free memory. Your code runs again only when the user opens the app or iOS grants background time."
+     },
+     {
+      "h": "What this means for design",
+      "p": "Any work that matters must survive a kill at any line of code. That rules out long-running loops, in-memory queues and retry-in-a-minute timers. The question stops being how to stay alive and becomes how to resume.",
+      "ex": "Interview line: “I don’t keep the app alive. I make every step resumable.”"
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "Mobile operating systems suspend and kill background apps to protect battery and memory, so I never design around staying alive. Every unit of work is persisted before it starts and can resume after a kill at any line. The question I design for is how the app resumes, not how it survives.",
+      "say": true
+     }
+    ],
+    "cta": {
+     "label": "Open in the post",
+     "post": "background-sync",
+     "section": "s-rule"
+    }
+   },
+   {
+    "id": "f-offline-first",
+    "title": "Offline-first, explained properly",
+    "template": "read",
+    "tags": [
+     "architecture"
+    ],
+    "pages": [
+     {
+      "h": "Two ways to build an app",
+      "p": "A network-first app asks the server for data each time a screen opens and shows a spinner until it answers. An offline-first app reads a local database instantly and treats the network as something that happens later. The second feels faster and keeps working in a lift, a basement or on a plane."
+     },
+     {
+      "h": "One source of truth",
+      "p": "In offline-first design the UI never reads from the network. It **observes the local database**. When new data arrives from the server it is written to the database, and the screen updates because the query it watches changed. There is exactly one place the screen gets data from."
+     },
+     {
+      "h": "Writes are local too",
+      "p": "When the user creates or edits something, the app writes it locally and returns at once. The screen updates in milliseconds. Sending that change to the server is a separate job that may run seconds or hours later."
+     },
+     {
+      "h": "The price you pay",
+      "p": "You now own a sync problem: pending changes, conflicts, deletes and schema versions across devices that may stay offline for weeks. Every other course in this feed is about paying that price well.",
+      "ex": "A technician fills a 20-field form underground. It saves instantly and reaches the server when she walks back outside."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "Our UI reads only from a local SQLite database, which is the single source of truth. Writes land locally first and sync later, so the app is instant and works with no signal. The trade-off is owning a sync protocol, which I treat as a core part of the product rather than plumbing.",
+      "say": true
+     }
+    ],
+    "cta": {
+     "label": "Open in the post",
+     "post": "background-sync",
+     "section": "s-arch"
+    }
+   },
+   {
+    "id": "f-principles",
+    "title": "Five principles behind every sync system",
+    "template": "read",
+    "tags": [
+     "principles"
+    ],
+    "pages": [
+     {
+      "h": "Disk before network",
+      "p": "The UI reads only the local database, and every pending action becomes a row on disk before any request starts. If the app dies a millisecond later, the intent is still there for the next run to find."
+     },
+     {
+      "h": "Idempotent and resumable",
+      "p": "Every change carries a client-generated ID, so sending it twice is harmless. Work is cut into small units and progress is committed after each one. Failure stops being an edge case and becomes a path the code walks every day."
+     },
+     {
+      "h": "Let the OS schedule",
+      "p": "You declare what the work needs, such as a network, charging or free storage, and the OS picks the moment. No wake locks, no polling loops, and no services you hope will survive."
+     },
+     {
+      "h": "Records and bytes are different",
+      "p": "Small structured records sync through your API. Large files go straight to object storage. They fail in different ways, so they get separate pipelines, retry rules and progress tracking."
+     },
+     {
+      "h": "The server orders, the client observes",
+      "p": "The server decides the order of changes and applies the conflict policy; clients never trust their own clocks. And every sync run emits metrics, because a broken sync system fails silently: data just goes stale."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "My rules are disk before network, idempotent and resumable work, OS-scheduled execution, separate pipelines for records and bytes, and server-assigned ordering. Together they make failure a normal path. Each exists because a phone can lose power, signal or its process at any moment.",
+      "say": true
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-proto",
+  "group": "learn",
+  "title": "The sync protocol",
+  "blurb": "Outbox, idempotency, cursors, deletes and conflicts.",
+  "theme": {
+   "bg": "#0a1f24",
+   "fg": "#eefbfb",
+   "accent": "#3fd0c9",
+   "muted": "#8fb6b8"
+  },
+  "reels": [
+   {
+    "id": "p-outbox",
+    "title": "The outbox pattern",
+    "template": "read",
+    "tags": [
+     "outbox"
+    ],
+    "pages": [
+     {
+      "h": "The problem",
+      "p": "A user taps Save. You write to the database, then call the API. If the app is killed between those steps, the server never hears about the change. Call the API first instead, and a failed request loses the edit entirely."
+     },
+     {
+      "h": "The fix",
+      "p": "Write the change **and an outbox row in the same local transaction**. The outbox row says which entity changed, what changed, and carries a unique op_id. Both are saved or neither is, so the edit can never exist without the intent to send it."
+     },
+     {
+      "h": "Draining it",
+      "p": "The sync engine reads outbox rows in creation order, sends them, and deletes each row only after the server confirms it. If the process dies halfway, the remaining rows are simply sent on the next run."
+     },
+     {
+      "h": "Details that matter",
+      "p": "Keep operations on the same entity in order and batch the rest. Store the attempt count and next retry time on each row. Move permanently rejected operations to a failed state the user can see, instead of retrying them forever.",
+      "ex": "Restaurant version: the waiter writes the order on the pad before walking to the kitchen."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "Every user write commits the row and an outbox entry in one transaction, so intent is never lost. A sync engine drains the outbox in order, deletes entries only after the server confirms, and parks permanent failures where the user can see them. A crash at any point is recoverable.",
+      "say": true
+     }
+    ],
+    "cta": {
+     "label": "Open in the post",
+     "post": "background-sync",
+     "section": "s-protocol"
+    }
+   },
+   {
+    "id": "p-idem",
+    "title": "Idempotency: making retries safe",
+    "template": "read",
+    "tags": [
+     "idempotency"
+    ],
+    "pages": [
+     {
+      "h": "The lost response",
+      "p": "The app sends a change, the server applies it, and the response is lost as the phone switches from Wi-Fi to mobile data. To the app the request failed. A naive retry applies it twice: two comments, two orders, two payments."
+     },
+     {
+      "h": "The op_id",
+      "p": "Each change gets a UUID generated on the device at the moment the user acts. The server records the op_ids it has processed. When one arrives again, it **returns the original result and changes nothing**."
+     },
+     {
+      "h": "How long to remember",
+      "p": "Keep processed op_ids for longer than any realistic retry, often several days, in Redis or a table with a unique index. UUIDv7 suits this well: unique, time-ordered and friendly to indexes."
+     },
+     {
+      "h": "Retrying politely",
+      "p": "Use exponential backoff with **full jitter**: wait a random time between zero and a growing limit. Honour Retry-After. Retry timeouts, 5xx and 429; send 400 and 403 to a failed state instead.",
+      "ex": "Say it: “Every write is idempotent by op_id, so the client can retry without fear.”"
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "Every mutation carries a UUIDv7 op_id generated on the device. The server stores processed IDs and returns the original result for duplicates, so retries are always safe. Clients back off exponentially with full jitter and honour Retry-After, which keeps recovery calm after an outage.",
+      "say": true
+     }
+    ],
+    "cta": {
+     "label": "Open in the post",
+     "post": "background-sync",
+     "section": "s-protocol"
+    }
+   },
+   {
+    "id": "p-cursor",
+    "title": "Cursors and server sequence numbers",
+    "template": "read",
+    "tags": [
+     "cursor"
+    ],
+    "pages": [
+     {
+      "h": "Asking what changed",
+      "p": "To pull, the app asks the server for everything since it last synced. The obvious approach is a timestamp: rows where updated_at is later than my last sync. It is also the source of a whole family of bugs."
+     },
+     {
+      "h": "Why timestamps break",
+      "p": "Device clocks are often wrong, and server clocks drift between machines. Rows written in the same millisecond straddle the boundary, and a transaction that commits late carries an earlier timestamp than rows you already pulled. Data quietly goes missing."
+     },
+     {
+      "h": "Sequence numbers",
+      "p": "Instead, the server stamps every change with a number from a **monotonic sequence per tenant or user**. The device stores the last number it applied, its cursor, and asks for changes after it. The order is total, and nothing slips through."
+     },
+     {
+      "h": "Saving the cursor",
+      "p": "Apply a page of changes and save the new cursor **in the same database transaction**. If the app dies in between, the next run reapplies the page, which is harmless because applying a change twice gives the same result.",
+      "ex": "Keep the cursor opaque, like c_1043, so you can change what it means without breaking old apps."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "We never sync by timestamps, because clocks drift and late commits slip through. The server stamps each change with a per-tenant sequence number and the device keeps an opaque cursor. Applying a page and saving the cursor happen in one transaction, so a crash only replays a harmless page.",
+      "say": true
+     }
+    ],
+    "cta": {
+     "label": "Open in the post",
+     "post": "background-sync",
+     "section": "s-protocol"
+    }
+   },
+   {
+    "id": "p-deletes",
+    "title": "Deletes and devices that vanish for weeks",
+    "template": "read",
+    "tags": [
+     "tombstones"
+    ],
+    "pages": [
+     {
+      "h": "Deletes are invisible",
+      "p": "If a row is deleted on the server, a pull of changed rows never mentions it, and the device keeps showing data that no longer exists. A delete has to be recorded as a change of its own."
+     },
+     {
+      "h": "Tombstones",
+      "p": "A tombstone is a change-log entry saying this record was deleted, with its own sequence number. Devices pull it like any other change and remove the local row. Tombstones are kept for a retention window, commonly 30 to 90 days."
+     },
+     {
+      "h": "Gone too long",
+      "p": "A device that returns with a cursor older than that window can no longer be told everything that was deleted. The server answers **410 Gone**. The app discards its local copy, rebuilds from a fresh snapshot and then pulls deltas again."
+     },
+     {
+      "h": "Never lose offline work",
+      "p": "Before rebuilding, push the outbox first and keep any rows that still have unsynced changes. A rebuild must never throw away work the user did while offline.",
+      "ex": "Follow-up answer: “Tombstones with a 90-day TTL. Older cursor: 410, snapshot, then deltas.”"
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "Deletes are tombstones in the change log with 90-day retention. A device whose cursor is older gets 410 Gone, pushes its outbox, keeps unsynced rows and rebuilds from a CDN snapshot before pulling deltas. Offline work is never thrown away during a rebuild.",
+      "say": true
+     }
+    ]
+   },
+   {
+    "id": "p-conflicts",
+    "title": "Choosing a conflict strategy",
+    "template": "read",
+    "tags": [
+     "conflicts"
+    ],
+    "pages": [
+     {
+      "h": "When two edits meet",
+      "p": "Two devices edit the same record offline, then both sync. The server must decide what the record looks like now. There is no universal answer, so choose **per entity**, based on what a lost edit would cost."
+     },
+     {
+      "h": "Last write wins",
+      "p": "The change with the highest server sequence wins. It is simple and right for settings, status flags and data with a single owner. It is wrong wherever two people edit the same thing, because one change silently disappears."
+     },
+     {
+      "h": "Optimistic concurrency",
+      "p": "The client sends the version its edit was based on. If the server has moved on, it returns **409 Conflict** and the app merges field by field or asks the user. This is the default for important records like patient notes or job reports."
+     },
+     {
+      "h": "Operations and CRDTs",
+      "p": "For counters and stock, send intents such as remove two units rather than the new total, so concurrent changes add up. For collaborative text, CRDT libraries like Automerge or Yjs merge edits in any order to the same result, at a cost in storage and complexity."
+     },
+     {
+      "h": "Server-authoritative",
+      "p": "For money, bookings and reservations, the device only proposes. The record stays pending until the server confirms it. Here correctness beats availability, and the screen must say so plainly.",
+      "ex": "Clinic case: two receptionists book one slot offline. The first wins; the second gets 409 and the next free slot."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "I choose conflict handling per entity by the cost of a lost edit: last-write-wins for settings, 409 and merge for important records, operations for counters, CRDTs only for real-time collaboration, and server-authoritative for money and bookings. We measured conflict rates after launch to confirm the choices.",
+      "say": true
+     }
+    ],
+    "cta": {
+     "label": "Open in the post",
+     "post": "background-sync",
+     "section": "s-conflict"
+    }
+   }
+  ]
+ },
+ {
+  "id": "c-data",
+  "group": "learn",
+  "title": "Persistence and the UI",
+  "blurb": "SQLite at scale, migrations and a UI users trust.",
+  "theme": {
+   "bg": "#12162a",
+   "fg": "#f0f2ff",
+   "accent": "#9aa8ff",
+   "muted": "#9da3c4"
+  },
+  "reels": [
+   {
+    "id": "d-sqlite",
+    "title": "SQLite at scale on a phone",
+    "template": "read",
+    "tags": [
+     "sqlite"
+    ],
+    "pages": [
+     {
+      "h": "Why SQLite everywhere",
+      "p": "SQLite is transactional, fast with millions of rows and available on every platform. Room on Android, GRDB or SwiftData on iOS, and WatermelonDB or op-sqlite in React Native all sit on top of it. Pick the wrapper by platform and by how much control you need."
+     },
+     {
+      "h": "IDs made on the device",
+      "p": "Generate primary keys on the device, ideally **UUIDv7**. A record can then be created, linked and edited offline without waiting for the server to hand out an ID, and its time ordering keeps indexes efficient."
+     },
+     {
+      "h": "WAL and one writer",
+      "p": "Turn on write-ahead logging so the UI can read while sync writes. Use one writer connection and a pool of readers. Apply pulled changes in batches of a few hundred rows per transaction, so observers fire once rather than a thousand times."
+     },
+     {
+      "h": "Keep it lean",
+      "p": "Index every column you filter or sort on. Use FTS5 for search instead of LIKE. Never keep large blobs in the database; store a path and a hash. Purge synced outbox rows and old tombstones on a schedule.",
+      "ex": "Regulated data: SQLCipher, with the key held in Keystore or Keychain."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "SQLite sits underneath on every platform, with client-generated UUIDv7 keys, WAL mode, one writer and many readers, and batched transactions for sync. Blobs live on disk with a hash in the row, and search uses FTS5. That stays fast with millions of rows on mid-range phones.",
+      "say": true
+     }
+    ]
+   },
+   {
+    "id": "d-migrations",
+    "title": "Schema changes while users stay offline",
+    "template": "read",
+    "tags": [
+     "migrations"
+    ],
+    "pages": [
+     {
+      "h": "The long tail",
+      "p": "Some users update months late. Some phones sit in a drawer holding unsynced changes. Your database and your protocol will both change while those devices are still out there."
+     },
+     {
+      "h": "On the device",
+      "p": "Migrations are versioned, forward-only and tested in CI against **real snapshots of old databases**, not just a fresh install. A migration that fails at launch is among the worst bugs a sync app can ship, because it can strand unsynced data."
+     },
+     {
+      "h": "On the wire",
+      "p": "Protocol changes are additive. New fields are optional, and the server keeps accepting old payload shapes and filling in defaults. A breaking change gets a new versioned endpoint, and the old one stays until telemetry shows almost nobody uses it."
+     },
+     {
+      "h": "The rule",
+      "p": "Never assume clients upgrade together. Design every change so an app from six months ago can still push its outbox safely."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "Database migrations are forward-only and tested in CI against real old snapshots. Protocol changes are additive, anything breaking gets a versioned endpoint, and old versions retire only when telemetry shows almost no devices use them. I assume clients never upgrade together.",
+      "say": true
+     }
+    ]
+   },
+   {
+    "id": "d-ui",
+    "title": "The UI layer: one-way data flow",
+    "template": "read",
+    "tags": [
+     "ui"
+    ],
+    "pages": [
+     {
+      "h": "Read, never fetch",
+      "p": "In this architecture the screen does not call the network. A ViewModel or store observes a database query and turns its results into immutable UI state, which Jetpack Compose, SwiftUI or React renders."
+     },
+     {
+      "h": "The loop",
+      "p": "The user acts. The ViewModel writes the row and the outbox entry in one transaction. The observed query emits again and the screen re-renders. Later, when sync updates those rows, the screen re-renders again without any special code."
+     },
+     {
+      "h": "Optimistic UI",
+      "p": "Each synced row carries a **sync_state**: pending, syncing, synced, failed or conflict. The UI shows a change instantly with a small badge. If the server rejects it, the row moves to failed or conflict with a clear action, never a silent rollback."
+     },
+     {
+      "h": "Status users trust",
+      "p": "Show one honest global status: all changes saved, syncing twelve items, or offline with changes waiting. Show progress for big uploads, let users retry failures and offer Wi-Fi only for media. Trust in an offline app is built on this one line of UI.",
+      "ex": "Large lists: keyset pagination from the database, with Paging 3, LazyVStack or FlashList recycling cells."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "The UI follows one-way data flow: it observes database queries and renders immutable state. Writes are optimistic with a sync_state per row, and failures surface as clear actions rather than silent rollbacks. One honest sync status line is what makes users trust an offline app.",
+      "say": true
+     }
+    ],
+    "cta": {
+     "label": "Open in the post",
+     "post": "background-sync",
+     "section": "s-arch"
+    }
+   }
+  ]
+ },
+ {
+  "id": "c-files",
+  "group": "learn",
+  "title": "Huge files and huge data",
+  "blurb": "Resumable uploads, smart downloads and first sync with millions of rows.",
+  "theme": {
+   "bg": "#151a0c",
+   "fg": "#f6fbe9",
+   "accent": "#b8e04a",
+   "muted": "#aab48c"
+  },
+  "reels": [
+   {
+    "id": "h-upload",
+    "title": "Uploading 4 GB on a bad network",
+    "template": "read",
+    "tags": [
+     "uploads"
+    ],
+    "pages": [
+     {
+      "h": "Why one request fails",
+      "p": "A single 4 GB upload over mobile data will almost certainly be interrupted. A network switch, a tunnel or the app being killed sends it back to zero. The answer is to split the file and make every piece resumable on its own."
+     },
+     {
+      "h": "Prepare",
+      "p": "Copy the file into app storage first, because a gallery or picker URI can disappear. Hash it with SHA-256 while copying, and compress or transcode if the product allows. Record all of it in a file-transfer table before a byte leaves the phone."
+     },
+     {
+      "h": "Ask before sending",
+      "p": "The app sends the hash and size to the server. If the server already holds that content, the upload is skipped. Otherwise it starts a **multipart upload** and returns presigned URLs, one per part, valid for a few minutes."
+     },
+     {
+      "h": "Send parts, save progress",
+      "p": "Parts of 8 to 16 MB go straight to object storage, two to four at a time. After each part lands, its ETag is written to the database. A kill now costs at most the parts that were in flight."
+     },
+     {
+      "h": "Finish",
+      "p": "When every part is done, the app asks the server to complete the upload. The server verifies the hash, links the file to its record and queues thumbnails or virus scans. That record change then syncs like any other.",
+      "ex": "S3 parts must be at least 5 MB, except the last. Abort stale multipart uploads with a lifecycle rule."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "Large files are copied into app storage, hashed with SHA-256 and deduplicated before upload. Then S3 multipart with presigned part URLs, saving each part’s ETag as it lands, so a kill costs at most the parts in flight. The server verifies the hash on completion.",
+      "say": true
+     }
+    ],
+    "cta": {
+     "label": "Open in the post",
+     "post": "background-sync",
+     "section": "s-files"
+    }
+   },
+   {
+    "id": "h-download",
+    "title": "Downloads, storage and caching",
+    "template": "read",
+    "tags": [
+     "downloads"
+    ],
+    "pages": [
+     {
+      "h": "Download less",
+      "p": "Most users never need every file. Show thumbnails first and fetch the full file when it is opened. Prefetch only what is likely to be needed, such as today’s jobs, and only on Wi-Fi while charging."
+     },
+     {
+      "h": "Resume, verify, rename",
+      "p": "Use HTTP Range requests to continue from the last byte received. Write to a temporary file, verify its hash, then atomically rename it into place, so a half-written file is never mistaken for a complete one."
+     },
+     {
+      "h": "Serve from the edge",
+      "p": "Put files behind a CDN with short-lived signed URLs and content-addressed keys, such as the hash. A file then never changes at a given address and can be cached forever."
+     },
+     {
+      "h": "Respect the phone",
+      "p": "Keep a storage budget and evict the least recently used files first, sparing pinned ones. Handle low-disk errors calmly, and keep re-downloadable files out of cloud backups."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "Downloads are lazy: thumbnails first, prefetch only on Wi-Fi while charging. We resume with Range requests, verify hashes and rename atomically. Files sit behind a CDN with signed, content-addressed URLs, and each device keeps a storage budget with LRU eviction.",
+      "say": true
+     }
+    ]
+   },
+   {
+    "id": "h-dataset",
+    "title": "First sync with two million rows",
+    "template": "read",
+    "tags": [
+     "datasets"
+    ],
+    "pages": [
+     {
+      "h": "Paging does not scale",
+      "p": "A new device on a big account may need millions of records. Paging them through the API 500 at a time means thousands of requests and hours of waiting. Users give up long before it finishes."
+     },
+     {
+      "h": "Snapshots",
+      "p": "Instead, the server builds a compressed **snapshot per scope** on a schedule, as a SQLite file or newline-delimited JSON, and serves it from a CDN. The app downloads it once, imports it in the background and pulls deltas from the snapshot’s cursor."
+     },
+     {
+      "h": "Sync less",
+      "p": "Partial replication limits a device to what its user needs: their team, their region or the last 90 days. Older data is fetched on demand from the API. Most users never notice, and the database stays small."
+     },
+     {
+      "h": "Import fast",
+      "p": "Parse responses as a stream rather than loading them whole. Insert in large transactions, and pause full-text indexing during the import, rebuilding it at the end.",
+      "ex": "Size pages by bytes, not rows: roughly 100 to 500 KB each."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "New devices bootstrap from a prebuilt, CDN-served snapshot per scope, then pull deltas from its cursor. Partial replication keeps each device to the data its user needs, and imports stream, batch and defer indexing. First sync goes from hours of paging to minutes.",
+      "say": true
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-android",
+  "group": "learn",
+  "title": "Android in depth",
+  "blurb": "WorkManager, long transfers and the limits OEMs add.",
+  "theme": {
+   "bg": "#0b211c",
+   "fg": "#eefaf5",
+   "accent": "#4fe0a8",
+   "muted": "#93b8ab"
+  },
+  "reels": [
+   {
+    "id": "a-workmanager",
+    "title": "WorkManager, properly",
+    "template": "read",
+    "tags": [
+     "android"
+    ],
+    "pages": [
+     {
+      "h": "What it gives you",
+      "p": "WorkManager stores your work in its own database, survives process death and reboots, applies constraints and retries with backoff. It chooses the right system scheduler for each Android version. It is the default answer for deferrable background work."
+     },
+     {
+      "h": "Unique work",
+      "p": "Enqueue sync under a **unique name** with a KEEP or APPEND policy, so ten triggers in a minute become one job, not ten. Give each file upload its own unique name, such as upload- followed by the file ID."
+     },
+     {
+      "h": "Constraints and timing",
+      "p": "Declare what the job needs: a network, an unmetered network for media, battery not low. Periodic work runs at most every 15 minutes and may wait in Doze. For sync right after a user action, use expedited work that falls back to normal work when its quota runs out."
+     },
+     {
+      "h": "A good worker",
+      "p": "A worker reads its progress from the database, does a bounded amount of work, commits after each unit and checks isStopped. If the system stops it, it returns retry and the next run continues exactly where it left off.",
+      "ex": "Never do network work inside the FCM callback. Enqueue a worker instead."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "On Android, sync runs in WorkManager under unique names, with network and battery constraints and exponential backoff. Workers are short, checkpoint after every unit and return retry when stopped. FCM messages only enqueue work; they never make the network call themselves.",
+      "say": true
+     }
+    ],
+    "cta": {
+     "label": "Open in the post",
+     "post": "background-sync",
+     "section": "s-platforms"
+    }
+   },
+   {
+    "id": "a-long",
+    "title": "Long transfers on modern Android",
+    "template": "read",
+    "tags": [
+     "android",
+     "uploads"
+    ],
+    "pages": [
+     {
+      "h": "Foreground services changed",
+      "p": "Android 12 stopped most apps from starting foreground services in the background. Android 14 requires each one to declare a type, such as dataSync. Android 15 limits dataSync services to about six hours in every 24. A long-running service is no longer a safe default."
+     },
+     {
+      "h": "User-initiated transfer jobs",
+      "p": "From Android 14, a job started while the user is in your app can be marked **user-initiated**. It shows a notification, may run for a long time and is not bound by normal job quotas. It exists for exactly the big upload or download a user asked for."
+     },
+     {
+      "h": "Respect the user",
+      "p": "The required notification should be useful: file name, percentage and a cancel button. If the user cancels, record it in your database so the transfer is not quietly restarted later."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "For big transfers the user starts, we use user-initiated data transfer jobs on Android 14 and later, with a progress notification and a cancel action. We avoid depending on dataSync foreground services because of the type requirement and Android 15’s six-hour daily limit.",
+      "say": true
+     }
+    ]
+   },
+   {
+    "id": "a-killers",
+    "title": "Doze, standby buckets and OEM killers",
+    "template": "read",
+    "tags": [
+     "android"
+    ],
+    "pages": [
+     {
+      "h": "Doze",
+      "p": "When the phone sits still with its screen off, Doze batches background work into short maintenance windows. Jobs and alarms wait, so your sync may run minutes or hours later than you expected."
+     },
+     {
+      "h": "Standby buckets",
+      "p": "Android ranks apps by recent use: active, working set, frequent, rare and restricted. Apps in the rare bucket get very few job runs and a limited number of high-priority FCM messages."
+     },
+     {
+      "h": "OEM battery managers",
+      "p": "Some manufacturers add their own aggressive killers. Test on Xiaomi, Oppo, Vivo and Samsung phones, measure background runs per manufacturer, and guide users of critical apps to allow background activity."
+     },
+     {
+      "h": "Force Stop",
+      "p": "If the user taps Force Stop in settings, every scheduled job and alarm is cancelled until they open the app again. Nothing you write can undo that.",
+      "ex": "Test with adb shell dumpsys deviceidle force-idle, and am set-standby-bucket to simulate rare."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "We plan for Doze, standby buckets and OEM battery managers rather than fighting them. Sync health is tracked per manufacturer, we test on Xiaomi, Oppo, Vivo and Samsung, and users of critical features get a short guide to allow background activity.",
+      "say": true
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-ios",
+  "group": "learn",
+  "title": "iOS in depth",
+  "blurb": "Background tasks, background URLSession and the traps.",
+  "theme": {
+   "bg": "#15181d",
+   "fg": "#f1f5fa",
+   "accent": "#7cc4ff",
+   "muted": "#9aa6b4"
+  },
+  "reels": [
+   {
+    "id": "i-bgtasks",
+    "title": "BGTaskScheduler without surprises",
+    "template": "read",
+    "tags": [
+     "ios"
+    ],
+    "pages": [
+     {
+      "h": "Two kinds of task",
+      "p": "**BGAppRefreshTask** gives you about 30 seconds to fetch small updates. **BGProcessingTask** gives minutes for heavier work, usually overnight while charging. You request them; iOS decides when, based on battery, network and how the user uses your app."
+     },
+     {
+      "h": "The rhythm",
+      "p": "Register handlers at launch. In each handler, schedule the next task first, then do bounded work. Set an expiration handler that cancels the work, and always call setTaskCompleted. Apps that overrun or forget to complete are scheduled less often."
+     },
+     {
+      "h": "Usage decides",
+      "p": "iOS learns when your user opens the app and tends to refresh shortly before. A rarely used app gets few background runs, which is why background tasks are an optimisation, never the only route to fresh data."
+     },
+     {
+      "h": "New in iOS 26",
+      "p": "BGContinuedProcessingTask lets a task the user started, like an export or a large upload, keep running after they leave the app, with system progress UI and a cancel button.",
+      "ex": "Debug from Xcode with _simulateLaunchForTaskWithIdentifier."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "On iOS, BGAppRefreshTask handles quick catch-up and BGProcessingTask handles heavy work while charging. Each handler reschedules first, does bounded work, handles expiration and always completes. Foreground sync stays the dependable path, because background time follows how often the user opens the app.",
+      "say": true
+     }
+    ],
+    "cta": {
+     "label": "Open in the post",
+     "post": "background-sync",
+     "section": "s-platforms"
+    }
+   },
+   {
+    "id": "i-urlsession",
+    "title": "Background URLSession, the big-file workhorse",
+    "template": "read",
+    "tags": [
+     "ios",
+     "uploads"
+    ],
+    "pages": [
+     {
+      "h": "Transfers outside your process",
+      "p": "A background URLSession hands uploads and downloads to a system daemon. Transfers continue while your app is suspended, and even after the system terminates it. When they finish, iOS relaunches your app in the background to tell you."
+     },
+     {
+      "h": "The rules",
+      "p": "Uploads must come **from a file**, not from memory. For multipart uploads, write each part to its own file and create one task per part. Recreate the session with the same identifier at every launch to reconnect to transfers already in flight."
+     },
+     {
+      "h": "The events",
+      "p": "Implement handleEventsForBackgroundURLSession, keep its completion handler, and call it when the session finishes delivering events. Store which task belongs to which file and part in your database, because the callback may arrive in a brand-new process."
+     },
+     {
+      "h": "The exception",
+      "p": "If the user force-quits the app from the app switcher, its background transfers are cancelled. Your saved list of finished parts makes the restart cheap: on the next launch, only missing parts are queued again.",
+      "ex": "Set isDiscretionary for prefetch so iOS can wait for Wi-Fi and power."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "Big files on iOS go through a background URLSession, one upload task per part file, so the system keeps transferring while we are suspended. We map tasks to parts in SQLite and reconnect the session on every launch. After a user force-quit, only missing parts are queued again.",
+      "say": true
+     }
+    ]
+   },
+   {
+    "id": "i-gotchas",
+    "title": "iOS traps that quietly break sync",
+    "template": "read",
+    "tags": [
+     "ios"
+    ],
+    "pages": [
+     {
+      "h": "Locked phone, locked database",
+      "p": "With complete file protection, files cannot be read while the phone is locked, so background sync fails. Use completeUntilFirstUserAuthentication for the sync database and keychain items: protected at rest, readable after the first unlock."
+     },
+     {
+      "h": "Silent push is a hint",
+      "p": "A push with content-available wakes your app for about 30 seconds, but iOS throttles and coalesces these, especially for apps the user rarely opens. Use them to trigger a pull, and keep foreground sync as the dependable path."
+     },
+     {
+      "h": "Low Power and Low Data",
+      "p": "Low Power Mode delays discretionary work, and Low Data Mode marks networks as constrained. Respect both, and let users override them for transfers they started themselves."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "The sync database uses completeUntilFirstUserAuthentication so background work can open it after the first unlock. Silent pushes only trigger a pull, and we respect Low Power and Low Data Mode except for transfers the user explicitly started.",
+      "say": true
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-rn",
+  "group": "learn",
+  "title": "React Native in depth",
+  "blurb": "What JS can’t do in the background, and the native split.",
+  "theme": {
+   "bg": "#0b1626",
+   "fg": "#eef7ff",
+   "accent": "#61dafb",
+   "muted": "#8fa9c2"
+  },
+  "reels": [
+   {
+    "id": "r-runtime",
+    "title": "Why JS can’t own background sync",
+    "template": "read",
+    "tags": [
+     "react-native"
+    ],
+    "pages": [
+     {
+      "h": "The runtime may not exist",
+      "p": "When the OS wakes your app for background work, it starts native code. Booting the JavaScript runtime costs time and memory the OS may not grant, and iOS offers no general way to run JS in the background at all."
+     },
+     {
+      "h": "Memory and bytes",
+      "p": "Moving a large file through JavaScript means holding it in the JS heap, and a few hundred megabytes is enough to crash the app. Files should cross into native code only as a path."
+     },
+     {
+      "h": "The split",
+      "p": "Keep screens, navigation and UI state in JavaScript. Put scheduling, transfers and ideally the sync engine in native modules. Native code writes progress into SQLite and JavaScript observes it, so both share one source of truth."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "In React Native, JavaScript owns screens and state, while scheduling, transfers and the sync engine are native. Native code writes progress to SQLite and JavaScript observes it. File bytes never pass through the JS heap; only paths cross into native code.",
+      "say": true
+     }
+    ],
+    "cta": {
+     "label": "Open in the post",
+     "post": "background-sync",
+     "section": "s-platforms"
+    }
+   },
+   {
+    "id": "r-maturity",
+    "title": "Three levels of React Native sync",
+    "template": "read",
+    "tags": [
+     "react-native"
+    ],
+    "pages": [
+     {
+      "h": "Level one: libraries",
+      "p": "For an MVP, react-native-background-fetch or expo-background-task runs short JS jobs, a background upload library handles files, and WatermelonDB provides a sync protocol. It ships fast, but tight time budgets and JS start-up cost hold it back."
+     },
+     {
+      "h": "Level two: native modules",
+      "p": "At scale, write Turbo Modules that expose enqueueSync and enqueueUpload. Android uses WorkManager underneath; iOS uses BGTaskScheduler and background URLSession. JavaScript only enqueues work and watches the database."
+     },
+     {
+      "h": "Level three: a shared core",
+      "p": "Larger teams write the sync engine once, in Kotlin Multiplatform or Rust, and use it from the native Android app, the native iOS app and the React Native app. One protocol implementation and one test suite, with no drift between platforms.",
+      "ex": "App Center CodePush was retired in March 2025; EAS Update is the usual replacement."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "We started with background libraries for speed, then moved to Turbo Modules wrapping WorkManager and BGTaskScheduler as usage grew. With native apps alongside, I would put the sync core in Kotlin Multiplatform from day one to avoid drift between platforms.",
+      "say": true
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-scale",
+  "group": "learn",
+  "title": "Backend and scale",
+  "blurb": "A stateless backend, the change log and surviving your own users.",
+  "theme": {
+   "bg": "#1d1407",
+   "fg": "#fbf4e6",
+   "accent": "#ffc23d",
+   "muted": "#c2ab84"
+  },
+  "reels": [
+   {
+    "id": "b-stateless",
+    "title": "Why the backend scales sideways",
+    "template": "read",
+    "tags": [
+     "backend"
+    ],
+    "pages": [
+     {
+      "h": "No memory of clients",
+      "p": "Each sync request carries everything the server needs: the device’s cursor and a batch of operations with op_ids. No session lives on any server, so any instance can answer any request, and you add capacity by adding instances."
+     },
+     {
+      "h": "The change log",
+      "p": "Every write produces a change-log entry with a sequence number per partition, usually per tenant or user. A pull is a cheap range read on that log, and partitioning keeps each read small as the log grows."
+     },
+     {
+      "h": "Change data capture",
+      "p": "A transactional outbox table on the server, or Debezium reading the Postgres write-ahead log, turns writes into an ordered stream in Kafka. Search indexing, thumbnails, snapshots and push notifications consume it outside the request path."
+     },
+     {
+      "h": "Bytes never touch it",
+      "p": "Because uploads go straight to object storage through presigned URLs, terabytes of media never pass through your API servers. They handle small JSON and stay cheap to run."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "The sync API is stateless: every request carries its cursor and op_ids, so any instance serves any device. Writes land in a partitioned change log, CDC streams them to Kafka for indexing and notifications, and file bytes go straight to object storage. Scaling means adding pods.",
+      "say": true
+     }
+    ],
+    "cta": {
+     "label": "Open in the post",
+     "post": "background-sync",
+     "section": "s-scale"
+    }
+   },
+   {
+    "id": "b-herd",
+    "title": "Surviving your own users",
+    "template": "read",
+    "tags": [
+     "reliability"
+    ],
+    "pages": [
+     {
+      "h": "The thundering herd",
+      "p": "After an outage, every device holds a backlog and retries at the same moment, so your own clients become the biggest threat to recovery. Sending one push to every user at once causes the same spike."
+     },
+     {
+      "h": "On the client",
+      "p": "Full jitter spreads retries randomly across the backoff window. Coalescing triggers means one device runs one sync, not five. A remote-config kill switch lets you pause sync entirely without shipping a release."
+     },
+     {
+      "h": "On the server",
+      "p": "Rate-limit per device and per tenant, and return 429 with Retry-After to set the pace. Spread push fan-out over several minutes, and use collapse keys so a device receives one changes-available message, not fifty."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "To prevent retry storms, clients use full-jitter backoff and coalesced triggers, the server rate-limits and returns 429 with Retry-After, and push fan-out is staggered with collapse keys. A remote kill switch lets us pause sync without shipping a release.",
+      "say": true
+     }
+    ]
+   },
+   {
+    "id": "b-capacity",
+    "title": "Capacity maths for the whiteboard",
+    "template": "read",
+    "tags": [
+     "capacity"
+    ],
+    "pages": [
+     {
+      "h": "Requests",
+      "p": "One million daily users syncing ten times a day is ten million requests, about **115 per second** on average. Peaks run five to ten times higher, so plan for around a thousand per second, plus room for retry storms."
+     },
+     {
+      "h": "Bytes",
+      "p": "If each user uploads 20 MB a day, that is **20 TB a day** of ingress, all of it straight to object storage. The interesting costs become storage tiers, CDN egress and deduplication by hash."
+     },
+     {
+      "h": "The log",
+      "p": "Fifty changes per user per day at about 1 KB each is **50 GB a day** of change log. With 90 days of tombstone retention, you need partitioning and archiving from the start.",
+      "ex": "Say the arithmetic out loud. It is what panels remember."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "A million daily users syncing ten times a day is about 115 requests per second, with peaks near a thousand. At 20 MB of uploads each, that is 20 TB a day, all direct to object storage. A change log near 50 GB a day needs partitioning from the first day.",
+      "say": true
+     }
+    ]
+   },
+   {
+    "id": "b-stages",
+    "title": "Scaling in stages, with gates",
+    "template": "read",
+    "tags": [
+     "backend"
+    ],
+    "pages": [
+     {
+      "h": "Start boring",
+      "p": "Under ten thousand users, one Postgres, one sync API, presigned uploads and last-write-wins are enough. Complexity added early only slows you down."
+     },
+     {
+      "h": "Growth",
+      "p": "When reads saturate the primary, add read replicas, plus Redis for idempotency keys and rate limits. Replace frequent polling with push hints, and put downloads behind a CDN."
+     },
+     {
+      "h": "Scale",
+      "p": "When first sync gets slow and the change log grows large, partition the log by tenant, stream changes through CDC and serve snapshots from a CDN to new devices."
+     },
+     {
+      "h": "Large",
+      "p": "When one tenant or one region can hurt everyone, shard the database and split traffic into regional cells, with data residency where the law requires it. Every stage is justified by a signal you can measure."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "I scale in stages triggered by measured signals: replicas and Redis when reads saturate the primary, a partitioned log, CDC and snapshots when first sync slows, and regional cells when one tenant or region can hurt everyone. Nothing is built before its gate.",
+      "say": true
+     }
+    ],
+    "cta": {
+     "label": "Open in the post",
+     "post": "background-sync",
+     "section": "s-scale"
+    }
+   }
+  ]
+ },
+ {
+  "id": "c-rel",
+  "group": "learn",
+  "title": "Security, metrics and testing",
+  "blurb": "Keeping offline data safe and proving sync works.",
+  "theme": {
+   "bg": "#1f0e0c",
+   "fg": "#fff1ee",
+   "accent": "#ff8566",
+   "muted": "#c79d94"
+  },
+  "reels": [
+   {
+    "id": "x-security",
+    "title": "Security for offline data",
+    "template": "read",
+    "tags": [
+     "security"
+    ],
+    "pages": [
+     {
+      "h": "Tokens in the background",
+      "p": "Background jobs must authenticate without the user. Keep short-lived access tokens and a refresh token in Keystore or Keychain, readable after first unlock. If refresh fails, pause sync and ask the user to sign in when they next open the app."
+     },
+     {
+      "h": "Data at rest",
+      "p": "Encrypt the local database for regulated data, wipe it on logout and keep files inside the app sandbox. Presigned URLs should expire within minutes and allow exactly one object and one method."
+     },
+     {
+      "h": "Trust nothing from clients",
+      "p": "The server re-checks authorisation on every pull, validates every payload, verifies file hashes on completion and scans uploads. Deletion requests reach every device through tombstones."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "Background auth uses short-lived tokens with a refresh token in Keystore or Keychain, readable after first unlock. Regulated data is encrypted at rest and wiped on logout. Presigned URLs expire in minutes, and the server re-checks authorisation and verifies hashes on every request.",
+      "say": true
+     }
+    ]
+   },
+   {
+    "id": "x-observe",
+    "title": "Knowing your sync is healthy",
+    "template": "read",
+    "tags": [
+     "observability"
+    ],
+    "pages": [
+     {
+      "h": "It fails quietly",
+      "p": "A broken sync system rarely crashes. Data simply stops arriving, and users notice days later. You need numbers that move before users complain."
+     },
+     {
+      "h": "The metrics",
+      "p": "Track **freshness**, the time since each device last synced, at p50 and p95. Track outbox depth, upload completion rate, conflict rate and background-task expirations, split by app version, platform and manufacturer."
+     },
+     {
+      "h": "Acting on them",
+      "p": "Alert when a release moves those numbers, gate staged rollouts on sync success, trace requests from device to database with OpenTelemetry, and keep a remote kill switch for every sync path."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "Our sync SLOs are p95 freshness and zero acknowledged writes lost. Dashboards show outbox depth, upload completion, conflict rate and background-task expirations by app version and manufacturer, and staged rollouts are gated on sync success.",
+      "say": true
+     }
+    ]
+   },
+   {
+    "id": "x-test",
+    "title": "Testing a system built to be killed",
+    "template": "read",
+    "tags": [
+     "testing"
+    ],
+    "pages": [
+     {
+      "h": "Make the engine pure",
+      "p": "Write the sync engine as a function of database state and server responses. Every conflict, error and retry branch can then be tested deterministically, without a device."
+     },
+     {
+      "h": "Break it on purpose",
+      "p": "On real phones, kill the app mid-upload, toggle airplane mode, switch between Wi-Fi and mobile data, reboot, fill the disk, change the clock and revoke the token. Every case should end with no lost data and no duplicates."
+     },
+     {
+      "h": "Test the OS and the scale",
+      "p": "Force Doze and standby buckets with adb, simulate background launches in Xcode, test on aggressive OEM phones, and seed a million rows on a low-end device to measure first sync and scrolling."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "The sync engine is a pure function of database state and server responses, so every branch has deterministic tests. On devices we run kill, airplane-mode, reboot, low-disk and clock-skew drills, force Doze, and seed a million rows on a low-end phone.",
+      "say": true
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-interview",
+  "group": "learn",
+  "title": "The principal interview",
+  "blurb": "How to talk about decisions, trade-offs and failures.",
+  "theme": {
+   "bg": "#1b0f1a",
+   "fg": "#fbeff7",
+   "accent": "#ff7eb6",
+   "muted": "#c39bb3"
+  },
+  "reels": [
+   {
+    "id": "i-decide",
+    "title": "How principals talk about decisions",
+    "template": "read",
+    "tags": [
+     "interview"
+    ],
+    "pages": [
+     {
+      "h": "Context first",
+      "p": "Before naming a technology, state the context: data per user, how long users stay offline, whether data is shared, the team’s skills and the deadline. The right answer depends on these, and saying so is itself the signal."
+     },
+     {
+      "h": "Options and criteria",
+      "p": "Name at least two real options and the criteria you weighed: reliability, time to market, cost, team fit and how reversible the choice is. Interviewers want to see the comparison, not just the winner."
+     },
+     {
+      "h": "Decision and cost",
+      "p": "Say what you chose and what you accepted as its cost, such as a concurrent settings change occasionally being overwritten. Then say which signal would make you revisit it, and that you recorded it as an architecture decision record."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "I frame each decision with the context, at least two options, explicit criteria and the cost I accepted, then name the signal that would make me revisit it. Every one is written as an architecture decision record, so the reasoning outlives the meeting.",
+      "say": true
+     }
+    ],
+    "cta": {
+     "label": "Open in the post",
+     "post": "background-sync",
+     "section": "s-kit"
+    }
+   },
+   {
+    "id": "i-native-rn",
+    "title": "Native, React Native or a shared core?",
+    "template": "read",
+    "tags": [
+     "interview"
+    ],
+    "pages": [
+     {
+      "h": "The real question",
+      "p": "Background sync is native work in every option, so the choice is really about the UI layer and how much logic you want to share. Framed that way, the trade-offs become clear."
+     },
+     {
+      "h": "When each wins",
+      "p": "Native Kotlin and Swift suit media-heavy, regulated or platform-heavy apps. React Native suits content and form-driven apps built by a strong JavaScript team that needs speed. A Kotlin Multiplatform or Rust core with native UI suits large organisations with complex sync on both platforms."
+     },
+     {
+      "h": "Build or buy sync",
+      "p": "PowerSync and ElectricSQL give Postgres-to-SQLite sync quickly. Firestore is fast to start but harder at scale. Build your own when sync is core to the product or compliance demands it; for a small product, buy."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "Background sync is native in every option, so the real choice is the UI layer. I pick native for media-heavy or regulated apps, React Native for form-driven apps with a strong JavaScript team, and a shared Kotlin Multiplatform core for complex sync on both platforms.",
+      "say": true
+     }
+    ]
+   },
+   {
+    "id": "i-story",
+    "title": "Telling an incident story",
+    "template": "read",
+    "tags": [
+     "interview"
+    ],
+    "pages": [
+     {
+      "h": "Pick a real failure",
+      "p": "Panels trust a story about something that broke more than a list of things that worked. Choose an incident you were close to: a retry storm, a failed migration or a gap in synced data."
+     },
+     {
+      "h": "Four beats",
+      "p": "What users saw. What you found. What you changed, in code and in process. What the numbers looked like afterwards. Keep blame out of it and keep yourself in it."
+     },
+     {
+      "h": "An example",
+      "p": "After an outage, every device retried at once and the API hit several times its normal load. We added full-jitter backoff, 429 with Retry-After, staggered push fan-out and a remote kill switch. The next outage recovered without a spike.",
+      "ex": "No incident of your own? Describe a failure test you ran instead. Never invent one."
+     },
+     {
+      "h": "Say it in the interview",
+      "p": "When we had a retry storm, I said what users saw, how we traced it to synchronised retries, the four changes we made, and that the next outage recovered without a spike. Four beats, numbers at the end, no blame, and my own role clear.",
+      "say": true
+     }
+    ],
+    "cta": {
+     "label": "Open in the post",
+     "post": "background-sync",
+     "section": "s-kit"
+    }
+   }
+  ]
+ },
+ {
+  "id": "sync60",
+  "title": "Background sync in 60 seconds",
+  "blurb": "Part 1 of the series, cut into seven reels.",
+  "theme": {
+   "bg": "#0d1a28",
+   "fg": "#f2f5f9",
+   "accent": "#ff6a35",
+   "muted": "#9fb0c3"
+  },
+  "reels": [
+   {
+    "id": "sync-rule",
+    "title": "The one rule",
+    "template": "hook",
+    "kicker": "Rule #1",
+    "lines": [
+     "Your app",
+     "will be killed.",
+     "Design for it."
+    ],
+    "accent": "killed.",
+    "captions": [
+     "Android and iOS stop apps that are off screen.",
+     "Memory pressure. Battery savers. A user swipe.",
+     "So everything that matters lives on disk."
+    ],
+    "tags": [
+     "lifecycle"
+    ],
+    "cta": {
+     "label": "Read the rule",
+     "post": "background-sync",
+     "section": "s-rule"
+    }
+   },
+   {
+    "id": "sync-survives",
+    "title": "What survives a kill",
+    "template": "compare",
+    "left": {
+     "label": "Gone",
+     "items": [
+      "Variables in RAM",
+      "In-flight requests",
+      "Timers and loops",
+      "The JS runtime"
+     ]
+    },
+    "right": {
+     "label": "Still on disk",
+     "items": [
+      "SQLite rows",
+      "The outbox",
+      "The sync cursor",
+      "Saved upload parts"
+     ]
+    },
+    "verdict": "If it isn't on disk, it doesn't exist.",
+    "captions": [
+     "A kill wipes memory instantly.",
+     "Disk survives. Build on that.",
+     "Say this line in the interview."
+    ],
+    "tags": [
+     "lifecycle",
+     "persistence"
+    ],
+    "cta": {
+     "label": "Read more",
+     "post": "background-sync",
+     "section": "s-rule"
+    }
+   },
+   {
+    "id": "sync-flow",
+    "title": "One edit, end to end",
+    "template": "flow",
+    "heading": "One edit, end to end",
+    "nodes": [
+     {
+      "t": "Tap",
+      "s": "user edits a note"
+     },
+     {
+      "t": "SQLite + outbox",
+      "s": "one transaction · UI updates now"
+     },
+     {
+      "t": "OS wakes the job",
+      "s": "WorkManager · BGTask"
+     },
+     {
+      "t": "Push op_id",
+      "s": "server dedupes, assigns seq"
+     },
+     {
+      "t": "Pull by cursor",
+      "s": "changes after 1041"
+     },
+     {
+      "t": "Commit",
+      "s": "data + cursor, one transaction"
+     }
+    ],
+    "captions": [
+     "The user never waits for the network.",
+     "Row and outbox entry land together, or not at all.",
+     "The OS decides when. You declare constraints.",
+     "Retries are safe. Duplicates are ignored.",
+     "Ask for everything after the last number you saw.",
+     "If you crash here, the next run repeats safely."
+    ],
+    "tags": [
+     "protocol"
+    ],
+    "cta": {
+     "label": "See the contract",
+     "post": "background-sync",
+     "section": "s-protocol"
+    }
+   },
+   {
+    "id": "sync-restaurant",
+    "title": "Explain it like a restaurant",
+    "template": "analogy",
+    "heading": "Sync is a busy restaurant",
+    "pairs": [
+     [
+      "The order is written on a pad first",
+      "outbox row"
+     ],
+     [
+      "Every ticket has a number",
+      "op_id"
+     ],
+     [
+      "The kitchen numbers each dish it sends",
+      "server sequence"
+     ],
+     [
+      "\"What happened since 1041?\"",
+      "pull by cursor"
+     ]
+    ],
+    "captions": [
+     "Nothing is lost if the waiter is interrupted.",
+     "The kitchen ignores a ticket it already cooked.",
+     "One total order, decided by the server.",
+     "Coming back from a break costs one question."
+    ],
+    "tags": [
+     "interview",
+     "analogy"
+    ],
+    "cta": {
+     "label": "Full analogy",
+     "post": "background-sync",
+     "section": "s-analogy"
+    }
+   },
+   {
+    "id": "sync-contract",
+    "title": "The push contract",
+    "template": "code",
+    "lines": [
+     "POST /v1/sync/push",
+     "{ \"ops\": [{",
+     "  \"op_id\": \"018f3c7a\",",
+     "  \"base_version\": 12,",
+     "  \"fields\": { \"title\": \"Pump B\" }",
+     "}] }",
+     "→ { \"status\": \"applied\",",
+     "    \"seq\": 1042 }"
+    ],
+    "beats": [
+     {
+      "hl": [
+       0
+      ],
+      "note": "Push sends outbox ops in order."
+     },
+     {
+      "hl": [
+       2
+      ],
+      "note": "op_id makes retries safe. The server ignores duplicates."
+     },
+     {
+      "hl": [
+       3
+      ],
+      "note": "base_version lets the server spot a conflicting edit."
+     },
+     {
+      "hl": [
+       6,
+       7
+      ],
+      "note": "The server gives every write a sequence number."
+     }
+    ],
+    "tags": [
+     "protocol",
+     "api"
+    ],
+    "cta": {
+     "label": "Read the protocol",
+     "post": "background-sync",
+     "section": "s-protocol"
+    }
+   },
+   {
+    "id": "sync-upload",
+    "title": "Kill it at 58%",
+    "template": "upload",
+    "parts": 12,
+    "killAt": 7,
+    "file": "pump-room.mov · 96 MB · 12 × 8 MB parts",
+    "captions": [
+     "Parts upload one by one. Each ETag is saved.",
+     "SIGKILL. Memory gone. 7 parts already on disk.",
+     "The OS wakes the job. Only parts 8 to 12 go.",
+     "Done. Lost: one 8 MB part, not 56 MB."
+    ],
+    "tags": [
+     "files"
+    ],
+    "cta": {
+     "label": "Try the calculator",
+     "post": "background-sync",
+     "section": "s-files"
+    }
+   },
+   {
+    "id": "sync-quiz-cursor",
+    "title": "Quick check",
+    "template": "quiz",
+    "q": "Can you sync using updated_at?",
+    "options": [
+     "Yes, it is simpler",
+     "No, clocks drift"
+    ],
+    "answer": 1,
+    "why": "Device clocks drift and same-millisecond writes get skipped. Use a server sequence.",
+    "tags": [
+     "quiz"
+    ],
+    "cta": {
+     "label": "Why sequences win",
+     "post": "background-sync",
+     "section": "s-protocol"
+    }
+   }
+  ],
+  "group": "quick"
+ },
+ {
+  "id": "platform",
+  "title": "Android vs iOS vs React Native",
+  "blurb": "Which tool to reach for, on each platform.",
+  "theme": {
+   "bg": "#0b211c",
+   "fg": "#eefaf5",
+   "accent": "#4fe0a8",
+   "muted": "#93b8ab"
+  },
+  "reels": [
+   {
+    "id": "and-tools",
+    "title": "Android: pick the tool",
+    "template": "steps",
+    "heading": "Android: pick the tool",
+    "items": [
+     {
+      "h": "Sync soon",
+      "p": "WorkManager, expedited, unique name"
+     },
+     {
+      "h": "Periodic",
+      "p": "PeriodicWorkRequest, 15 min minimum"
+     },
+     {
+      "h": "Huge user upload",
+      "p": "User-initiated data transfer job, API 34+"
+     },
+     {
+      "h": "Server changed",
+      "p": "FCM data message, then enqueue work"
+     }
+    ],
+    "captions": [
+     "Right after a user edit.",
+     "Nobody is waiting. Add a network constraint.",
+     "Shows a notification. Not bound by normal quotas.",
+     "Never do the network call inside the FCM callback."
+    ],
+    "tags": [
+     "android"
+    ],
+    "cta": {
+     "label": "Android playbook",
+     "post": "background-sync",
+     "section": "s-platforms"
+    }
+   },
+   {
+    "id": "ios-tools",
+    "title": "iOS: pick the tool",
+    "template": "steps",
+    "heading": "iOS: pick the tool",
+    "items": [
+     {
+      "h": "Finish now",
+      "p": "beginBackgroundTask, a few seconds"
+     },
+     {
+      "h": "Catch up",
+      "p": "BGAppRefreshTask, about 30 s"
+     },
+     {
+      "h": "Huge files",
+      "p": "Background URLSession, one task per part"
+     },
+     {
+      "h": "Long user task",
+      "p": "BGContinuedProcessingTask, iOS 26+"
+     }
+    ],
+    "captions": [
+     "Wrap up the write the user just made.",
+     "The OS learns when your user opens the app.",
+     "A system daemon uploads while you are suspended.",
+     "System progress UI. The user can cancel."
+    ],
+    "tags": [
+     "ios"
+    ],
+    "cta": {
+     "label": "iOS playbook",
+     "post": "background-sync",
+     "section": "s-platforms"
+    }
+   },
+   {
+    "id": "rn-split",
+    "title": "React Native: who does what",
+    "template": "compare",
+    "left": {
+     "label": "JavaScript",
+     "items": [
+      "Screens and navigation",
+      "UI state",
+      "Observe SQLite"
+     ]
+    },
+    "right": {
+     "label": "Native",
+     "items": [
+      "WorkManager · BGTask",
+      "File transfers",
+      "The sync engine"
+     ]
+    },
+    "verdict": "Never move file bytes through JS.",
+    "captions": [
+     "JS may be gone when the OS wakes you.",
+     "Native code is what the OS can run.",
+     "Pass a file URI. Let native upload it."
+    ],
+    "tags": [
+     "react-native"
+    ],
+    "cta": {
+     "label": "RN section",
+     "post": "background-sync",
+     "section": "s-platforms"
+    }
+   },
+   {
+    "id": "myth-fgs",
+    "title": "Myth check",
+    "template": "compare",
+    "left": {
+     "label": "Myth",
+     "items": [
+      "A foreground service keeps sync alive forever"
+     ]
+    },
+    "right": {
+     "label": "Reality",
+     "items": [
+      "Android 14+ needs a declared service type",
+      "Android 15 caps dataSync at about 6 h a day",
+      "Use WorkManager or UIDT jobs"
+     ]
+    },
+    "captions": [
+     "Common answer. Wrong for modern Android.",
+     "Know the version numbers. Panels check."
+    ],
+    "tags": [
+     "android",
+     "myth"
+    ],
+    "cta": {
+     "label": "More myths",
+     "post": "background-sync",
+     "section": "s-myths"
+    }
+   },
+   {
+    "id": "ios-swipe-quiz",
+    "title": "iOS check",
+    "template": "quiz",
+    "q": "The user swipe-kills mid-upload. Background URLSession…",
+    "options": [
+     "keeps uploading",
+     "is cancelled until next launch"
+    ],
+    "answer": 1,
+    "why": "System termination is survivable. A user force-quit is not. Resume from saved parts on launch.",
+    "tags": [
+     "ios",
+     "quiz"
+    ]
+   }
+  ],
+  "group": "quick"
+ },
+ {
+  "id": "scale",
+  "title": "Scale and the numbers",
+  "blurb": "Back-of-envelope maths that wins system design rounds.",
+  "theme": {
+   "bg": "#1d1407",
+   "fg": "#fbf4e6",
+   "accent": "#ffc23d",
+   "muted": "#c2ab84"
+  },
+  "reels": [
+   {
+    "id": "scale-400tb",
+    "title": "Field app, real numbers",
+    "template": "stat",
+    "value": 400,
+    "unit": "TB of uploads a week",
+    "caption": "200k technicians × 2 GB of photos each",
+    "sub": "So bytes go straight to S3. Never through your API.",
+    "captions": [
+     "Do the multiplication out loud.",
+     "That number decides the architecture."
+    ],
+    "tags": [
+     "capacity"
+    ],
+    "cta": {
+     "label": "Scaling section",
+     "post": "background-sync",
+     "section": "s-scale"
+    }
+   },
+   {
+    "id": "scale-115",
+    "title": "Requests per second",
+    "template": "stat",
+    "value": 115,
+    "unit": "requests / second",
+    "caption": "1M daily users × 10 syncs a day ÷ 86,400 s",
+    "sub": "Plan for 5 to 10 times that at peak.",
+    "captions": [
+     "Average load is smaller than people guess.",
+     "Peaks and retry storms are the real risk."
+    ],
+    "tags": [
+     "capacity"
+    ]
+   },
+   {
+    "id": "scale-stages",
+    "title": "Scale in 4 stages",
+    "template": "steps",
+    "heading": "Scale in 4 stages",
+    "items": [
+     {
+      "h": "MVP",
+      "p": "one Postgres, monolith sync API"
+     },
+     {
+      "h": "Growth",
+      "p": "replicas, Redis, push hints, CDN"
+     },
+     {
+      "h": "Scale",
+      "p": "partitioned log, CDC, snapshots"
+     },
+     {
+      "h": "Large",
+      "p": "shards, regional cells"
+     }
+    ],
+    "captions": [
+     "Under 10k users. Keep it boring.",
+     "Gate: reads saturate the primary.",
+     "Gate: first sync is too slow.",
+     "Gate: one region hurts everyone."
+    ],
+    "tags": [
+     "backend"
+    ],
+    "cta": {
+     "label": "Roadmap",
+     "post": "background-sync",
+     "section": "s-scale"
+    }
+   },
+   {
+    "id": "scale-herd",
+    "title": "The retry storm",
+    "template": "flow",
+    "heading": "Stop the thundering herd",
+    "nodes": [
+     {
+      "t": "Outage ends",
+      "s": "1M devices retry at once"
+     },
+     {
+      "t": "Full jitter",
+      "s": "random wait, 0 to backoff"
+     },
+     {
+      "t": "429 + Retry-After",
+      "s": "server sets the pace"
+     },
+     {
+      "t": "Staggered pushes",
+      "s": "fan-out over minutes"
+     }
+    ],
+    "captions": [
+     "Your own clients become the attack.",
+     "Spread retries out on the client.",
+     "Let the server push back.",
+     "Never wake every device in the same second."
+    ],
+    "tags": [
+     "reliability"
+    ]
+   }
+  ],
+  "group": "quick"
+ },
+ {
+  "id": "interview",
+  "title": "Interview drills",
+  "blurb": "Pitches, checks and the whiteboard routine.",
+  "theme": {
+   "bg": "#1b0f1a",
+   "fg": "#fbeff7",
+   "accent": "#ff7eb6",
+   "muted": "#c39bb3"
+  },
+  "reels": [
+   {
+    "id": "int-pitch",
+    "title": "Your 30-second pitch",
+    "template": "hook",
+    "size": "m",
+    "kicker": "Say it like this",
+    "lines": [
+     "I design for the app being killed.",
+     "The UI reads local SQLite. Every write lands in an outbox.",
+     "Sync pushes op_ids and pulls by a server cursor.",
+     "Files go as checkpointed multipart uploads to S3.",
+     "The OS runs it: WorkManager, BGTask, URLSession."
+    ],
+    "captions": [
+     "Lead with the constraint.",
+     "Then the source of truth.",
+     "Then the protocol.",
+     "Then the bytes.",
+     "Then the platforms."
+    ],
+    "tags": [
+     "pitch"
+    ],
+    "cta": {
+     "label": "All pitches",
+     "post": "background-sync",
+     "section": "s-kit"
+    }
+   },
+   {
+    "id": "int-retry",
+    "title": "Retry check",
+    "template": "quiz",
+    "q": "What makes retrying a push safe?",
+    "options": [
+     "A longer timeout",
+     "A client op_id the server dedupes"
+    ],
+    "answer": 1,
+    "why": "The first request may have succeeded before the network dropped. The server returns the original result.",
+    "tags": [
+     "quiz"
+    ]
+   },
+   {
+    "id": "int-whiteboard",
+    "title": "Whiteboard in 5 strokes",
+    "template": "steps",
+    "heading": "Whiteboard in 5 strokes",
+    "items": [
+     {
+      "h": "Phone",
+      "p": "UI, a big local DB, the outbox"
+     },
+     {
+      "h": "OS",
+      "p": "scheduler wakes sync and transfers"
+     },
+     {
+      "h": "Backend",
+      "p": "gateway, stateless API, change log"
+     },
+     {
+      "h": "S3",
+      "p": "an arrow from the phone that skips the API"
+     },
+     {
+      "h": "Kill it",
+      "p": "walk one edit, kill halfway, resume"
+     }
+    ],
+    "tags": [
+     "whiteboard"
+    ],
+    "cta": {
+     "label": "Interview kit",
+     "post": "background-sync",
+     "section": "s-kit"
+    }
+   },
+   {
+    "id": "int-followup",
+    "title": "The follow-up they always ask",
+    "template": "compare",
+    "left": {
+     "label": "They ask",
+     "items": [
+      "\"A user is offline for three weeks. Then what?\""
+     ]
+    },
+    "right": {
+     "label": "You answer",
+     "items": [
+      "Deletes are tombstones with a 90-day TTL",
+      "Older cursor? Server returns 410",
+      "App rebuilds from a CDN snapshot, then pulls deltas"
+     ]
+    },
+    "captions": [
+     "This separates seniors from principals.",
+     "Name the TTL, the status code and the recovery path."
+    ],
+    "tags": [
+     "interview"
+    ]
+   }
+  ],
+  "group": "quick"
+ }
+]

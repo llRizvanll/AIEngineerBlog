@@ -1,0 +1,5300 @@
+[
+ {
+  "id": "frontend-arch",
+  "group": "mobile",
+  "title": "Front-end architecture for offline, real-time and AI apps",
+  "kicker": "Client · front-end design",
+  "labels": {
+   "does": "What the front end owns",
+   "doesnt": "What it must not do",
+   "scenario": "One screen, end to end",
+   "arch": "Client architecture",
+   "states": "Patterns and terms",
+   "seq": "A user action through the layers",
+   "platforms": "Per-platform toolkit",
+   "tech": "Choices and when to pick them",
+   "metrics": "Front-end metrics",
+   "edges": "Hard cases",
+   "interview": "Front-end interview questions"
+  },
+  "summary": "In data-heavy mobile and web apps, the front end is not a thin skin. It owns the source of truth the user sees, the state machine of every screen, perceived performance, offline behaviour, real-time updates, streaming AI output and accessibility. Principal-level answers describe these layers as precisely as the backend.",
+  "does": [
+   "Render immutable UI state derived from a local source of truth",
+   "Model each screen as a small state machine with explicit loading, empty, error, offline and pending states",
+   "Own perceived performance: startup, scrolling, image and video memory",
+   "Handle offline, retries and conflicts visibly and honestly",
+   "Integrate real-time sockets and streaming AI responses smoothly",
+   "Meet accessibility and localisation requirements by default"
+  ],
+  "doesnt": [
+   "Call the network from views or composables",
+   "Keep business rules in UI code",
+   "Block the main thread with parsing, hashing or database work",
+   "Hide failures behind infinite spinners",
+   "Encode meaning with colour alone"
+  ],
+  "scenario": [
+   "Take the job detail screen in the inspection app. When it opens, the ViewModel subscribes to a database query for the job, its answers and its media. The first frame renders from SQLite in about 50 ms, before any network activity.",
+   "The technician changes an answer. The ViewModel sends an intent to the repository, which writes the answer and an outbox row in one transaction. The query emits again, the reducer produces a new immutable state with that field marked pending, and Compose recomposes only that row.",
+   "In the background, the sync engine pushes the change and the server returns the supervisor’s edit to the instructions. The same query emits again; the instructions update in place and a small ‘Updated by Priya’ label fades in. No screen code knows the network exists.",
+   "If the push returns a conflict, the row’s state becomes conflict, the reducer maps it to an amber badge, and tapping it navigates to the resolver. Every one of these states was designed, named and screenshot-tested before the feature shipped."
+  ],
+  "arch": {
+   "cols": 4,
+   "rows": 3,
+   "groups": [
+    [
+     "UI",
+     0,
+     0,
+     0,
+     2
+    ],
+    [
+     "Presentation",
+     1,
+     1,
+     0,
+     2
+    ],
+    [
+     "Data",
+     2,
+     3,
+     0,
+     2
+    ]
+   ],
+   "nodes": [
+    [
+     "view",
+     "Screens",
+     "Compose · SwiftUI · React",
+     0,
+     0,
+     "c"
+    ],
+    [
+     "ds",
+     "Design system",
+     "tokens · components",
+     0,
+     1,
+     "d"
+    ],
+    [
+     "nav",
+     "Navigation",
+     "typed routes · deep links",
+     0,
+     2,
+     "s"
+    ],
+    [
+     "vm",
+     "ViewModel / store",
+     "intents → reducer",
+     1,
+     0,
+     "s"
+    ],
+    [
+     "state",
+     "UI state",
+     "immutable · per screen",
+     1,
+     1,
+     "d"
+    ],
+    [
+     "effects",
+     "Effects",
+     "navigation · toasts",
+     1,
+     2,
+     "s"
+    ],
+    [
+     "repo",
+     "Repositories",
+     "read · write + outbox",
+     2,
+     0,
+     "s"
+    ],
+    [
+     "db",
+     "Local DB",
+     "Room · GRDB · SQLite",
+     2,
+     1,
+     "d"
+    ],
+    [
+     "rt",
+     "Real-time",
+     "WebSocket · SSE",
+     2,
+     2,
+     "s"
+    ],
+    [
+     "sync",
+     "Sync engine",
+     "background",
+     3,
+     0,
+     "s"
+    ],
+    [
+     "files",
+     "Transfer manager",
+     "media",
+     3,
+     1,
+     "s"
+    ],
+    [
+     "ai",
+     "AI client",
+     "stream · tools",
+     3,
+     2,
+     "a"
+    ]
+   ],
+   "edges": [
+    [
+     "view",
+     "vm",
+     "intents"
+    ],
+    [
+     "vm",
+     "state",
+     "reduce"
+    ],
+    [
+     "state",
+     "ds",
+     ""
+    ],
+    [
+     "vm",
+     "repo",
+     ""
+    ],
+    [
+     "repo",
+     "db",
+     "1 txn"
+    ],
+    [
+     "db",
+     "state",
+     "observe"
+    ],
+    [
+     "vm",
+     "effects",
+     ""
+    ],
+    [
+     "effects",
+     "nav",
+     ""
+    ],
+    [
+     "repo",
+     "sync",
+     ""
+    ],
+    [
+     "db",
+     "files",
+     ""
+    ],
+    [
+     "rt",
+     "ai",
+     ""
+    ],
+    [
+     "rt",
+     "db",
+     "apply"
+    ]
+   ]
+  },
+  "archNotes": [
+   [
+    "Unidirectional data flow",
+    "Views send intents; a ViewModel or store reduces intents and data changes into one immutable state object; views render it. This is MVI on Android, the same shape with @Observable models or TCA on iOS, and a Zustand or Redux store in React."
+   ],
+   [
+    "Observe, don’t fetch",
+    "Screens subscribe to database queries. Network results are written to the database, which updates the screen. That gives offline support, instant reopening and one source of truth."
+   ],
+   [
+    "Effects",
+    "One-off events such as navigation, toasts and haptics are separate from state, so rotating the device or recomposing does not repeat them."
+   ],
+   [
+    "Real-time and streaming",
+    "Sockets and server-sent events are data sources like any other: they write to the database (chat) or to a stream buffer (AI tokens) that the reducer consumes."
+   ],
+   [
+    "Design system",
+    "Tokens and components with accessibility built in. Screens compose components; they don’t restyle them."
+   ]
+  ],
+  "states": [
+   [
+    "Loading / empty / content / error",
+    "The four base states every list screen must design."
+   ],
+   [
+    "Pending / synced / conflict / failed",
+    "Per-row sync states for offline-first data."
+   ],
+   [
+    "Optimistic update",
+    "Show the change immediately and reconcile when the server answers."
+   ],
+   [
+    "Skeleton",
+    "Placeholder shapes that match final layout, used only on first load."
+   ],
+   [
+    "Stale-while-revalidate",
+    "Show cached data, refresh in the background, update in place."
+   ],
+   [
+    "Idempotent intents",
+    "A double tap produces the same result as a single tap."
+   ]
+  ],
+  "seq": {
+   "actors": [
+    "User",
+    "View",
+    "ViewModel",
+    "Repository",
+    "Local DB"
+   ],
+   "msgs": [
+    [
+     0,
+     1,
+     "tap ‘Valve 3: leaking’"
+    ],
+    [
+     1,
+     2,
+     "Intent.SetAnswer"
+    ],
+    [
+     2,
+     3,
+     "setAnswer()"
+    ],
+    [
+     3,
+     4,
+     "row + outbox (1 txn)"
+    ],
+    [
+     4,
+     2,
+     "query emits",
+     "d"
+    ],
+    [
+     2,
+     2,
+     "reduce → new UiState"
+    ],
+    [
+     2,
+     1,
+     "state (field pending)",
+     "d"
+    ],
+    [
+     1,
+     0,
+     "updated in < 16 ms",
+     "d"
+    ],
+    [
+     "note",
+     "Later: sync writes server changes to the DB"
+    ],
+    [
+     4,
+     2,
+     "query emits again",
+     "d"
+    ],
+    [
+     2,
+     1,
+     "state (synced)",
+     "d"
+    ]
+   ]
+  },
+  "seqNotes": [
+   "The view never waits for the network; the user sees their change in the same frame.",
+   "The same observation path delivers local edits, sync results and real-time updates, so there is one code path to test."
+  ],
+  "code": [
+   [
+    "MVI ViewModel with a reducer (Kotlin, Compose)",
+    "kotlin",
+    "data class JobUi(val title: String = \"\", val fields: List<FieldUi> = emptyList(),\n                 val banner: Banner? = null, val loading: Boolean = true)\n\nsealed interface JobIntent { data class SetAnswer(val fieldId: String, val value: String) : JobIntent; data object Retry : JobIntent }\n\nclass JobViewModel(private val jobId: String, private val repo: JobRepo, net: NetworkMonitor) : ViewModel() {\n  val ui: StateFlow<JobUi> = combine(repo.observeJob(jobId), repo.observeFields(jobId), net.online, repo.pendingCount()) { job, fields, online, pending ->\n    JobUi(\n      title = job.title,\n      fields = fields.map { it.toUi() },                                  // each carries its sync badge\n      banner = when { !online && pending > 0 -> Banner.Offline(pending); fields.any { it.conflict } -> Banner.NeedsReview; else -> null },\n      loading = false,\n    )\n  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), JobUi())\n\n  fun onIntent(i: JobIntent) = viewModelScope.launch {\n    when (i) {\n      is JobIntent.SetAnswer -> repo.setAnswer(jobId, i.fieldId, i.value)   // row + outbox, returns fast\n      JobIntent.Retry -> repo.retryFailed(jobId)\n    }\n  }\n}"
+   ],
+   [
+    "The same screen in SwiftUI with an @Observable model",
+    "swift",
+    "@Observable @MainActor\nfinal class JobModel {\n  var title = \"\"\n  var fields: [FieldUI] = []\n  var banner: Banner?\n  private var task: Task<Void, Never>?\n\n  func start(jobId: String, db: AppDatabase) {\n    task = Task {\n      for try await snapshot in db.observeJob(jobId) {          // GRDB ValueObservation as AsyncSequence\n        title = snapshot.job.title\n        fields = snapshot.fields.map(FieldUI.init)\n        banner = snapshot.fields.contains { $0.syncState == .conflict } ? .needsReview : nil\n      }\n    }\n  }\n\n  func setAnswer(_ fieldId: String, _ value: String) {\n    Task.detached { try? await Repo.shared.setAnswer(fieldId: fieldId, value: value) }   // off the main actor\n  }\n}"
+   ],
+   [
+    "React web dashboard: cached queries plus live invalidation",
+    "tsx",
+    "function useJobs(region: string) {\n  const qc = useQueryClient();\n  const jobs = useQuery({ queryKey: ['jobs', region], queryFn: () => api.jobs(region), staleTime: 30_000 });\n  useEffect(() => {\n    const ws = new WebSocket(WS_URL + '?region=' + region);\n    ws.onmessage = e => {\n      const change = JSON.parse(e.data);\n      qc.setQueryData(['jobs', region], (old: Job[] | undefined) => upsert(old ?? [], change.job));   // patch in place\n    };\n    return () => ws.close();\n  }, [region, qc]);\n  return jobs;\n}"
+   ]
+  ],
+  "platforms": [
+   [
+    "Android",
+    [
+     "Jetpack Compose, ViewModel + StateFlow, Hilt, Room with Flow, Paging 3.",
+     "Coil for images, Media3 for video, WorkManager for background work.",
+     "Baseline Profiles and Macrobenchmark for startup and scroll; JankStats in production.",
+     "Paparazzi or Roborazzi screenshot tests; Maestro for end-to-end flows."
+    ]
+   ],
+   [
+    "iOS",
+    [
+     "SwiftUI with @Observable models or TCA; UIKit collection views for very heavy lists.",
+     "GRDB ValueObservation or SwiftData @Query for reactive data.",
+     "Nuke or Kingfisher for images; AVFoundation for media.",
+     "Instruments and MetricKit for performance; swift-snapshot-testing and XCUITest."
+    ]
+   ],
+   [
+    "React Native",
+    [
+     "New Architecture (Fabric, Turbo Modules, JSI) with Hermes.",
+     "FlashList for lists, expo-image or FastImage, Reanimated for animations on the UI thread.",
+     "WatermelonDB or op-sqlite for reactive local data; Zustand or Redux Toolkit for UI state.",
+     "Flashlight and the Hermes profiler; Detox or Maestro for flows."
+    ]
+   ],
+   [
+    "Web dashboards",
+    [
+     "React with TypeScript, TanStack Query for server state, WebSockets or SSE for live updates.",
+     "Virtualised tables for large lists; charts with accessible data tables.",
+     "Playwright for end-to-end tests; Storybook with visual regression for components."
+    ]
+   ]
+  ],
+  "tech": [
+   [
+    "State management",
+    "MVI/UDF · TCA · Zustand · Redux Toolkit · TanStack Query",
+    "UDF everywhere; TanStack Query for server state on the web; a store for cross-screen UI state."
+   ],
+   [
+    "Local reactive data",
+    "Room · GRDB · SwiftData · WatermelonDB · op-sqlite",
+    "Whatever gives observable queries on SQLite on your platform."
+   ],
+   [
+    "Lists",
+    "LazyColumn · UICollectionView · FlashList · virtualised tables",
+    "Stable keys, content types, fixed or estimated sizes."
+   ],
+   [
+    "Images and media",
+    "Coil · Nuke · Kingfisher · expo-image · Media3 · AVPlayer",
+    "Request sized images; one active video player."
+   ],
+   [
+    "Testing",
+    "Screenshot tests · Maestro · Detox · XCUITest · Playwright",
+    "Screenshots for every state; a few end-to-end flows for critical paths."
+   ],
+   [
+    "Feature delivery",
+    "Feature flags · server-driven UI · OTA for JS (EAS Update)",
+    "Flags for every risky change; SDUI only for content screens."
+   ]
+  ],
+  "real": [],
+  "metrics": [
+   [
+    "Cold start to first meaningful content (p50, p90 by device class)",
+    "The first impression; set a budget per tier."
+   ],
+   [
+    "Dropped or slow frames during scroll",
+    "Smoothness on real devices, not flagships."
+   ],
+   [
+    "Time from tap to visible change",
+    "Should be one frame for local writes."
+   ],
+   [
+    "Crash-free and ANR-free sessions",
+    "Release gates."
+   ],
+   [
+    "Share of screens shown from cache",
+    "Shows offline-first actually working."
+   ],
+   [
+    "Accessibility issues found in CI",
+    "Keeps the bar from slipping."
+   ]
+  ],
+  "edges": [
+   [
+    "Process death mid-flow",
+    "Persist screen state with SavedStateHandle or SceneStorage; reload from the database on return."
+   ],
+   [
+    "Configuration change repeats a toast or navigation",
+    "Model one-off effects separately from state."
+   ],
+   [
+    "List jumps when data updates",
+    "Stable keys, reserved image sizes, and insert-above only on user request."
+   ],
+   [
+    "Thousands of rows update at once during sync",
+    "Batch database writes per page so observers emit once."
+   ],
+   [
+    "Streaming text causes jank",
+    "Buffer tokens and render in 50 ms batches; re-parse only the last paragraph."
+   ],
+   [
+    "Right-to-left and large fonts break layouts",
+    "Screenshot tests in those variants; avoid fixed heights for text."
+   ]
+  ],
+  "interview": [
+   [
+    "How do you structure a screen in an offline-first app?",
+    "Unidirectional data flow: the view sends intents; the ViewModel writes through a repository and observes database queries; a reducer produces immutable state with explicit loading, empty, error, offline and per-row sync states; effects are separate."
+   ],
+   [
+    "How do you make a list of 10,000 items smooth on a cheap phone?",
+    "Paged reads from the local database, virtualisation with stable keys and content types, flat item layouts, images decoded to display size off the main thread, and production frame metrics."
+   ],
+   [
+    "How do you design for failure in the UI?",
+    "Every async state is named and designed: pending, failed with a reason and retry, conflict with a resolver, offline with a count. No infinite spinners, and nothing claims success before the source of truth confirms it."
+   ],
+   [
+    "What changes in the front end when you add AI?",
+    "Streaming rendering with buffering, visible tool progress, structured action cards for confirmations, cancel and retry, feedback capture tied to prompt versions, and a non-AI fallback path."
+   ]
+  ]
+ },
+ {
+  "id": "sync-engine",
+  "title": "The sync engine",
+  "kicker": "Client · low-level design",
+  "summary": "The sync engine is a small runtime inside the app with one job: move local changes to the server and server changes into the local database. It has no UI and no business logic beyond merging. It must be safe to start, stop and kill at any line, because the OS will do all three.",
+  "does": [
+   "Drain the outbox in order, in batches, with op_ids",
+   "Pull changes after the stored cursor, page by page",
+   "Apply each page and save the cursor in one transaction",
+   "Run conflict rules and mark rows that need the user",
+   "Respect a time budget and report a result to the scheduler",
+   "Emit metrics for every run"
+  ],
+  "doesnt": [
+   "Decide when to run (the background-work layer does)",
+   "Move file bytes (the transfer manager does)",
+   "Render anything or hold UI state",
+   "Keep state in memory between runs",
+   "Trust the device clock for ordering"
+  ],
+  "scenario": [
+   "Priya, a field technician, edits twelve inspection jobs in a basement with no signal. Every save writes the job row and an outbox entry in one SQLite transaction, so the app feels instant. Meanwhile two supervisors change instructions on two of those same jobs from the office.",
+   "At 4:12 pm she walks outside. The phone regains a network, WorkManager’s network constraint is met, and the scheduler calls run(reason = network_back, budget = 8 minutes). The coordinator takes the single-flight lock and reads the cursor c_88411 from disk.",
+   "The push stage reads 37 outbox operations, sends them in two batches of up to 25, and gets back 36 applied and 1 conflict: the supervisor changed the same ‘valve 3 status’ field. Acknowledged operations are deleted and their rows marked synced in the same transaction; the conflicting row is marked conflict with the server’s value attached.",
+   "The pull stage asks for changes after c_88411, receives 140 changes in one page, applies them in a single transaction and stores c_88551. The run takes 2.1 seconds, emits a trace, and returns success. Priya sees eleven green ticks and one amber ‘needs review’ badge with both values side by side."
+  ],
+  "arch": {
+   "cols": 4,
+   "rows": 3,
+   "groups": [
+    [
+     "Sync engine (native module)",
+     0,
+     2,
+     0,
+     2
+    ],
+    [
+     "Storage",
+     3,
+     3,
+     0,
+     2
+    ]
+   ],
+   "nodes": [
+    [
+     "trig",
+     "Run request",
+     "reason · budget",
+     0,
+     0,
+     "c"
+    ],
+    [
+     "auth",
+     "Auth provider",
+     "token refresh",
+     0,
+     1,
+     "s"
+    ],
+    [
+     "net",
+     "HTTP client",
+     "OkHttp · URLSession",
+     0,
+     2,
+     "s"
+    ],
+    [
+     "coord",
+     "Coordinator",
+     "single-flight lock",
+     1,
+     0,
+     "s"
+    ],
+    [
+     "push",
+     "Push stage",
+     "outbox batches",
+     1,
+     1,
+     "s"
+    ],
+    [
+     "pull",
+     "Pull stage",
+     "cursor pages",
+     1,
+     2,
+     "s"
+    ],
+    [
+     "cfg",
+     "Remote config",
+     "batch sizes · kill switch",
+     2,
+     0,
+     "s"
+    ],
+    [
+     "merge",
+     "Merge policy",
+     "LWW · field · 409",
+     2,
+     1,
+     "s"
+    ],
+    [
+     "apply",
+     "Applier",
+     "batched txn + cursor",
+     2,
+     2,
+     "s"
+    ],
+    [
+     "tel",
+     "Telemetry",
+     "spans · counters",
+     3,
+     0,
+     "s"
+    ],
+    [
+     "outbox",
+     "Outbox table",
+     "pending ops",
+     3,
+     1,
+     "d"
+    ],
+    [
+     "db",
+     "SQLite",
+     "entities · cursor",
+     3,
+     2,
+     "d"
+    ]
+   ],
+   "edges": [
+    [
+     "trig",
+     "coord",
+     ""
+    ],
+    [
+     "cfg",
+     "coord",
+     "limits"
+    ],
+    [
+     "coord",
+     "push",
+     "1"
+    ],
+    [
+     "push",
+     "pull",
+     "2"
+    ],
+    [
+     "push",
+     "outbox",
+     "ack"
+    ],
+    [
+     "push",
+     "net",
+     "POST /push"
+    ],
+    [
+     "pull",
+     "net",
+     "GET /pull"
+    ],
+    [
+     "net",
+     "auth",
+     "token"
+    ],
+    [
+     "push",
+     "merge",
+     "conflicts"
+    ],
+    [
+     "pull",
+     "apply",
+     "pages"
+    ],
+    [
+     "merge",
+     "apply",
+     "resolved"
+    ],
+    [
+     "apply",
+     "db",
+     "1 txn"
+    ],
+    [
+     "coord",
+     "tel",
+     "events"
+    ]
+   ]
+  },
+  "archNotes": [
+   [
+    "Coordinator",
+    "Entry point. Takes a single-flight lock so two triggers never run two syncs, computes a deadline from the budget, runs push then pull, and maps exceptions to a result the scheduler understands: success, retry after N seconds, needs login, or disabled."
+   ],
+   [
+    "Push stage",
+    "Reads the next batch of outbox rows that are ready (not waiting for a retry time), serialises them with op_ids and base versions, and handles each per-operation result inside one transaction."
+   ],
+   [
+    "Pull stage",
+    "Loops over pages from the stored cursor until the server says has_more is false or the deadline arrives. A 410 Gone response switches it to the rebuild path."
+   ],
+   [
+    "Merge policy",
+    "Pure functions, one per entity type, that decide what to do when a server change meets a row with pending local edits. Pure functions make this the easiest part to unit test."
+   ],
+   [
+    "Applier",
+    "Writes a page of changes in one transaction: inserts, updates, deletes from tombstones, and the new cursor. Observers fire once per page, not once per row."
+   ],
+   [
+    "HTTP client and auth",
+    "A shared client with timeouts, gzip, HTTP/2 and an authenticator that refreshes tokens once and retries. If refresh fails, the run ends with needs login and sync pauses."
+   ]
+  ],
+  "states": [
+   [
+    "Idle",
+    "Nothing running. Waiting for a run request."
+   ],
+   [
+    "Pushing",
+    "Draining the outbox in batches."
+   ],
+   [
+    "Pulling",
+    "Applying pages after the cursor."
+   ],
+   [
+    "Backoff",
+    "Last run failed with a retryable error; next attempt not before a jittered time."
+   ],
+   [
+    "Needs login",
+    "Token refresh failed. Sync pauses until the user signs in."
+   ],
+   [
+    "Rebuilding",
+    "Cursor too old (410). Push outbox, keep unsynced rows, import snapshot."
+   ],
+   [
+    "Disabled",
+    "Remote kill switch on. Runs return immediately."
+   ]
+  ],
+  "seq": {
+   "actors": [
+    "Scheduler",
+    "Coordinator",
+    "Push stage",
+    "Server",
+    "Pull + apply"
+   ],
+   "msgs": [
+    [
+     0,
+     1,
+     "run(reason, budget)"
+    ],
+    [
+     1,
+     1,
+     "lock, load cursor"
+    ],
+    [
+     1,
+     2,
+     "push()"
+    ],
+    [
+     2,
+     2,
+     "read 25 ready ops"
+    ],
+    [
+     2,
+     3,
+     "POST /push batch"
+    ],
+    [
+     3,
+     2,
+     "24 applied · 1 conflict",
+     "d"
+    ],
+    [
+     2,
+     2,
+     "ack, mark conflict (1 txn)"
+    ],
+    [
+     1,
+     4,
+     "pull(cursor)"
+    ],
+    [
+     4,
+     3,
+     "GET /pull?cursor"
+    ],
+    [
+     3,
+     4,
+     "page + next cursor",
+     "d"
+    ],
+    [
+     4,
+     4,
+     "apply page + cursor (1 txn)"
+    ],
+    [
+     "note",
+     "Loop until has_more = false or the budget ends"
+    ],
+    [
+     1,
+     0,
+     "Success / Retry(after) / NeedsLogin",
+     "d"
+    ]
+   ]
+  },
+  "seqNotes": [
+   "Every arrow that changes local state ends in a transaction, so the run can be killed between any two arrows without losing or duplicating data.",
+   "Push always runs before pull, so the server’s answer already reflects this device’s edits.",
+   "The result tells the scheduler what to do next, which keeps retry policy in one place."
+  ],
+  "code": [
+   [
+    "Engine core (Kotlin, coroutines)",
+    "kotlin",
+    "class SyncEngine(\n  private val db: AppDatabase, private val api: SyncApi, private val merge: MergePolicy,\n  private val cfg: SyncConfig, private val clock: Clock, private val telemetry: Telemetry,\n) {\n  private val lock = Mutex()\n\n  suspend fun run(reason: Reason, budget: Duration): RunResult {\n    if (cfg.killSwitch) return RunResult.Disabled\n    if (!lock.tryLock()) return RunResult.AlreadyRunning          // single flight\n    val span = telemetry.start(\"sync.run\", reason)\n    return try {\n      val deadline = clock.now() + budget\n      pushAll(deadline)\n      pullAll(deadline)\n      RunResult.Success(morePending = db.outbox().readyCount() > 0)\n    } catch (e: AuthExpiredException) { RunResult.NeedsLogin }\n      catch (e: IOException) { RunResult.Retry(backoffMs(db.meta().failedRuns())) }\n      finally { span.end(); lock.unlock() }\n  }\n\n  private suspend fun pushAll(deadline: Instant) {\n    while (clock.now() < deadline) {\n      val batch = db.outbox().nextReady(limit = cfg.pushBatch, now = clock.now())\n      if (batch.isEmpty()) return\n      val res = api.push(PushRequest(cfg.deviceId, batch.map { it.toWire() }))\n      db.withTransaction {\n        res.results.forEach { r ->\n          when (r.status) {\n            Status.APPLIED, Status.DUPLICATE -> { db.outbox().delete(r.opId); db.entities().markSynced(r.entityId, r.version) }\n            Status.CONFLICT -> db.entities().markConflict(r.entityId, r.serverFields)\n            Status.REJECTED -> db.outbox().fail(r.opId, r.reason)       // visible to the user, never retried\n          }\n        }\n      }\n    }\n  }\n\n  private suspend fun pullAll(deadline: Instant) {\n    var cursor = db.cursors().get(SCOPE_DEFAULT)\n    do {\n      val page = api.pull(cursor, limit = cfg.pullPage)\n      if (page.gone) { rebuild(); return }                          // 410: older than tombstone TTL\n      db.withTransaction {\n        page.changes.forEach { applyOne(it) }\n        db.cursors().set(SCOPE_DEFAULT, page.nextCursor)\n      }\n      cursor = page.nextCursor\n    } while (page.hasMore && clock.now() < deadline)\n  }\n}"
+   ],
+   [
+    "Applying one change with pending local edits",
+    "kotlin",
+    "private suspend fun applyOne(ch: Change) {\n  val local = db.entities().find(ch.id)\n  when {\n    ch.deleted && local?.hasPendingOps == true -> db.entities().markConflict(ch.id, deletedOnServer = true)\n    ch.deleted -> db.entities().delete(ch.id)\n    local == null -> db.entities().insert(ch.toEntity())\n    !local.hasPendingOps -> db.entities().replace(ch.toEntity())\n    else -> db.entities().replace(merge.resolve(local, ch))   // keep fields the user changed locally\n  }\n}"
+   ],
+   [
+    "Retry timing with full jitter",
+    "kotlin",
+    "fun backoffMs(attempt: Int, baseMs: Long = 2_000, capMs: Long = 60 * 60_000): Long {\n  val ceiling = min(capMs, baseMs shl min(attempt, 20))\n  return Random.nextLong(0, ceiling + 1)        // spreads a million devices across the window\n}"
+   ],
+   [
+    "Same engine on iOS (Swift actor)",
+    "swift",
+    "actor SyncEngine {\n  private var running = false\n\n  func run(reason: Reason, budget: Duration) async -> RunResult {\n    guard !config.killSwitch else { return .disabled }\n    guard !running else { return .alreadyRunning }\n    running = true; defer { running = false }\n    let deadline = ContinuousClock.now + budget\n    do {\n      try await pushAll(until: deadline)\n      try await pullAll(until: deadline)\n      return .success\n    } catch is CancellationError {\n      return .expired                       // BGTask expiration handler cancelled us\n    } catch SyncError.authExpired {\n      return .needsLogin\n    } catch {\n      return .retry(after: Backoff.next(attempt: await meta.failedRuns))\n    }\n  }\n\n  private func pullAll(until deadline: ContinuousClock.Instant) async throws {\n    var cursor = try await db.read { try Cursor.current($0) }\n    repeat {\n      try Task.checkCancellation()\n      let page = try await api.pull(cursor: cursor, limit: config.pullPage)\n      try await db.write { db in\n        try page.changes.forEach { try Applier.apply($0, in: db) }\n        try Cursor.save(page.nextCursor, in: db)\n      }\n      cursor = page.nextCursor\n      if !page.hasMore { break }\n    } while ContinuousClock.now < deadline\n  }\n}"
+   ]
+  ],
+  "platforms": [
+   [
+    "Android",
+    [
+     "Engine in a Kotlin module with no Android UI dependencies, so it is unit-testable on the JVM.",
+     "Room DAOs with withTransaction for every state change; WAL is on by default.",
+     "OkHttp with an Authenticator for token refresh, gzip and HTTP/2; Retrofit or Ktor on top.",
+     "A CoroutineWorker calls run() with a budget of a few minutes and maps the result to Result.success() or Result.retry()."
+    ]
+   ],
+   [
+    "iOS",
+    [
+     "A Swift package with the engine as an actor, so state is never touched from two tasks at once.",
+     "GRDB DatabasePool in WAL mode; write transactions for every state change.",
+     "A default URLSession for API calls (they are short); background sessions are for big files only.",
+     "BGAppRefreshTask gives about 30 seconds, so the budget is around 25; BGProcessingTask allows longer runs while charging."
+    ]
+   ],
+   [
+    "React Native",
+    [
+     "The engine stays native and is exposed through a Turbo Module with requestSync(reason) and a status observable.",
+     "JavaScript reads the same SQLite database through WatermelonDB or op-sqlite and re-renders on change.",
+     "No sync logic in JavaScript, because the JS runtime may not exist when the OS wakes the app."
+    ]
+   ],
+   [
+    "Shared core (KMP)",
+    [
+     "Engine in commonMain with SQLDelight for the database and Ktor for HTTP.",
+     "expect/actual for the scheduler hooks, crypto and clocks.",
+     "One test suite runs the protocol against a fake server for both platforms."
+    ]
+   ]
+  ],
+  "tech": [
+   [
+    "Local database",
+    "Room · GRDB · SQLDelight · WatermelonDB · op-sqlite",
+    "Room or GRDB natively; SQLDelight for KMP; WatermelonDB for RN with its sync protocol."
+   ],
+   [
+    "Wire format",
+    "JSON + gzip · Protobuf (Wire, swift-protobuf)",
+    "Start with JSON; switch hot endpoints to Protobuf when payloads or parse time hurt on low-end phones."
+   ],
+   [
+    "Transport",
+    "HTTPS request/response · WebSocket hint channel · gRPC",
+    "HTTPS for push and pull; a socket only to say ‘cursor moved’ while the app is open."
+   ],
+   [
+    "Off-the-shelf sync",
+    "PowerSync · ElectricSQL · Replicache / Zero · Couchbase Lite · Firestore offline",
+    "Buy when sync is not your differentiator; build when you need custom merge rules, residency or evidence guarantees."
+   ],
+   [
+    "Testing",
+    "Fake server · property-based tests · fault injection",
+    "Generate random sequences of edits, kills and network failures and assert convergence."
+   ]
+  ],
+  "real": [
+   [
+    "Dropbox",
+    "Publicly described rewriting its desktop sync engine, Nucleus, in Rust, with heavy use of deterministic and randomised testing to find rare sync bugs."
+   ],
+   [
+    "Linear",
+    "Has described a client that keeps a local copy of workspace data, applies changes optimistically, and receives ordered changes from the server tracked by an increasing sync ID."
+   ],
+   [
+    "Figma",
+    "Has described a server-authoritative multiplayer model where clients send property-level changes and the server resolves conflicts per property."
+   ],
+   [
+    "Replicache (Rocicorp)",
+    "Documents a push/pull protocol where each client mutation carries an ID and the server records the last processed mutation ID per client, which is the op_id pattern."
+   ]
+  ],
+  "metrics": [
+   [
+    "sync.run.duration (p50, p95)",
+    "Slow runs hit OS budgets and get cancelled."
+   ],
+   [
+    "sync.freshness (time since last success)",
+    "The single best indicator users are seeing stale data."
+   ],
+   [
+    "outbox.depth and outbox.oldest_age",
+    "Growing values mean pushes are failing silently."
+   ],
+   [
+    "push.result by status",
+    "Spikes in rejected or conflict usually mean a bug, not users."
+   ],
+   [
+    "pull.pages per run, 410 count",
+    "Too many pages means devices sync too rarely; 410s mean TTL is too short."
+   ],
+   [
+    "run.result by reason and OS",
+    "Shows which triggers actually deliver fresh data."
+   ]
+  ],
+  "edges": [
+   [
+    "Killed mid-transaction",
+    "SQLite rolls back; the batch is pushed again and deduped by op_id."
+   ],
+   [
+    "Server applied, response lost",
+    "Retry returns DUPLICATE with the original result; row marked synced."
+   ],
+   [
+    "Pulled change for a row with pending edits",
+    "Merge policy runs; unresolved fields become a conflict for the user."
+   ],
+   [
+    "Delete arrives for a row edited offline",
+    "Marked conflict instead of deleting the user’s work."
+   ],
+   [
+    "Clock on the phone is wrong",
+    "Ordering comes from server sequence numbers; local timestamps are display-only."
+   ],
+   [
+    "Schema of a pulled change is newer than the app",
+    "Unknown fields are kept as raw JSON and preserved on push; never dropped."
+   ]
+  ],
+  "interview": [
+   [
+    "Why is the engine single-flight?",
+    "Two concurrent runs could push the same outbox rows twice and apply pages out of order. A lock plus idempotent server writes keeps one logical sync at a time."
+   ],
+   [
+    "Why push before pull?",
+    "So the server’s view, which the pull returns, already includes this device’s edits, and the merge only has to handle edits made by others."
+   ],
+   [
+    "How do you test a sync engine?",
+    "Pure merge functions with unit tests, the engine against a fake server, and randomised fault injection: random edits, kills between transactions, dropped responses, then assert all replicas converge."
+   ],
+   [
+    "What happens if the OS cancels the run halfway?",
+    "Nothing is lost. Every step committed atomically, the cursor only moves with its page, and the next run continues from disk."
+   ]
+  ],
+  "group": "mobile"
+ },
+ {
+  "id": "transfer-manager",
+  "title": "The transfer manager",
+  "kicker": "Client · low-level design",
+  "summary": "The transfer manager moves large files between the phone and object storage. It hashes, splits, uploads and downloads files in parts that each succeed or fail on their own, records progress after every part, and keeps going across network switches, app kills and reboots.",
+  "does": [
+   "Copy the source into app storage and hash it while copying",
+   "Ask the server whether the content already exists",
+   "Plan parts and upload several in parallel",
+   "Persist each part’s ETag the moment it lands",
+   "Refresh expired URLs and resume after any interruption",
+   "Download with Range requests, verify and rename atomically"
+  ],
+  "doesnt": [
+   "Sync records (the sync engine does)",
+   "Decide product rules like Wi-Fi only (it reads them as constraints)",
+   "Hold file bytes in memory or in JavaScript",
+   "Trust a file path that the system can revoke"
+  ],
+  "scenario": [
+   "Arjun records a 412 MB walkthrough video of a pump room and taps Submit. The transfer manager copies the file into app storage while computing its SHA-256, so it reads the file once. It asks the server with POST /files/init; the hash is new, so the server starts a multipart upload and returns 52 presigned part URLs of 8 MB each, valid for 15 minutes.",
+   "Four parts upload at a time. After each one, the ETag goes into the transfer_part table. At part 20 the phone moves from Wi-Fi to 4G: three in-flight parts fail, retry after a short jittered delay and succeed. At part 31 the URLs have expired, the server returns 403, and the manager asks for fresh URLs for parts 31 to 52 only.",
+   "Arjun’s phone is an iPhone and he swipes the app away at part 38. iOS cancels the background transfers. When he opens the app an hour later, the manager reads the table, sees 37 parts done, requests URLs for parts 38 to 52 and finishes. It then sends POST /files/complete with all 52 part numbers and ETags; the server verifies the hash and links the video to the inspection.",
+   "Total bytes re-sent because of the network switch and the swipe: about 32 MB out of 412 MB. Without part checkpoints, the swipe alone would have cost 296 MB."
+  ],
+  "arch": {
+   "cols": 4,
+   "rows": 3,
+   "groups": [
+    [
+     "Transfer manager (native)",
+     0,
+     2,
+     0,
+     2
+    ],
+    [
+     "Server and storage",
+     3,
+     3,
+     0,
+     2
+    ]
+   ],
+   "nodes": [
+    [
+     "api",
+     "Public API",
+     "enqueue · cancel · observe",
+     0,
+     0,
+     "c"
+    ],
+    [
+     "queue",
+     "Transfer queue",
+     "priority · constraints",
+     0,
+     1,
+     "s"
+    ],
+    [
+     "store",
+     "Transfer DB",
+     "files · parts · state",
+     0,
+     2,
+     "d"
+    ],
+    [
+     "prep",
+     "Preparer",
+     "copy · hash · compress",
+     1,
+     0,
+     "s"
+    ],
+    [
+     "plan",
+     "Part planner",
+     "size · count · ranges",
+     1,
+     1,
+     "s"
+    ],
+    [
+     "pool",
+     "Worker pool",
+     "2–4 parts in flight",
+     1,
+     2,
+     "s"
+    ],
+    [
+     "url",
+     "URL broker",
+     "presign · refresh",
+     2,
+     0,
+     "s"
+    ],
+    [
+     "up",
+     "Uploader",
+     "PUT part → ETag",
+     2,
+     1,
+     "s"
+    ],
+    [
+     "dl",
+     "Downloader",
+     "Range GET · verify",
+     2,
+     2,
+     "s"
+    ],
+    [
+     "srv",
+     "Upload API",
+     "init · complete",
+     3,
+     0,
+     "s"
+    ],
+    [
+     "s3",
+     "Object storage",
+     "multipart",
+     3,
+     1,
+     "d"
+    ],
+    [
+     "cdn",
+     "CDN",
+     "signed URLs",
+     3,
+     2,
+     "d"
+    ]
+   ],
+   "edges": [
+    [
+     "api",
+     "queue",
+     "enqueue"
+    ],
+    [
+     "queue",
+     "store",
+     "persist"
+    ],
+    [
+     "api",
+     "prep",
+     "file"
+    ],
+    [
+     "prep",
+     "plan",
+     "sha256 + size"
+    ],
+    [
+     "plan",
+     "pool",
+     "parts"
+    ],
+    [
+     "pool",
+     "up",
+     "part"
+    ],
+    [
+     "pool",
+     "dl",
+     "range"
+    ],
+    [
+     "pool",
+     "store",
+     "ETag saved"
+    ],
+    [
+     "url",
+     "srv",
+     "init"
+    ],
+    [
+     "up",
+     "url",
+     "URL"
+    ],
+    [
+     "up",
+     "s3",
+     "PUT"
+    ],
+    [
+     "dl",
+     "cdn",
+     "GET Range"
+    ]
+   ]
+  },
+  "archNotes": [
+   [
+    "Public API",
+    "enqueue(uri, owner, priority) returns a transfer ID immediately; observe(id) streams progress from the database; cancel(id) marks it cancelled so nothing restarts it."
+   ],
+   [
+    "Preparer",
+    "Copies the file into app storage, because content URIs and photo-library references can disappear, and computes SHA-256 in the same pass. Optional transcoding happens here, before any bytes leave the phone."
+   ],
+   [
+    "Part planner",
+    "Chooses part size from file size and network: at least 5 MB (the S3 minimum for all but the last part), usually 8–16 MB, and large enough to stay under 10,000 parts."
+   ],
+   [
+    "URL broker",
+    "Owns the upload ID and presigned URLs. It refreshes URLs in bulk when they are near expiry or a PUT returns 403, so expiry never fails a transfer."
+   ],
+   [
+    "Worker pool",
+    "Runs two to four part uploads concurrently, fewer on cellular or low battery. It records each part’s ETag in its own small transaction."
+   ],
+   [
+    "Downloader",
+    "Uses Range requests to resume, writes to a temporary file, verifies the hash, and renames into place so a half-written file is never visible."
+   ]
+  ],
+  "states": [
+   [
+    "Queued",
+    "Accepted and persisted. Waiting for constraints such as Wi-Fi or charging."
+   ],
+   [
+    "Preparing",
+    "Copying, hashing, optionally compressing."
+   ],
+   [
+    "Checking",
+    "Asking the server whether the content already exists."
+   ],
+   [
+    "Uploading",
+    "Parts in flight; progress = parts done ÷ total."
+   ],
+   [
+    "Paused",
+    "System stopped us, network lost, or constraints no longer met. Resumes automatically."
+   ],
+   [
+    "Completing",
+    "All parts done; asking the server to assemble and verify."
+   ],
+   [
+    "Done",
+    "Linked to its record. Local copy can be evicted later."
+   ],
+   [
+    "Failed",
+    "Permanent error such as file deleted or hash mismatch; shown to the user."
+   ],
+   [
+    "Cancelled",
+    "User cancelled. Server multipart upload aborted."
+   ]
+  ],
+  "seq": {
+   "actors": [
+    "App",
+    "Transfer manager",
+    "Upload API",
+    "Object storage",
+    "Transfer DB"
+   ],
+   "msgs": [
+    [
+     0,
+     1,
+     "enqueue(video, priority = user)"
+    ],
+    [
+     1,
+     1,
+     "copy + SHA-256 in one pass"
+    ],
+    [
+     1,
+     2,
+     "POST /files/init {sha256, size}"
+    ],
+    [
+     2,
+     1,
+     "upload_id + 52 part URLs",
+     "d"
+    ],
+    [
+     1,
+     4,
+     "save plan: 52 parts"
+    ],
+    [
+     1,
+     3,
+     "PUT parts 1–4 in parallel"
+    ],
+    [
+     3,
+     1,
+     "ETag per part",
+     "d"
+    ],
+    [
+     1,
+     4,
+     "mark each part done"
+    ],
+    [
+     "note",
+     "Wi-Fi → 4G at part 20: in-flight parts retry"
+    ],
+    [
+     "note",
+     "URLs expire at part 31"
+    ],
+    [
+     1,
+     2,
+     "refresh URLs for 31–52"
+    ],
+    [
+     1,
+     3,
+     "PUT remaining parts"
+    ],
+    [
+     1,
+     2,
+     "POST /files/complete {parts, ETags}"
+    ],
+    [
+     2,
+     1,
+     "hash verified · linked",
+     "d"
+    ]
+   ]
+  },
+  "seqNotes": [
+   "The hash is computed once, during the copy, and reused for deduplication and final verification.",
+   "Each part commits independently, so any interruption costs only the parts in flight.",
+   "Expired URLs are a normal event, refreshed in bulk, never a failure."
+  ],
+  "code": [
+   [
+    "Transfer tables (SQLite)",
+    "sql",
+    "CREATE TABLE file_transfer (\n  id TEXT PRIMARY KEY, owner_entity TEXT, owner_id TEXT,\n  local_path TEXT NOT NULL, size INTEGER NOT NULL, sha256 TEXT NOT NULL, mime TEXT,\n  direction TEXT NOT NULL,           -- up | down\n  priority TEXT NOT NULL,            -- user | background\n  state TEXT NOT NULL,               -- queued | preparing | uploading | paused | completing | done | failed | cancelled\n  upload_id TEXT, part_size INTEGER, part_count INTEGER,\n  attempts INTEGER DEFAULT 0, next_retry_at INTEGER, last_error TEXT, remote_key TEXT,\n  created_at INTEGER NOT NULL\n);\nCREATE TABLE transfer_part (\n  transfer_id TEXT NOT NULL, part_no INTEGER NOT NULL,\n  url TEXT, url_expires_at INTEGER, etag TEXT, done INTEGER DEFAULT 0,\n  PRIMARY KEY (transfer_id, part_no)\n);\nCREATE INDEX transfer_ready ON file_transfer(state, priority, next_retry_at);"
+   ],
+   [
+    "Hash while copying (Kotlin)",
+    "kotlin",
+    "fun copyAndHash(src: InputStream, dst: File): String {\n  val md = MessageDigest.getInstance(\"SHA-256\")\n  val buf = ByteArray(1 shl 20)                       // 1 MB buffer, constant memory\n  dst.outputStream().buffered().use { out ->\n    src.use { input ->\n      while (true) {\n        val n = input.read(buf); if (n < 0) break\n        md.update(buf, 0, n); out.write(buf, 0, n)\n      }\n    }\n  }\n  return md.digest().joinToString(\"\") { \"%02x\".format(it) }\n}"
+   ],
+   [
+    "Part planning",
+    "kotlin",
+    "fun planParts(size: Long, onCellular: Boolean): Plan {\n  val min = 5L * 1024 * 1024                            // S3 minimum except last part\n  val preferred = if (onCellular) 8L * 1024 * 1024 else 16L * 1024 * 1024\n  val forLimit = ceil(size / 9_000.0).toLong()          // stay well under 10,000 parts\n  val partSize = maxOf(min, preferred, forLimit)\n  val count = ((size + partSize - 1) / partSize).toInt()\n  return Plan(partSize, count)\n}"
+   ],
+   [
+    "Streaming one part without loading it (OkHttp)",
+    "kotlin",
+    "class FileSliceBody(private val file: File, private val offset: Long, private val length: Long) : RequestBody() {\n  override fun contentType() = \"application/octet-stream\".toMediaType()\n  override fun contentLength() = length\n  override fun writeTo(sink: BufferedSink) {\n    RandomAccessFile(file, \"r\").use { raf ->\n      raf.seek(offset)\n      val buf = ByteArray(64 * 1024); var left = length\n      while (left > 0) {\n        val n = raf.read(buf, 0, minOf(buf.size.toLong(), left).toInt())\n        sink.write(buf, 0, n); left -= n\n      }\n    }\n  }\n}\n\nsuspend fun uploadPart(t: Transfer, p: Part): String {\n  val req = Request.Builder().url(p.url).put(FileSliceBody(t.file, (p.no - 1) * t.partSize, p.length)).build()\n  client.newCall(req).await().use { res ->\n    if (res.code == 403) throw UrlExpired(p.no)                // broker refreshes, then retry\n    if (!res.isSuccessful) throw IOException(\"part \" + p.no + \" failed: \" + res.code)\n    return res.header(\"ETag\") ?: error(\"missing ETag\")\n  }\n}"
+   ],
+   [
+    "iOS: one background task per part",
+    "swift",
+    "let config = URLSessionConfiguration.background(withIdentifier: \"com.app.transfers\")\nconfig.sessionSendsLaunchEvents = true          // relaunch the app when transfers finish\nconfig.isDiscretionary = false                  // user started this upload\nlazy var session = URLSession(configuration: config, delegate: self, delegateQueue: nil)\n\nfunc enqueue(_ part: Part, url: URL) throws {\n  let slice = try PartSlicer.writeSlice(of: part)          // file containing only this part's bytes\n  var request = URLRequest(url: url); request.httpMethod = \"PUT\"\n  let task = session.uploadTask(with: request, fromFile: slice)\n  task.taskDescription = part.transferId + \":\" + String(part.number)   // survives relaunch\n  task.resume()\n}\n\nfunc urlSession(_ s: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {\n  guard let (id, n) = PartKey.parse(task.taskDescription) else { return }\n  let etag = (task.response as? HTTPURLResponse)?.value(forHTTPHeaderField: \"ETag\")\n  try? db.write { db in try TransferPart.record(id, n, etag: etag, error: error, in: db) }\n  try? FileManager.default.removeItem(at: PartSlicer.url(id, n))\n}"
+   ],
+   [
+    "Resuming a download",
+    "kotlin",
+    "val have = tmp.length()\nval req = Request.Builder().url(signedUrl).header(\"Range\", \"bytes=\" + have + \"-\").build()\nclient.newCall(req).await().use { res ->\n  require(res.code == 206 || (have == 0L && res.code == 200)) { \"server ignored Range\" }\n  FileOutputStream(tmp, true).use { out -> res.body!!.byteStream().copyTo(out) }\n}\ncheck(sha256(tmp) == expectedHash) { \"corrupt download\" }\ntmp.renameTo(finalFile)                             // atomic on the same filesystem"
+   ]
+  ],
+  "platforms": [
+   [
+    "Android",
+    [
+     "WorkManager unique work per transfer (upload- plus the ID) with network and battery constraints for background priority.",
+     "For uploads the user started, a user-initiated data transfer job on Android 14 and later, with a progress notification and cancel action.",
+     "OkHttp with a FileSliceBody so memory stays flat regardless of file size.",
+     "Media3 Transformer for on-device video compression before upload."
+    ]
+   ],
+   [
+    "iOS",
+    [
+     "Background URLSession with one upload task per part file; the system keeps transferring while the app is suspended.",
+     "handleEventsForBackgroundURLSession in the app delegate, and the stored completion handler called after events are delivered.",
+     "BGContinuedProcessingTask (iOS 26+) or a short background task for the hashing and compression step.",
+     "AVAssetExportSession for video compression."
+    ]
+   ],
+   [
+    "React Native",
+    [
+     "A native module with enqueueUpload(uri, priority) that returns a transfer ID; progress is read from SQLite.",
+     "Pass file URIs only; bytes never enter the JS heap.",
+     "react-native-background-upload or a custom module wrapping the native pieces above."
+    ]
+   ]
+  ],
+  "tech": [
+   [
+    "Upload protocol",
+    "S3 multipart with presigned URLs · GCS resumable uploads · Azure block blobs · tus",
+    "Use your cloud’s native protocol; tus when you need a vendor-neutral, open resumable protocol."
+   ],
+   [
+    "Integrity",
+    "SHA-256 of the whole file · per-part checksums (S3 supports CRC32C, SHA-256 and others)",
+    "Whole-file hash for dedupe and evidence; per-part checksums to catch corruption in transit."
+   ],
+   [
+    "Concurrency",
+    "1 · 2–4 · adaptive",
+    "Two on cellular, four on Wi-Fi; drop to one when the battery is low."
+   ],
+   [
+    "Compression",
+    "Media3 Transformer · AVAssetExportSession · none",
+    "Compress video when the product allows; never re-compress photos used as evidence."
+   ],
+   [
+    "Download delivery",
+    "CDN signed URLs · direct storage URLs",
+    "CDN with content-addressed keys for anything downloaded more than once."
+   ]
+  ],
+  "real": [
+   [
+    "Google APIs",
+    "Publish a resumable upload protocol: create an upload session, send the file in chunks, and query the server for how many bytes it received before resuming."
+   ],
+   [
+    "tus",
+    "An open protocol for resumable uploads over HTTP, with server and client libraries in many languages; Vimeo is among its well-known adopters."
+   ],
+   [
+    "Dropbox API",
+    "Exposes upload sessions (start, append, finish) so large files are sent in pieces and committed at the end."
+   ],
+   [
+    "Amazon S3",
+    "Multipart upload: up to 10,000 parts, each at least 5 MB except the last, assembled by a final complete call; incomplete uploads should be cleaned up with a lifecycle rule."
+   ]
+  ],
+  "metrics": [
+   [
+    "transfer.completion_rate",
+    "The headline number: share of enqueued files that reach done."
+   ],
+   [
+    "bytes_resent ÷ bytes_total",
+    "Shows whether checkpoints and part size are working."
+   ],
+   [
+    "time_to_done (p50, p95) by network",
+    "Sets expectations and catches regressions."
+   ],
+   [
+    "part.failure by reason",
+    "403 expiry, timeouts and 5xx need different fixes."
+   ],
+   [
+    "dedupe.hit_rate",
+    "How often uploads were skipped because the server already had the bytes."
+   ],
+   [
+    "paused.age",
+    "Transfers stuck paused for days usually mean a missing constraint or a killed OEM job."
+   ]
+  ],
+  "edges": [
+   [
+    "Source file deleted or permission revoked",
+    "Already copied into app storage at enqueue time, so the transfer continues."
+   ],
+   [
+    "File changed after enqueue",
+    "Hash mismatch on complete; transfer marked failed and re-enqueued from the new file."
+   ],
+   [
+    "Presigned URL expired",
+    "403 triggers a bulk refresh for remaining parts; not counted as a failure."
+   ],
+   [
+    "Disk nearly full",
+    "Refuse new copies with a clear message; evict uploaded files first."
+   ],
+   [
+    "Complete called twice",
+    "Server treats complete as idempotent by upload ID."
+   ],
+   [
+    "Abandoned upload on the server",
+    "Storage lifecycle rule aborts incomplete multipart uploads after a few days."
+   ]
+  ],
+  "interview": [
+   [
+    "Why copy the file before uploading?",
+    "Picker and gallery URIs can be revoked or the user can edit the photo. A private copy with a recorded hash is the only stable source for a transfer that may take hours."
+   ],
+   [
+    "How do you choose part size?",
+    "Big enough to keep request overhead low and stay under the part limit, small enough that a lost part is cheap on cellular. 8 MB on cellular and 16 MB on Wi-Fi is a sensible start; measure resend ratio."
+   ],
+   [
+    "Why not one background task for the whole file on iOS?",
+    "If it fails at 90%, you restart from zero. One task per part gives checkpoints that survive relaunch."
+   ],
+   [
+    "How do you prevent duplicate storage when users re-upload?",
+    "Content addressing: the server looks up the SHA-256 at init and links the existing object."
+   ]
+  ],
+  "group": "mobile"
+ },
+ {
+  "id": "background-layer",
+  "title": "The background-work layer",
+  "kicker": "Client · low-level design",
+  "summary": "The background-work layer is a thin adapter between your app and the OS scheduler. It turns many triggers (app open, network back, push, timers, user actions) into a few well-behaved jobs, gives each job a time budget, and hands results back to the OS so it keeps trusting your app.",
+  "does": [
+   "Collect triggers and coalesce them into one job",
+   "Map jobs to WorkManager on Android and BGTaskScheduler on iOS",
+   "Pass a time budget and a cancellation signal to the engines",
+   "Translate engine results into success, retry or reschedule",
+   "Record which triggers actually ran, per OS and manufacturer"
+  ],
+  "doesnt": [
+   "Contain sync or transfer logic",
+   "Keep anything alive with wake locks or endless services",
+   "Poll the server on a timer while the app is closed"
+  ],
+  "scenario": [
+   "In one minute, Meera’s phone produces five reasons to sync: she edits a booking, the app goes to the background, Wi-Fi reconnects, a push arrives saying her clinic changed a time, and the periodic job comes due. A naive app would start five syncs.",
+   "The trigger hub coalesces them. On Android, each trigger enqueues unique work named sync with a KEEP policy, so only one job exists. On iOS, the edit starts a short background task to finish the write, and the rest schedule one app refresh request.",
+   "WorkManager runs the job when the network constraint is met. The worker calls the sync engine with an eight-minute budget. The engine returns Success with more pending, so the worker returns success and enqueues one follow-up job.",
+   "Over a week, telemetry shows that on one manufacturer’s phones, periodic jobs ran 70% less often. The team adds a one-time battery-settings guide for affected users and shifts weight to sync-on-open, without touching the sync engine."
+  ],
+  "arch": {
+   "cols": 4,
+   "rows": 3,
+   "groups": [
+    [
+     "Triggers",
+     0,
+     0,
+     0,
+     2
+    ],
+    [
+     "Background-work layer",
+     1,
+     2,
+     0,
+     2
+    ],
+    [
+     "Engines",
+     3,
+     3,
+     0,
+     2
+    ]
+   ],
+   "nodes": [
+    [
+     "t1",
+     "App lifecycle",
+     "open · background",
+     0,
+     0,
+     "c"
+    ],
+    [
+     "t2",
+     "Network + push",
+     "connectivity · FCM · APNs",
+     0,
+     1,
+     "c"
+    ],
+    [
+     "t3",
+     "User action",
+     "edit · upload",
+     0,
+     2,
+     "c"
+    ],
+    [
+     "hub",
+     "Trigger hub",
+     "dedupe · priority",
+     1,
+     0,
+     "s"
+    ],
+    [
+     "and",
+     "Android adapter",
+     "WorkManager · UIDT",
+     1,
+     1,
+     "s"
+    ],
+    [
+     "ios",
+     "iOS adapter",
+     "BGTaskScheduler",
+     1,
+     2,
+     "s"
+    ],
+    [
+     "run",
+     "Job runner",
+     "budget · cancel",
+     2,
+     0,
+     "s"
+    ],
+    [
+     "res",
+     "Result mapper",
+     "success · retry",
+     2,
+     1,
+     "s"
+    ],
+    [
+     "tel",
+     "Run telemetry",
+     "by OS · OEM",
+     2,
+     2,
+     "s"
+    ],
+    [
+     "sync",
+     "Sync engine",
+     "records",
+     3,
+     0,
+     "s"
+    ],
+    [
+     "xfer",
+     "Transfer manager",
+     "files",
+     3,
+     1,
+     "s"
+    ],
+    [
+     "cfg",
+     "Remote config",
+     "rules · kill switch",
+     3,
+     2,
+     "s"
+    ]
+   ],
+   "edges": [
+    [
+     "t1",
+     "hub",
+     ""
+    ],
+    [
+     "t2",
+     "hub",
+     ""
+    ],
+    [
+     "t3",
+     "hub",
+     ""
+    ],
+    [
+     "hub",
+     "and",
+     "enqueue"
+    ],
+    [
+     "and",
+     "ios",
+     ""
+    ],
+    [
+     "hub",
+     "run",
+     ""
+    ],
+    [
+     "run",
+     "sync",
+     "run(budget)"
+    ],
+    [
+     "run",
+     "xfer",
+     ""
+    ],
+    [
+     "run",
+     "res",
+     ""
+    ],
+    [
+     "res",
+     "and",
+     "Result"
+    ],
+    [
+     "res",
+     "tel",
+     ""
+    ],
+    [
+     "cfg",
+     "tel",
+     ""
+    ]
+   ]
+  },
+  "archNotes": [
+   [
+    "Trigger hub",
+    "Accepts trigger(reason, priority). It collapses duplicates within a short window and decides the job type: an immediate expedited job after a user edit, a constrained job for background catch-up, or a user-initiated transfer job."
+   ],
+   [
+    "Android adapter",
+    "Enqueues unique work with WorkManager, sets constraints and backoff, uses expedited work with a fallback when quota runs out, and schedules user-initiated data transfer jobs for big uploads on Android 14+."
+   ],
+   [
+    "iOS adapter",
+    "Registers BGTask identifiers at launch, schedules BGAppRefreshTask and BGProcessingTask requests, wraps the expiration handler, and starts a short background task when the app is backgrounded mid-write."
+   ],
+   [
+    "Job runner",
+    "Creates a deadline from the OS budget, passes a cancellation token to the engines, and guarantees the OS is told the job finished."
+   ],
+   [
+    "Result mapper",
+    "Turns engine results into Result.success(), Result.retry() or setTaskCompleted(success:), and schedules the next run with the delay the engine suggested."
+   ],
+   [
+    "Run telemetry",
+    "Logs every run: trigger, scheduled time, actual start, duration, outcome, OS version and manufacturer. This is how you discover OEM restrictions."
+   ]
+  ],
+  "states": [
+   [
+    "Not scheduled",
+    "No pending reason to run."
+   ],
+   [
+    "Scheduled",
+    "A job exists with constraints; waiting for the OS."
+   ],
+   [
+    "Running",
+    "Engine executing within its budget."
+   ],
+   [
+    "Retry pending",
+    "Engine asked for a retry; OS backoff applies."
+   ],
+   [
+    "Blocked",
+    "User or OS has stopped background work (Force Stop, background restrictions); runs only when the app opens."
+   ]
+  ],
+  "seq": {
+   "actors": [
+    "Trigger",
+    "Trigger hub",
+    "WorkManager",
+    "Worker",
+    "Sync engine"
+   ],
+   "msgs": [
+    [
+     0,
+     1,
+     "edit saved"
+    ],
+    [
+     0,
+     1,
+     "network back"
+    ],
+    [
+     0,
+     1,
+     "push received"
+    ],
+    [
+     1,
+     2,
+     "enqueueUniqueWork(sync, KEEP)"
+    ],
+    [
+     "note",
+     "Constraint met: network connected"
+    ],
+    [
+     2,
+     3,
+     "doWork()"
+    ],
+    [
+     3,
+     4,
+     "run(reason, budget 8 min)"
+    ],
+    [
+     4,
+     3,
+     "Success(morePending)",
+     "d"
+    ],
+    [
+     3,
+     2,
+     "Result.success()",
+     "d"
+    ],
+    [
+     3,
+     2,
+     "enqueue follow-up"
+    ]
+   ]
+  },
+  "seqNotes": [
+   "Three triggers become one job because the work name is unique and the policy is KEEP.",
+   "Network work never happens inside the push callback; the callback only enqueues.",
+   "The worker always returns a result, so the OS keeps scheduling the app normally."
+  ],
+  "code": [
+   [
+    "Android: trigger hub and worker",
+    "kotlin",
+    "object SyncTriggers {\n  fun request(ctx: Context, reason: Reason, urgent: Boolean = false) {\n    val req = OneTimeWorkRequestBuilder<SyncWorker>()\n      .setInputData(workDataOf(\"reason\" to reason.name))\n      .setConstraints(Constraints(requiredNetworkType = NetworkType.CONNECTED))\n      .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)\n      .apply { if (urgent) setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST) }\n      .build()\n    WorkManager.getInstance(ctx).enqueueUniqueWork(\"sync\", ExistingWorkPolicy.KEEP, req)\n  }\n}\n\nclass SyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {\n  override suspend fun doWork(): Result {\n    val reason = Reason.valueOf(inputData.getString(\"reason\") ?: \"PERIODIC\")\n    return when (val r = engine.run(reason, budget = 8.minutes)) {\n      is RunResult.Success -> { if (r.morePending) SyncTriggers.request(applicationContext, Reason.FOLLOW_UP); Result.success() }\n      is RunResult.Retry -> Result.retry()\n      RunResult.NeedsLogin, RunResult.Disabled, RunResult.AlreadyRunning -> Result.success()\n    }\n  }\n}\n\nclass PushService : FirebaseMessagingService() {\n  override fun onMessageReceived(msg: RemoteMessage) {\n    if (msg.data[\"type\"] == \"changes\") SyncTriggers.request(this, Reason.PUSH, urgent = true)   // enqueue only\n  }\n}"
+   ],
+   [
+    "iOS: registering and scheduling",
+    "swift",
+    "enum BGIds { static let refresh = \"com.app.sync.refresh\"; static let heavy = \"com.app.sync.heavy\" }\n\nfunc registerBackgroundTasks() {          // call before the app finishes launching\n  BGTaskScheduler.shared.register(forTaskWithIdentifier: BGIds.refresh, using: nil) { task in\n    scheduleRefresh()                                         // always schedule the next one first\n    let work = Task { await SyncEngine.shared.run(reason: .refresh, budget: .seconds(25)) }\n    task.expirationHandler = { work.cancel() }\n    Task { let r = await work.value; task.setTaskCompleted(success: r.isSuccess) }\n  }\n}\n\nfunc scheduleRefresh() {\n  let req = BGAppRefreshTaskRequest(identifier: BGIds.refresh)\n  req.earliestBeginDate = Date(timeIntervalSinceNow: 15 * 60)\n  try? BGTaskScheduler.shared.submit(req)\n}\n\nfunc sceneDidEnterBackground(_ scene: UIScene) {            // finish a write the user just made\n  var id = UIBackgroundTaskIdentifier.invalid\n  id = UIApplication.shared.beginBackgroundTask { UIApplication.shared.endBackgroundTask(id) }\n  Task { _ = await SyncEngine.shared.run(reason: .backgrounded, budget: .seconds(20)); UIApplication.shared.endBackgroundTask(id) }\n}"
+   ],
+   [
+    "React Native: Turbo Module spec",
+    "ts",
+    "// NativeSyncModule.ts — codegen generates the native interfaces from this spec\nimport type { TurboModule } from 'react-native';\nimport { TurboModuleRegistry } from 'react-native';\n\nexport interface Spec extends TurboModule {\n  requestSync(reason: string): void;\n  enqueueUpload(fileUri: string, ownerId: string, priority: string): Promise<string>;\n  cancelUpload(transferId: string): void;\n}\nexport default TurboModuleRegistry.getEnforcing<Spec>('SyncModule');"
+   ]
+  ],
+  "platforms": [
+   [
+    "Android",
+    [
+     "WorkManager for deferrable and expedited work; unique names stop duplicates.",
+     "User-initiated data transfer jobs for long uploads the user started (Android 14+).",
+     "Foreground services only with a declared type, and not as a long-term home for sync (Android 15 limits dataSync).",
+     "Test Doze with adb shell dumpsys deviceidle force-idle and standby buckets with am set-standby-bucket."
+    ]
+   ],
+   [
+    "iOS",
+    [
+     "BGTaskSchedulerPermittedIdentifiers and UIBackgroundModes in Info.plist.",
+     "BGAppRefreshTask for short catch-up; BGProcessingTask for heavy work while charging.",
+     "Silent push only triggers a refresh; it is throttled and never guaranteed.",
+     "Simulate launches from the Xcode debugger with _simulateLaunchForTaskWithIdentifier."
+    ]
+   ],
+   [
+    "React Native",
+    [
+     "A Turbo Module whose native side calls the same Android and iOS adapters.",
+     "expo-background-task or react-native-background-fetch for early versions, replaced by native adapters at scale.",
+     "JavaScript only requests work and observes results."
+    ]
+   ]
+  ],
+  "tech": [
+   [
+    "Android scheduling",
+    "WorkManager · JobScheduler · AlarmManager · foreground service",
+    "WorkManager for almost everything; UIDT jobs for long user transfers; avoid exact alarms for sync."
+   ],
+   [
+    "iOS scheduling",
+    "BGTaskScheduler · background URLSession · silent push · beginBackgroundTask",
+    "Refresh tasks for catch-up, URLSession for bytes, short tasks to finish writes."
+   ],
+   [
+    "Push",
+    "FCM data messages · APNs background notifications",
+    "Use as a hint with collapse keys; never as the only path."
+   ],
+   [
+    "Cross-platform glue",
+    "Turbo Modules · Expo Modules API · KMP expect/actual",
+    "Turbo Modules for bare RN, Expo Modules in Expo apps, KMP for shared Kotlin."
+   ]
+  ],
+  "real": [],
+  "metrics": [
+   [
+    "runs per device per day by trigger",
+    "Shows which triggers actually execute."
+   ],
+   [
+    "scheduled → started delay",
+    "Reveals Doze, standby buckets and OEM throttling."
+   ],
+   [
+    "expirations and cancellations",
+    "iOS schedules apps that overrun less often."
+   ],
+   [
+    "share of syncs on app open",
+    "If most syncs happen on open, background scheduling is not working for that segment."
+   ]
+  ],
+  "edges": [
+   [
+    "Force Stop on Android",
+    "All jobs cancelled until the user opens the app; sync on open covers it."
+   ],
+   [
+    "User rarely opens the iOS app",
+    "Few background runs; push hints and on-open sync carry freshness."
+   ],
+   [
+    "Expedited quota exhausted",
+    "Falls back to normal work automatically with the out-of-quota policy."
+   ],
+   [
+    "Push storm",
+    "Collapse keys plus KEEP policy mean one job, not hundreds."
+   ]
+  ],
+  "interview": [
+   [
+    "Why put an adapter between engines and the OS?",
+    "The engines become platform-agnostic and testable, and all OS quirks, quotas and telemetry live in one small place per platform."
+   ],
+   [
+    "What do you do in the FCM callback?",
+    "Only enqueue work. The callback has a short time window, and the network call belongs in a worker with constraints and retries."
+   ],
+   [
+    "How do you know background sync works in the field?",
+    "Run telemetry by trigger, OS version and manufacturer, plus freshness percentiles. Without it, you are guessing."
+   ]
+  ],
+  "group": "mobile"
+ },
+ {
+  "id": "server-sync",
+  "title": "The server sync service",
+  "kicker": "Backend · low-level design",
+  "summary": "The server sync service is the other half of the protocol. It accepts pushes idempotently, applies merge rules, assigns every change a sequence number in a per-tenant change log, serves pulls by cursor with permission filtering, and builds snapshots for new devices.",
+  "does": [
+   "Deduplicate pushes by op_id and return original results",
+   "Validate and merge changes per entity type",
+   "Write the entity and its change-log entry in one transaction",
+   "Serve ordered pages of changes after a cursor",
+   "Filter every pull by what the user may see",
+   "Publish changes for push hints, search and analytics"
+  ],
+  "doesnt": [
+   "Hold sessions or per-device state in memory",
+   "Order changes by client timestamps",
+   "Carry file bytes"
+  ],
+  "scenario": [
+   "A supervisor and a technician edit job j-81 within the same second. Both pushes reach different API pods. Each push is a transaction: check the op_id table, apply field-level merge against the current row, update the row, allocate the next sequence number for the tenant, and insert into the change log.",
+   "The technician’s push changes answers.valve_3 from base version 4. The supervisor changed only instructions. Both apply cleanly. Sequence numbers 88412 and 88413 are assigned. A third push, a retry of the technician’s request after a lost response, finds its op_id already recorded and returns the stored result without writing anything.",
+   "Debezium reads the change-log inserts from the Postgres write-ahead log and publishes them to Kafka. A notifier consumer coalesces them per user and sends one ‘changes available’ push to each affected device. A search consumer updates the index.",
+   "When the supervisor’s tablet pulls with cursor c_88411, the service returns rows 88412 and 88413 that her role may see, plus next_cursor c_88413. A tablet that has been off for 120 days asks with c_51200; that is older than the 90-day tombstone window, so it receives 410 and a snapshot URL."
+  ],
+  "arch": {
+   "cols": 4,
+   "rows": 3,
+   "groups": [
+    [
+     "API (stateless)",
+     0,
+     1,
+     0,
+     2
+    ],
+    [
+     "Data",
+     2,
+     3,
+     0,
+     2
+    ]
+   ],
+   "nodes": [
+    [
+     "gw",
+     "Gateway",
+     "auth · rate limits",
+     0,
+     0,
+     "c"
+    ],
+    [
+     "pushh",
+     "Push handler",
+     "validate · merge",
+     0,
+     1,
+     "s"
+    ],
+    [
+     "pullh",
+     "Pull handler",
+     "cursor · ACL filter",
+     0,
+     2,
+     "s"
+    ],
+    [
+     "idem",
+     "Op ID table",
+     "processed ops",
+     1,
+     0,
+     "d"
+    ],
+    [
+     "rules",
+     "Merge rules",
+     "per entity type",
+     1,
+     1,
+     "s"
+    ],
+    [
+     "snap",
+     "Snapshot builder",
+     "per scope, nightly",
+     1,
+     2,
+     "s"
+    ],
+    [
+     "pg",
+     "Postgres",
+     "entities",
+     2,
+     0,
+     "d"
+    ],
+    [
+     "log",
+     "Change log",
+     "tenant + seq",
+     2,
+     1,
+     "d"
+    ],
+    [
+     "cdn",
+     "CDN",
+     "snapshots",
+     2,
+     2,
+     "d"
+    ],
+    [
+     "cdc",
+     "Debezium",
+     "WAL → events",
+     3,
+     0,
+     "q"
+    ],
+    [
+     "kafka",
+     "Kafka",
+     "change topics",
+     3,
+     1,
+     "q"
+    ],
+    [
+     "notif",
+     "Notifier",
+     "coalesced pushes",
+     3,
+     2,
+     "s"
+    ]
+   ],
+   "edges": [
+    [
+     "gw",
+     "pushh",
+     ""
+    ],
+    [
+     "pushh",
+     "idem",
+     "dedupe"
+    ],
+    [
+     "pushh",
+     "rules",
+     "merge"
+    ],
+    [
+     "rules",
+     "log",
+     "append"
+    ],
+    [
+     "pushh",
+     "pg",
+     ""
+    ],
+    [
+     "pullh",
+     "log",
+     "range read"
+    ],
+    [
+     "snap",
+     "cdn",
+     "publish"
+    ],
+    [
+     "pg",
+     "cdc",
+     "WAL"
+    ],
+    [
+     "cdc",
+     "kafka",
+     ""
+    ],
+    [
+     "kafka",
+     "notif",
+     ""
+    ],
+    [
+     "gw",
+     "pullh",
+     ""
+    ]
+   ]
+  },
+  "archNotes": [
+   [
+    "Push handler",
+    "For each operation: look up the op_id; if present, return the stored result. Otherwise load the row, run the entity’s merge rule, write the row, allocate a sequence and insert a change-log row, all in one transaction, then store the op_id result."
+   ],
+   [
+    "Change log",
+    "An append-only table keyed by (tenant_id, seq), partitioned by tenant hash and by time. Each row stores the entity, ID, version, changed fields or a tombstone flag, and the ACL tags needed to filter pulls."
+   ],
+   [
+    "Pull handler",
+    "A range read on (tenant_id, seq > cursor) ordered by seq, joined with the user’s permissions, limited by bytes as well as rows."
+   ],
+   [
+    "Snapshot builder",
+    "Builds a compressed SQLite file or NDJSON per scope from a consistent read at a known seq, uploads it to the CDN, and returns its seq as the starting cursor."
+   ],
+   [
+    "CDC to Kafka",
+    "Debezium streams committed change-log rows from the write-ahead log, so downstream consumers see exactly what was committed, in commit order."
+   ]
+  ],
+  "states": [
+   [
+    "applied",
+    "Operation accepted and stored with a new sequence number."
+   ],
+   [
+    "duplicate",
+    "op_id seen before; original result returned."
+   ],
+   [
+    "conflict",
+    "Base version stale on a field the server also changed; server values returned."
+   ],
+   [
+    "rejected",
+    "Validation or permission failure; client must not retry."
+   ],
+   [
+    "gone (pull)",
+    "Cursor older than the tombstone window; client must rebuild from a snapshot."
+   ]
+  ],
+  "seq": {
+   "actors": [
+    "Device",
+    "Push handler",
+    "Postgres",
+    "Debezium/Kafka",
+    "Other device"
+   ],
+   "msgs": [
+    [
+     0,
+     1,
+     "POST /push op_id=A"
+    ],
+    [
+     1,
+     2,
+     "BEGIN; op A seen? no"
+    ],
+    [
+     1,
+     2,
+     "merge + update row"
+    ],
+    [
+     1,
+     2,
+     "seq = next(tenant) → 88412"
+    ],
+    [
+     1,
+     2,
+     "INSERT change_log; COMMIT"
+    ],
+    [
+     1,
+     0,
+     "applied · seq 88412",
+     "d"
+    ],
+    [
+     2,
+     3,
+     "WAL → change event"
+    ],
+    [
+     3,
+     4,
+     "push hint (coalesced)"
+    ],
+    [
+     4,
+     1,
+     "GET /pull?cursor=c_88411"
+    ],
+    [
+     1,
+     4,
+     "[88412] + next cursor",
+     "d"
+    ]
+   ]
+  },
+  "seqNotes": [
+   "The op_id check, the row update and the change-log insert share one transaction, so a retry can never create a second change.",
+   "Downstream systems read committed changes from the WAL rather than being called from the request path.",
+   "The other device learns about the change from a hint, but the pull is what guarantees it."
+  ],
+  "code": [
+   [
+    "Change log and op table (PostgreSQL)",
+    "sql",
+    "CREATE TABLE change_log (\n  tenant_id  bigint      NOT NULL,\n  seq        bigint      NOT NULL,\n  entity     text        NOT NULL,\n  entity_id  uuid        NOT NULL,\n  version    int         NOT NULL,\n  fields     jsonb,                     -- changed fields; NULL for a tombstone\n  deleted    boolean     NOT NULL DEFAULT false,\n  acl        text[]      NOT NULL,      -- groups allowed to see this change\n  created_at timestamptz NOT NULL DEFAULT now(),\n  PRIMARY KEY (tenant_id, seq)\n) PARTITION BY HASH (tenant_id);\n\nCREATE TABLE processed_op (\n  op_id uuid PRIMARY KEY, tenant_id bigint NOT NULL,\n  result jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now()\n);  -- purged after 14 days\n\nCREATE TABLE tenant_seq (tenant_id bigint PRIMARY KEY, seq bigint NOT NULL);"
+   ],
+   [
+    "Push handler (TypeScript)",
+    "ts",
+    "export async function applyOp(tx: Tx, tenant: string, user: User, op: Op): Promise<OpResult> {\n  const seen = await tx.one('SELECT result FROM processed_op WHERE op_id = $1', [op.opId]);\n  if (seen) return { ...seen.result, status: 'duplicate' };\n\n  const row = await tx.one('SELECT * FROM job WHERE id = $1 AND tenant_id = $2 FOR UPDATE', [op.id, tenant]);\n  authorize(user, 'write', row);\n  const outcome = mergeRules[op.entity](row, op);              // field-level: applied or conflict\n  if (outcome.kind === 'conflict') return saveResult(tx, op, { status: 'conflict', server: outcome.server });\n\n  await tx.none('UPDATE job SET data = $1, version = version + 1 WHERE id = $2', [outcome.data, op.id]);\n  const { seq } = await tx.one('UPDATE tenant_seq SET seq = seq + 1 WHERE tenant_id = $1 RETURNING seq', [tenant]);\n  await tx.none('INSERT INTO change_log (tenant_id, seq, entity, entity_id, version, fields, acl) VALUES ($1,$2,$3,$4,$5,$6,$7)',\n    [tenant, seq, op.entity, op.id, row.version + 1, outcome.changedFields, row.acl]);\n  return saveResult(tx, op, { status: 'applied', seq, version: row.version + 1 });\n}"
+   ],
+   [
+    "Pull query",
+    "sql",
+    "SELECT seq, entity, entity_id, version, fields, deleted\nFROM change_log\nWHERE tenant_id = $1\n  AND seq > $2                         -- the client's cursor\n  AND acl && $3                        -- the user's groups\nORDER BY seq\nLIMIT 500;"
+   ]
+  ],
+  "platforms": [
+   [
+    "Service runtime",
+    [
+     "Node.js (Fastify or NestJS), Kotlin (Ktor) or Go; stateless pods behind a load balancer.",
+     "Connection pooling with PgBouncer; every request is one or a few short transactions."
+    ]
+   ],
+   [
+    "Database",
+    [
+     "PostgreSQL with hash partitioning by tenant; Citus when a single node is no longer enough.",
+     "Per-tenant sequence rows serialise writers within a tenant, which is what keeps pull order safe."
+    ]
+   ],
+   [
+    "Streaming",
+    [
+     "Debezium on the Postgres WAL into Kafka (or a managed equivalent); consumers for push hints, search, analytics and snapshots."
+    ]
+   ],
+   [
+    "Edge",
+    [
+     "API gateway for auth and per-device rate limits; a CDN for snapshots and media."
+    ]
+   ]
+  ],
+  "tech": [
+   [
+    "Sequence allocation",
+    "Per-tenant counter row · global sequence + watermark · WAL position (LSN)",
+    "Per-tenant counter for most products; a watermark when one tenant is too hot to serialise."
+   ],
+   [
+    "Change store",
+    "Postgres table · Cassandra/Scylla · DynamoDB stream",
+    "Postgres until write volume per tenant forces a wide-column store."
+   ],
+   [
+    "Idempotency store",
+    "Unique table in the same database · Redis",
+    "Same database when you need it inside the transaction; Redis as a fast front cache."
+   ],
+   [
+    "Change streaming",
+    "Debezium + Kafka · logical replication · application outbox",
+    "Debezium when you already run Kafka; an outbox table otherwise."
+   ]
+  ],
+  "real": [
+   [
+    "Replicache (Rocicorp)",
+    "Documents a pull that returns changes since a client’s cookie and a push that records the last processed mutation ID per client, the same idempotency idea as op_ids."
+   ],
+   [
+    "Linear",
+    "Has described tracking changes with an increasing sync ID so clients can request everything after the last ID they saw."
+   ],
+   [
+    "Debezium",
+    "An open-source change data capture platform that reads database write-ahead logs and publishes row changes to Kafka."
+   ]
+  ],
+  "metrics": [
+   [
+    "push latency and status mix",
+    "Duplicate share shows client retry health; conflict share shows product contention."
+   ],
+   [
+    "pull latency, rows and bytes per page",
+    "Large pages on mobile networks slow first sync."
+   ],
+   [
+    "change-log lag to Kafka",
+    "Delays push hints and search updates."
+   ],
+   [
+    "cursor age distribution",
+    "How far behind devices are; tunes tombstone TTL."
+   ],
+   [
+    "410 rate",
+    "Devices forced to rebuild; too high means TTL is too short."
+   ]
+  ],
+  "edges": [
+   [
+    "Two transactions allocate seq 10 and 11, 11 commits first",
+    "With a per-tenant counter row the second waits for the first, so commit order matches sequence order. With a global sequence, serve pulls only up to a safe watermark below the oldest in-flight transaction."
+   ],
+   [
+    "Retry after a lost response",
+    "op_id lookup returns the stored result; no second change-log row."
+   ],
+   [
+    "User loses access to a record",
+    "Pull filters by current ACL; a revoke change tells devices to delete local copies."
+   ],
+   [
+    "Hot tenant",
+    "Batch-allocate sequence ranges or split the tenant into scopes with their own counters."
+   ]
+  ],
+  "interview": [
+   [
+    "Why can a global sequence make pulls skip data?",
+    "Sequence numbers are allocated when a transaction asks for them, not when it commits. A later number can commit first, a client pulls past it, and the earlier one appears behind its cursor. Per-tenant serialisation or a safe watermark fixes it."
+   ],
+   [
+    "Where do you put the idempotency check?",
+    "In the same transaction as the write, so the check and the write cannot be separated by a crash."
+   ],
+   [
+    "How do you scale pulls?",
+    "Partition the change log by tenant, read with an index on (tenant_id, seq), cap pages by bytes, serve snapshots from a CDN for new devices, and push hints so devices pull only when something changed."
+   ]
+  ],
+  "group": "mobile"
+ },
+ {
+  "id": "llm-internals",
+  "group": "ai",
+  "title": "How an LLM works inside",
+  "kicker": "AI handbook · internals",
+  "labels": {
+   "does": "What to understand",
+   "doesnt": "Common misconceptions",
+   "scenario": "Follow one request",
+   "arch": "The pipeline inside the model",
+   "states": "Key terms",
+   "seq": "Generating a reply token by token",
+   "platforms": "Why internals matter to engineers",
+   "tech": "Model families and knobs",
+   "metrics": "Numbers to know",
+   "edges": "Failure modes and their causes"
+  },
+  "summary": "A large language model is a function that takes a sequence of tokens and returns a probability for every possible next token. Generation repeats that function, appending one chosen token at a time. Almost every engineering concern, from latency and cost to hallucination and context limits, follows from this loop.",
+  "does": [
+   "Text becomes tokens; cost and limits are counted in tokens",
+   "Each layer mixes information between tokens (attention) and transforms it (MLP)",
+   "Prefill reads the whole prompt at once; decode writes one token per step",
+   "The KV cache stores past keys and values so decode is not quadratic",
+   "Sampling settings shape the output, not the model’s knowledge"
+  ],
+  "doesnt": [
+   "The model does not look facts up; it predicts likely text",
+   "A bigger context window does not mean it uses all of it equally well",
+   "Temperature 0 is not a guarantee of identical output across providers or hardware",
+   "Tokens are not words; Hindi or code can cost more tokens per word than English"
+  ],
+  "scenario": [
+   "A user asks the booking assistant: “Move my massage to Friday evening.” The orchestrator builds a prompt of about 2,400 tokens: system instructions, tool definitions, the last few turns and retrieved facts.",
+   "The tokenizer turns that text into 2,400 integer IDs using a byte-pair-encoding vocabulary of roughly 100,000 to 200,000 entries. Each ID is looked up in an embedding table and becomes a vector of a few thousand numbers.",
+   "Prefill: all 2,400 vectors pass through every transformer layer in parallel. In each layer, attention lets every token weigh earlier tokens; the MLP transforms each position. The keys and values from every layer are saved in the KV cache. This step decides time to first token.",
+   "Decode: the final position produces a score (logit) for every token in the vocabulary. The sampler applies temperature and top-p and picks one token, perhaps a tool-call marker. That single token is fed back in, attending to the cached keys and values, and the loop repeats until a stop token. Each step decides the time per output token."
+  ],
+  "arch": {
+   "cols": 4,
+   "rows": 3,
+   "groups": [
+    [
+     "Input",
+     0,
+     0,
+     0,
+     2
+    ],
+    [
+     "Transformer × N layers",
+     1,
+     2,
+     0,
+     2
+    ],
+    [
+     "Output",
+     3,
+     3,
+     0,
+     2
+    ]
+   ],
+   "nodes": [
+    [
+     "text",
+     "Prompt text",
+     "system · history · tools",
+     0,
+     0,
+     "c"
+    ],
+    [
+     "tok",
+     "Tokenizer",
+     "BPE → token IDs",
+     0,
+     1,
+     "s"
+    ],
+    [
+     "emb",
+     "Embedding table",
+     "ID → vector",
+     0,
+     2,
+     "d"
+    ],
+    [
+     "attn",
+     "Self-attention",
+     "QKᵀ/√d · softmax · V",
+     1,
+     1,
+     "a"
+    ],
+    [
+     "norm",
+     "Norm + residual",
+     "stabilise layers",
+     1,
+     0,
+     "s"
+    ],
+    [
+     "kv",
+     "KV cache",
+     "keys + values per layer",
+     1,
+     2,
+     "d"
+    ],
+    [
+     "mlp",
+     "MLP / MoE",
+     "per-token transform",
+     2,
+     1,
+     "a"
+    ],
+    [
+     "pos",
+     "Positions",
+     "RoPE",
+     2,
+     0,
+     "s"
+    ],
+    [
+     "stack",
+     "Repeat N times",
+     "e.g. 32–120 layers",
+     2,
+     2,
+     "s"
+    ],
+    [
+     "head",
+     "LM head",
+     "vector → logits",
+     3,
+     0,
+     "a"
+    ],
+    [
+     "samp",
+     "Sampler",
+     "temperature · top-p",
+     3,
+     1,
+     "s"
+    ],
+    [
+     "out",
+     "Next token",
+     "append and repeat",
+     3,
+     2,
+     "c"
+    ]
+   ],
+   "edges": [
+    [
+     "text",
+     "tok",
+     ""
+    ],
+    [
+     "tok",
+     "emb",
+     ""
+    ],
+    [
+     "emb",
+     "attn",
+     "vectors"
+    ],
+    [
+     "attn",
+     "kv",
+     "store K,V"
+    ],
+    [
+     "attn",
+     "mlp",
+     ""
+    ],
+    [
+     "pos",
+     "mlp",
+     ""
+    ],
+    [
+     "norm",
+     "attn",
+     ""
+    ],
+    [
+     "mlp",
+     "stack",
+     ""
+    ],
+    [
+     "stack",
+     "head",
+     "last position"
+    ],
+    [
+     "head",
+     "samp",
+     "logits"
+    ],
+    [
+     "samp",
+     "out",
+     ""
+    ]
+   ]
+  },
+  "archNotes": [
+   [
+    "Tokenizer",
+    "Byte-pair encoding splits text into frequent sub-word pieces. Token counts drive price, latency and context limits, so always measure them with the provider’s tokenizer."
+   ],
+   [
+    "Self-attention",
+    "Each token produces a query, key and value. Scores are queries times keys, scaled by √d, turned into weights by softmax, and used to mix values. Causal masking stops a token from seeing the future. Grouped-query attention shares keys and values across heads to shrink the KV cache."
+   ],
+   [
+    "MLP and mixture of experts",
+    "A feed-forward network transforms each position independently. In mixture-of-experts models, a router sends each token to a few expert MLPs, so only part of the parameters run per token."
+   ],
+   [
+    "Positions",
+    "Rotary position embeddings (RoPE) encode order inside attention; context-extension techniques stretch them to longer windows."
+   ],
+   [
+    "KV cache",
+    "Saved keys and values for every past token in every layer. It makes decoding linear instead of quadratic, and it is the main memory cost of serving long prompts."
+   ],
+   [
+    "Sampler",
+    "Temperature rescales logits; top-p keeps the smallest set of tokens whose probability adds up to p. Lower values make output more predictable, not more correct."
+   ]
+  ],
+  "states": [
+   [
+    "Token",
+    "A sub-word unit. Roughly ¾ of an English word on average; varies by language and content."
+   ],
+   [
+    "Context window",
+    "Maximum tokens of prompt plus output the model accepts in one call."
+   ],
+   [
+    "Prefill / decode",
+    "Reading the prompt in parallel / generating one token per step."
+   ],
+   [
+    "Logits",
+    "Raw scores over the vocabulary before sampling."
+   ],
+   [
+    "Parameters",
+    "Learned weights; 7B, 70B and so on. Memory ≈ parameters × bytes per weight."
+   ],
+   [
+    "Pre-training / post-training",
+    "Learning to predict text at scale / then tuning to follow instructions and preferences."
+   ]
+  ],
+  "seq": {
+   "actors": [
+    "App",
+    "Tokenizer",
+    "Transformer",
+    "KV cache",
+    "Sampler"
+   ],
+   "msgs": [
+    [
+     0,
+     1,
+     "prompt (2,400 tokens)"
+    ],
+    [
+     1,
+     2,
+     "token IDs"
+    ],
+    [
+     2,
+     2,
+     "prefill all positions"
+    ],
+    [
+     2,
+     3,
+     "store K,V for 2,400 tokens"
+    ],
+    [
+     2,
+     4,
+     "logits for next token"
+    ],
+    [
+     4,
+     0,
+     "token 1 (TTFT)",
+     "d"
+    ],
+    [
+     "note",
+     "Decode loop: one token per step"
+    ],
+    [
+     4,
+     2,
+     "feed token back"
+    ],
+    [
+     2,
+     3,
+     "read cached K,V"
+    ],
+    [
+     2,
+     4,
+     "logits"
+    ],
+    [
+     4,
+     0,
+     "token 2, 3, …",
+     "d"
+    ]
+   ]
+  },
+  "seqNotes": [
+   "Prefill is compute-bound and grows with prompt length; long prompts mean slower first tokens.",
+   "Decode is memory-bandwidth-bound: each step reads all weights and the KV cache to produce one token.",
+   "This is why output tokens usually cost more than input tokens, and why streaming improves perceived speed."
+  ],
+  "code": [
+   [
+    "Attention in a few lines (PyTorch)",
+    "python",
+    "import torch, math\n\ndef causal_attention(x, Wq, Wk, Wv, n_heads):\n    B, T, D = x.shape\n    q, k, v = (x @ Wq, x @ Wk, x @ Wv)\n    split = lambda t: t.view(B, T, n_heads, D // n_heads).transpose(1, 2)   # B, H, T, d\n    q, k, v = split(q), split(k), split(v)\n    scores = (q @ k.transpose(-2, -1)) / math.sqrt(q.size(-1))              # B, H, T, T\n    mask = torch.triu(torch.ones(T, T, dtype=torch.bool), diagonal=1)\n    scores = scores.masked_fill(mask, float('-inf'))                         # no peeking ahead\n    return (scores.softmax(-1) @ v).transpose(1, 2).reshape(B, T, D)"
+   ],
+   [
+    "Sampling with temperature and top-p",
+    "python",
+    "def sample(logits, temperature=0.7, top_p=0.9):\n    probs = (logits / max(temperature, 1e-5)).softmax(-1)\n    sorted_p, idx = probs.sort(descending=True)\n    keep = sorted_p.cumsum(-1) - sorted_p < top_p          # smallest set reaching top_p\n    sorted_p = sorted_p * keep\n    choice = torch.multinomial(sorted_p / sorted_p.sum(), 1)\n    return idx[choice]"
+   ],
+   [
+    "KV cache size for any model",
+    "text",
+    "bytes per token = 2 (K and V) × layers × kv_heads × head_dim × bytes_per_value\nLlama-3-70B-class: 2 × 80 × 8 × 128 × 2 bytes ≈ 0.33 MB per token at FP16\n4,000-token conversation ≈ 1.3 GB of GPU memory, per request"
+   ]
+  ],
+  "platforms": [
+   [
+    "Cost and latency",
+    [
+     "You pay per input and output token; output tokens are slower and usually pricier.",
+     "Long system prompts cost on every call unless the provider caches the prefix."
+    ]
+   ],
+   [
+    "Quality",
+    [
+     "Models attend unevenly over long contexts; put the most important instructions and facts near the start or end, and retrieve rather than paste everything.",
+     "Sampling settings change style and variance; evaluation decides them, not intuition."
+    ]
+   ],
+   [
+    "Capacity planning",
+    [
+     "GPU memory = weights + KV cache; KV cache grows with concurrent users × context length.",
+     "Throughput depends on batching many decodes together."
+    ]
+   ]
+  ],
+  "tech": [
+   [
+    "Dense vs mixture of experts",
+    "Dense: every parameter runs per token. MoE: a few experts per token",
+    "MoE gives large-model quality at lower compute per token, at the cost of more memory."
+   ],
+   [
+    "Context length",
+    "8k · 32k · 128k · 1M tokens",
+    "Longer windows simplify prompts but cost more and do not replace retrieval for large corpora."
+   ],
+   [
+    "Reasoning models",
+    "Spend extra tokens thinking before answering",
+    "Better on multi-step problems; slower and more expensive per answer."
+   ],
+   [
+    "Open vs hosted",
+    "Llama, Mistral, Gemma, Qwen families · hosted frontier models",
+    "Open weights for control and residency; hosted for top quality and no infrastructure."
+   ]
+  ],
+  "real": [],
+  "metrics": [
+   [
+    "Time to first token (TTFT)",
+    "Driven by prompt length and queueing."
+   ],
+   [
+    "Time per output token (TPOT)",
+    "Driven by model size, batch size and memory bandwidth."
+   ],
+   [
+    "Tokens per request (in / out)",
+    "The core cost driver."
+   ],
+   [
+    "Context utilisation",
+    "How much of the window you actually send; trimming it is the easiest saving."
+   ]
+  ],
+  "edges": [
+   [
+    "Confident wrong facts",
+    "The model predicts plausible text; ground answers with retrieval and tool results."
+   ],
+   [
+    "Instruction ignored in a long prompt",
+    "Too much context dilutes attention; shorten and restructure."
+   ],
+   [
+    "Output cut off",
+    "Hit max output tokens; raise the limit or ask for shorter structure."
+   ],
+   [
+    "Same prompt, different answers",
+    "Sampling randomness and batching effects; lower temperature and evaluate on sets, not single runs."
+   ]
+  ],
+  "interview": [
+   [
+    "Why does a long prompt slow the first token but not later tokens as much?",
+    "Prefill processes all prompt tokens at once, which is compute-heavy. Later tokens reuse the KV cache and only process one new position each."
+   ],
+   [
+    "What is the KV cache and why does it matter for serving?",
+    "Stored keys and values for past tokens in every layer. It avoids recomputation, but its memory grows with context and concurrency, so it limits how many users a GPU can serve."
+   ],
+   [
+    "What does temperature actually change?",
+    "It sharpens or flattens the probability distribution before sampling. It changes variety, not knowledge."
+   ],
+   [
+    "Why can Hindi text cost more than English?",
+    "Tokenizers are trained mostly on English, so other scripts split into more tokens per word."
+   ]
+  ]
+ },
+ {
+  "id": "inference-accel",
+  "group": "ai",
+  "title": "Making inference fast and cheap",
+  "kicker": "AI handbook · acceleration",
+  "labels": {
+   "does": "Levers you control",
+   "doesnt": "What doesn’t help",
+   "scenario": "A real optimisation story",
+   "arch": "Where each technique acts",
+   "states": "Techniques in one line each",
+   "seq": "Speculative decoding step",
+   "platforms": "Where to apply each lever",
+   "tech": "Engines and tools",
+   "metrics": "Measure before and after",
+   "edges": "Trade-offs to watch"
+  },
+  "summary": "Inference speed and cost come down to three limits: GPU compute during prefill, memory bandwidth during decode, and memory capacity for weights and KV cache. Every acceleration technique relaxes one of them: smaller numbers, fewer tokens, better batching, or guessing ahead.",
+  "does": [
+   "Route easy requests to smaller models",
+   "Send fewer tokens: trim context, cache prefixes",
+   "Quantise weights and KV cache",
+   "Batch continuously and page the KV cache",
+   "Decode speculatively with a draft model",
+   "Distil a big model into a small task model"
+  ],
+  "doesnt": [
+   "Adding GPUs to a decode-bound workload without more batching",
+   "Raising max tokens ‘just in case’",
+   "Optimising before measuring TTFT, TPOT and cost per request",
+   "Quantising without re-running your evaluation set"
+  ],
+  "scenario": [
+   "A support summariser on a self-hosted 70B model costs too much and p95 latency is 9 seconds. The team measures first: average prompt 6,000 tokens, output 250, GPU utilisation 35% because requests are processed one at a time per replica.",
+   "Step one moves to vLLM with continuous batching and paged KV cache: throughput per GPU roughly triples and p95 drops, because the GPU now decodes many requests per step. Step two trims the prompt: ticket history is summarised once and cached, cutting input to 2,500 tokens and halving TTFT.",
+   "Step three quantises to FP8 weights and KV cache after the evaluation set shows less than 0.5% quality change, freeing memory for more concurrent requests. Step four routes short tickets to an 8B model distilled on the 70B model’s best summaries; 60% of traffic moves there.",
+   "Result: cost per summary falls by a large multiple and p95 latency drops below 3 seconds. Every step was gated on the same evaluation set and the same latency dashboard."
+  ],
+  "arch": {
+   "cols": 4,
+   "rows": 3,
+   "groups": [
+    [
+     "Before the model",
+     0,
+     1,
+     0,
+     2
+    ],
+    [
+     "Inside the server",
+     2,
+     3,
+     0,
+     2
+    ]
+   ],
+   "nodes": [
+    [
+     "route",
+     "Model routing",
+     "small vs large",
+     0,
+     0,
+     "s"
+    ],
+    [
+     "trim",
+     "Context trimming",
+     "summaries · retrieval",
+     0,
+     1,
+     "s"
+    ],
+    [
+     "pcache",
+     "Prompt caching",
+     "reuse prefixes",
+     0,
+     2,
+     "d"
+    ],
+    [
+     "distil",
+     "Distillation",
+     "task-specific small model",
+     1,
+     0,
+     "a"
+    ],
+    [
+     "semc",
+     "Semantic cache",
+     "similar question → answer",
+     1,
+     1,
+     "d"
+    ],
+    [
+     "batchapi",
+     "Batch APIs",
+     "offline, cheaper",
+     1,
+     2,
+     "s"
+    ],
+    [
+     "cb",
+     "Cont. batching",
+     "many decodes per step",
+     2,
+     0,
+     "a"
+    ],
+    [
+     "paged",
+     "Paged KV cache",
+     "no wasted memory",
+     2,
+     1,
+     "d"
+    ],
+    [
+     "flash",
+     "FlashAttention",
+     "IO-aware kernels",
+     2,
+     2,
+     "a"
+    ],
+    [
+     "quant",
+     "Quantisation",
+     "FP8 · INT8 · INT4",
+     3,
+     0,
+     "a"
+    ],
+    [
+     "spec",
+     "Speculative",
+     "draft + verify",
+     3,
+     1,
+     "a"
+    ],
+    [
+     "par",
+     "Parallelism",
+     "tensor · pipeline",
+     3,
+     2,
+     "s"
+    ]
+   ],
+   "edges": [
+    [
+     "route",
+     "distil",
+     ""
+    ],
+    [
+     "trim",
+     "semc",
+     ""
+    ],
+    [
+     "cb",
+     "paged",
+     ""
+    ],
+    [
+     "quant",
+     "spec",
+     ""
+    ],
+    [
+     "paged",
+     "flash",
+     ""
+    ],
+    [
+     "spec",
+     "par",
+     ""
+    ]
+   ]
+  },
+  "archNotes": [
+   [
+    "Routing and distillation",
+    "The cheapest token is one processed by a smaller model. Classify requests and send routine ones to a small model, often distilled from the large one on your task."
+   ],
+   [
+    "Context trimming and caching",
+    "Input tokens dominate cost for retrieval-heavy apps. Summarise history, retrieve only relevant chunks, and keep stable prefixes identical so provider prompt caching or engine prefix caching applies."
+   ],
+   [
+    "Continuous batching",
+    "Instead of waiting for a batch to finish, the server adds and removes requests every decode step, keeping the GPU full."
+   ],
+   [
+    "Paged KV cache",
+    "vLLM’s PagedAttention stores KV cache in fixed-size blocks, like virtual memory, so long and short requests share memory without fragmentation."
+   ],
+   [
+    "FlashAttention",
+    "Exact attention computed in tiles that fit in fast on-chip memory, reducing slow memory reads; standard in modern engines."
+   ],
+   [
+    "Quantisation",
+    "Store weights (and optionally KV cache) in 8 or 4 bits. FP8 on recent GPUs keeps quality close to FP16; INT4 methods such as AWQ and GPTQ shrink further with more risk."
+   ],
+   [
+    "Speculative decoding",
+    "A small draft model proposes several tokens; the large model checks them in one forward pass and keeps the accepted prefix. Output quality is unchanged; speed rises when drafts are often right."
+   ]
+  ],
+  "states": [
+   [
+    "Prefix caching",
+    "Reuse computed KV for a repeated prompt start, such as a long system prompt."
+   ],
+   [
+    "Semantic caching",
+    "Return a stored answer for a sufficiently similar past question; only for stable, non-personal answers."
+   ],
+   [
+    "Batch APIs",
+    "Asynchronous bulk processing at a discount from major providers, for work that can wait hours."
+   ],
+   [
+    "Tensor parallelism",
+    "Split each layer across GPUs for big models; needs fast interconnect such as NVLink."
+   ],
+   [
+    "Disaggregated serving",
+    "Run prefill and decode on separate GPU pools; useful at very large scale."
+   ]
+  ],
+  "seq": {
+   "actors": [
+    "Scheduler",
+    "Draft model (1B)",
+    "Target model (70B)",
+    "KV cache",
+    "Client"
+   ],
+   "msgs": [
+    [
+     0,
+     1,
+     "propose next 5 tokens"
+    ],
+    [
+     1,
+     0,
+     "t1 t2 t3 t4 t5",
+     "d"
+    ],
+    [
+     0,
+     2,
+     "verify all 5 in one pass"
+    ],
+    [
+     2,
+     3,
+     "read cached K,V"
+    ],
+    [
+     2,
+     0,
+     "accept t1–t3, correct t4",
+     "d"
+    ],
+    [
+     0,
+     4,
+     "stream 4 tokens",
+     "d"
+    ],
+    [
+     "note",
+     "One expensive pass produced 4 tokens instead of 1"
+    ]
+   ]
+  },
+  "seqNotes": [
+   "Speed-up depends on the acceptance rate, which is high for predictable text such as code and templated answers.",
+   "Because the target model verifies every token, the output matches what it would have produced on its own."
+  ],
+  "code": [
+   [
+    "Serving with the main levers on (vLLM)",
+    "bash",
+    "vllm serve meta-llama/Llama-3.1-70B-Instruct \\\n  --tensor-parallel-size 4 \\\n  --quantization fp8 --kv-cache-dtype fp8 \\\n  --enable-prefix-caching \\\n  --max-num-seqs 256 --gpu-memory-utilization 0.92"
+   ],
+   [
+    "Routing by difficulty (TypeScript)",
+    "ts",
+    "const route = (req: Req) =>\n  req.tokens < 800 && classifier.isRoutine(req.intent) ? 'small-8b'\n  : req.needsTools || req.tokens > 6000 ? 'large-70b'\n  : 'medium';\n\nconst res = await llm.generate({ model: route(req), messages, maxTokens: 300 });   // cap output too"
+   ],
+   [
+    "Keep the cached prefix stable",
+    "ts",
+    "// Same bytes every call → prefix cache hits. Put variable parts at the end.\nconst messages = [\n  { role: 'system', content: SYSTEM_PROMPT_V12 },     // never interpolate dates or names here\n  { role: 'system', content: TOOL_GUIDE_V4 },\n  ...recentTurns,\n  { role: 'user', content: question },\n];"
+   ]
+  ],
+  "platforms": [
+   [
+    "Hosted APIs",
+    [
+     "Model choice and routing are your biggest levers.",
+     "Prompt caching and batch APIs reduce cost for repeated prefixes and offline work.",
+     "Cap max output tokens and ask for concise structures."
+    ]
+   ],
+   [
+    "Self-hosted GPUs",
+    [
+     "Continuous batching, paged KV cache and prefix caching through vLLM, SGLang or TensorRT-LLM.",
+     "FP8 quantisation on recent GPUs; tensor parallelism sized by memory.",
+     "Autoscale on queue depth and KV utilisation."
+    ]
+   ],
+   [
+    "On device",
+    [
+     "Small models, 4-bit quantisation and hardware delegates (GPU, Neural Engine, NPU).",
+     "Short prompts and short outputs; cache results locally."
+    ]
+   ]
+  ],
+  "tech": [
+   [
+    "Serving engines",
+    "vLLM · SGLang · TensorRT-LLM · Hugging Face TGI · llama.cpp",
+    "vLLM or SGLang for general GPU serving; TensorRT-LLM for maximum NVIDIA performance; llama.cpp for CPU and edge."
+   ],
+   [
+    "Quantisation",
+    "FP8 · AWQ · GPTQ · GGUF (llama.cpp)",
+    "FP8 first on supported GPUs; INT4 when memory is the hard limit."
+   ],
+   [
+    "Kernels",
+    "FlashAttention · fused kernels in engines",
+    "Usually provided by the engine; check versions match your GPU."
+   ],
+   [
+    "Distillation and fine-tuning",
+    "LoRA on a small model using large-model outputs",
+    "When a narrow task is high volume and quality can be measured."
+   ]
+  ],
+  "real": [],
+  "metrics": [
+   [
+    "TTFT and TPOT, p50 and p95",
+    "User-visible speed."
+   ],
+   [
+    "Tokens per second per GPU",
+    "Efficiency of batching and kernels."
+   ],
+   [
+    "Cost per request and per successful task",
+    "The business number; includes retries."
+   ],
+   [
+    "Cache hit rates (prefix, semantic)",
+    "Show whether prompt structure is cache-friendly."
+   ],
+   [
+    "Quality score on the eval set",
+    "The guardrail for every optimisation."
+   ]
+  ],
+  "edges": [
+   [
+    "Quantisation hurts a niche skill",
+    "Evaluate per task, not on generic benchmarks; keep a higher-precision fallback."
+   ],
+   [
+    "Semantic cache serves a stale or personal answer",
+    "Cache only public, stable answers with TTLs; include version in the key."
+   ],
+   [
+    "Bigger batches raise latency",
+    "Cap batch size or tokens per step to protect p95."
+   ],
+   [
+    "Router misroutes hard requests",
+    "Escalate when the small model’s confidence or validation fails."
+   ]
+  ],
+  "interview": [
+   [
+    "Your LLM feature is too slow. Where do you start?",
+    "Measure TTFT versus TPOT. Slow first token means long prompts or queueing: trim context, cache prefixes, add capacity. Slow streaming means decode limits: batching, quantisation, speculative decoding or a smaller model."
+   ],
+   [
+    "Why does continuous batching help so much?",
+    "Decode is memory-bandwidth bound; reading the weights once to produce tokens for many requests amortises that cost."
+   ],
+   [
+    "Does speculative decoding change outputs?",
+    "No. The target model verifies every proposed token, so the result matches what it would have generated alone; only speed changes."
+   ],
+   [
+    "How do you cut cost by 10× without hurting quality?",
+    "Route most traffic to a small or distilled model, trim and cache context, cap outputs, batch offline work, and prove quality on an evaluation set at every step."
+   ]
+  ]
+ },
+ {
+  "id": "embeddings",
+  "group": "ai",
+  "title": "Embeddings and vector search",
+  "kicker": "AI handbook · retrieval",
+  "labels": {
+   "does": "What embeddings give you",
+   "doesnt": "Where they fall short",
+   "scenario": "Building semantic search for a service catalogue",
+   "arch": "The retrieval stack",
+   "states": "Index types",
+   "seq": "A hybrid query",
+   "platforms": "Choosing where vectors live",
+   "tech": "Models and stores",
+   "metrics": "Retrieval metrics",
+   "edges": "Pitfalls"
+  },
+  "summary": "An embedding model turns text, images or audio into a vector so that similar meanings land close together. Vector search finds the nearest vectors quickly using approximate indexes. Together they power semantic search, recommendations, deduplication and the retrieval half of RAG.",
+  "does": [
+   "Search by meaning instead of exact words",
+   "Compare across languages with multilingual models",
+   "Cluster, deduplicate and recommend",
+   "Feed relevant context to an LLM"
+  ],
+  "doesnt": [
+   "Exact identifiers such as SKUs, error codes and names",
+   "Negation and fine-grained constraints (“not vegan”)",
+   "Freshness unless you re-embed on change",
+   "Permissions unless you filter inside the query"
+  ],
+  "scenario": [
+   "The wellness app has 40,000 services across 3,000 clinics. Keyword search fails on ‘something for a stiff neck after long flights’ because no listing contains those words.",
+   "Each service is embedded from a short document: title, category, description and benefits. Vectors of 768 dimensions are stored in Postgres with pgvector and an HNSW index, alongside city, price and clinic ID for filtering.",
+   "A query is embedded with the same model, then searched twice: vector nearest neighbours and BM25 keyword search, both filtered by city. Results are merged with reciprocal rank fusion and the top 30 reranked by a cross-encoder.",
+   "Offline evaluation on 300 labelled queries shows recall at 10 rising substantially over keyword search, and bookings from search improve in an A/B test. Embeddings are recomputed only when a service description changes."
+  ],
+  "arch": {
+   "cols": 4,
+   "rows": 2,
+   "groups": [
+    [
+     "Indexing",
+     0,
+     1,
+     0,
+     1
+    ],
+    [
+     "Query time",
+     2,
+     3,
+     0,
+     1
+    ]
+   ],
+   "nodes": [
+    [
+     "doc",
+     "Source records",
+     "title · text · metadata",
+     0,
+     0,
+     "c"
+    ],
+    [
+     "chunk",
+     "Prepare text",
+     "chunk · clean",
+     1,
+     0,
+     "s"
+    ],
+    [
+     "emb1",
+     "Embedding model",
+     "batch job",
+     0,
+     1,
+     "a"
+    ],
+    [
+     "idx",
+     "Hybrid index",
+     "HNSW · BM25 · filters",
+     1,
+     1,
+     "d"
+    ],
+    [
+     "q",
+     "Query",
+     "user text + filters",
+     2,
+     0,
+     "c"
+    ],
+    [
+     "emb2",
+     "Query embedder",
+     "same model",
+     3,
+     0,
+     "a"
+    ],
+    [
+     "fuse",
+     "Search + fusion",
+     "kNN + BM25 → RRF",
+     2,
+     1,
+     "s"
+    ],
+    [
+     "rr",
+     "Reranker",
+     "cross-encoder",
+     3,
+     1,
+     "a"
+    ]
+   ],
+   "edges": [
+    [
+     "doc",
+     "chunk",
+     ""
+    ],
+    [
+     "chunk",
+     "emb1",
+     ""
+    ],
+    [
+     "emb1",
+     "idx",
+     "upsert"
+    ],
+    [
+     "q",
+     "emb2",
+     ""
+    ],
+    [
+     "emb2",
+     "fuse",
+     ""
+    ],
+    [
+     "fuse",
+     "idx",
+     "kNN + BM25"
+    ],
+    [
+     "fuse",
+     "rr",
+     "top 50"
+    ]
+   ]
+  },
+  "archNotes": [
+   [
+    "Embedding model",
+    "Maps input to a fixed-length vector. Use the same model, version and preprocessing for documents and queries; changing models means re-embedding everything."
+   ],
+   [
+    "Similarity",
+    "Usually cosine similarity, or dot product on normalised vectors."
+   ],
+   [
+    "Approximate index",
+    "HNSW builds a navigable graph for fast, high-recall search; IVF partitions vectors into clusters; product quantisation compresses vectors to save memory at some recall cost."
+   ],
+   [
+    "Hybrid search",
+    "Keyword search catches exact terms; vector search catches meaning. Reciprocal rank fusion combines ranked lists without tuning score scales."
+   ],
+   [
+    "Reranker",
+    "A cross-encoder reads the query and each candidate together and scores relevance much more accurately, but is too slow to run on the whole corpus."
+   ]
+  ],
+  "states": [
+   [
+    "Flat (exact)",
+    "Compare against every vector. Perfect recall; fine up to around 100k vectors."
+   ],
+   [
+    "HNSW",
+    "Graph index; fast and accurate; uses more memory; supports incremental inserts."
+   ],
+   [
+    "IVF",
+    "Cluster-based; cheaper to build; tune the number of clusters probed."
+   ],
+   [
+    "PQ / int8 / binary",
+    "Compressed vectors; large memory savings with some recall loss."
+   ],
+   [
+    "Matryoshka embeddings",
+    "Models trained so vectors can be truncated to fewer dimensions with graceful quality loss."
+   ]
+  ],
+  "seq": {
+   "actors": [
+    "App",
+    "Search API",
+    "Embedding model",
+    "Index",
+    "Reranker"
+   ],
+   "msgs": [
+    [
+     0,
+     1,
+     "‘stiff neck after flights’, city=Pune"
+    ],
+    [
+     1,
+     2,
+     "embed query"
+    ],
+    [
+     2,
+     1,
+     "768-d vector",
+     "d"
+    ],
+    [
+     1,
+     3,
+     "kNN top 50 + BM25 top 50, city filter"
+    ],
+    [
+     3,
+     1,
+     "two ranked lists",
+     "d"
+    ],
+    [
+     1,
+     1,
+     "reciprocal rank fusion"
+    ],
+    [
+     1,
+     4,
+     "rerank top 30"
+    ],
+    [
+     4,
+     1,
+     "scored list",
+     "d"
+    ],
+    [
+     1,
+     0,
+     "results",
+     "d"
+    ]
+   ]
+  },
+  "seqNotes": [
+   "Filters run inside both searches so results never include other cities.",
+   "The reranker is where most of the precision comes from."
+  ],
+  "code": [
+   [
+    "pgvector table and index",
+    "sql",
+    "CREATE EXTENSION IF NOT EXISTS vector;\nCREATE TABLE service_vec (\n  service_id uuid PRIMARY KEY, city text NOT NULL, price int,\n  model_version text NOT NULL,\n  embedding vector(768) NOT NULL\n);\nCREATE INDEX ON service_vec USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);\n-- query time\nSET hnsw.ef_search = 80;\nSELECT service_id FROM service_vec\nWHERE city = $2 ORDER BY embedding <=> $1 LIMIT 50;"
+   ],
+   [
+    "Reciprocal rank fusion",
+    "python",
+    "def rrf(*ranked_lists, k=60):\n    scores = {}\n    for lst in ranked_lists:\n        for rank, doc_id in enumerate(lst, start=1):\n            scores[doc_id] = scores.get(doc_id, 0) + 1 / (k + rank)\n    return sorted(scores, key=scores.get, reverse=True)"
+   ],
+   [
+    "Recall at k for your own test set",
+    "python",
+    "def recall_at_k(results: dict, labels: dict, k=10):\n    hits = [len(set(results[q][:k]) & labels[q]) / len(labels[q]) for q in labels]\n    return sum(hits) / len(hits)"
+   ]
+  ],
+  "platforms": [
+   [
+    "Inside your existing database",
+    [
+     "pgvector, OpenSearch k-NN or Elasticsearch: one system, transactional updates, easy filters.",
+     "Good into tens of millions of vectors with tuning."
+    ]
+   ],
+   [
+    "Dedicated vector database",
+    [
+     "Pinecone, Weaviate, Qdrant, Milvus: built for very large indexes, multi-tenancy and fast filtered search.",
+     "Adds another system to operate and keep in sync."
+    ]
+   ],
+   [
+    "On device",
+    [
+     "Small embedding models and a local index for offline semantic search over a user’s own data.",
+     "Keeps private data on the phone."
+    ]
+   ]
+  ],
+  "tech": [
+   [
+    "Embedding models",
+    "Hosted embedding APIs · open models (e.g. BGE, E5, multilingual variants)",
+    "Benchmark on your queries; check multilingual quality, dimension and cost."
+   ],
+   [
+    "Vector stores",
+    "pgvector · OpenSearch · Qdrant · Weaviate · Milvus · Pinecone",
+    "Start in the database you run; move when scale or filtering demands."
+   ],
+   [
+    "Rerankers",
+    "Cross-encoder models · hosted rerank APIs",
+    "Almost always worth it for top-k quality."
+   ],
+   [
+    "Evaluation",
+    "Labelled query sets · recall@k · nDCG",
+    "Without labels you cannot compare models or settings."
+   ]
+  ],
+  "real": [],
+  "metrics": [
+   [
+    "recall@k",
+    "Did the right items make the candidate list?"
+   ],
+   [
+    "nDCG / MRR",
+    "Are the best items near the top?"
+   ],
+   [
+    "Query latency p95",
+    "Index parameters trade speed for recall."
+   ],
+   [
+    "Index freshness lag",
+    "Time from change to searchable."
+   ]
+  ],
+  "edges": [
+   [
+    "Changed embedding model",
+    "All vectors must be re-embedded; keep model_version on every row and dual-write during migration."
+   ],
+   [
+    "Exact code searches fail",
+    "Hybrid search with BM25 fixes it."
+   ],
+   [
+    "Filtered search returns too few results",
+    "Increase candidate pool or use an index with native filtering."
+   ],
+   [
+    "Long documents embedded whole",
+    "Chunk by structure; long inputs blur meaning."
+   ]
+  ],
+  "interview": [
+   [
+    "Why combine keyword and vector search?",
+    "Vectors miss exact tokens like product codes; keywords miss paraphrases. Fusion gets both, and a reranker sorts the final list."
+   ],
+   [
+    "HNSW or IVF?",
+    "HNSW for high recall and incremental updates with enough memory; IVF with PQ when memory is tight and the index is rebuilt in batches."
+   ],
+   [
+    "How do you pick an embedding model?",
+    "Label a few hundred real queries, measure recall@k and latency for candidates, check language coverage and cost, then decide."
+   ]
+  ]
+ },
+ {
+  "id": "adapt-models",
+  "group": "ai",
+  "title": "Prompting, RAG or fine-tuning?",
+  "kicker": "AI handbook · customisation",
+  "labels": {
+   "does": "Use each when",
+   "doesnt": "Common mistakes",
+   "scenario": "Choosing for three real features",
+   "arch": "The ladder of customisation",
+   "states": "Fine-tuning methods",
+   "seq": "A LoRA fine-tuning pipeline",
+   "platforms": "Data you need for each",
+   "tech": "Tools",
+   "metrics": "How to judge the result",
+   "edges": "Risks"
+  },
+  "summary": "There are three main ways to make a general model fit your product: better prompts, retrieval of your data at query time, and changing the model’s weights. They solve different problems. Prompts and retrieval change what the model sees; fine-tuning changes how it behaves.",
+  "does": [
+   "Prompting: format, tone, rules and few-shot examples",
+   "RAG: facts that change, citations and permissions",
+   "Fine-tuning: consistent style, narrow tasks, lower latency with a smaller model",
+   "Preference tuning: choosing between acceptable answers the way your users prefer"
+  ],
+  "doesnt": [
+   "Fine-tuning to teach facts that change weekly",
+   "RAG for behaviour the model should always show",
+   "Skipping evaluation because the demo looked good",
+   "Training on data you are not allowed to use"
+  ],
+  "scenario": [
+   "Feature one, a refund-policy assistant, needs current facts with citations and permissions. That is retrieval: policies change and must be quoted. Fine-tuning would freeze yesterday’s policy into weights.",
+   "Feature two, ticket classification into 40 categories at 2 million tickets a day, needs speed and low cost more than broad reasoning. A small model fine-tuned with LoRA on 20,000 labelled tickets matches the large model’s accuracy on this task at a fraction of the cost.",
+   "Feature three, marketing copy in a strict brand voice, first gets a strong system prompt with examples. When reviewers still edit a third of outputs, the team collects pairs of preferred and rejected drafts and applies preference tuning (DPO) to an open model.",
+   "All three share one evaluation harness, so each decision is backed by numbers rather than impressions."
+  ],
+  "arch": {
+   "cols": 4,
+   "rows": 1,
+   "groups": [],
+   "nodes": [
+    [
+     "p",
+     "1 · Prompting",
+     "instructions · examples",
+     0,
+     0,
+     "s"
+    ],
+    [
+     "r",
+     "2 · RAG",
+     "fresh facts · citations",
+     1,
+     0,
+     "s"
+    ],
+    [
+     "f",
+     "3 · Fine-tuning",
+     "SFT · LoRA",
+     2,
+     0,
+     "a"
+    ],
+    [
+     "d",
+     "4 · Preference",
+     "DPO · RLHF",
+     3,
+     0,
+     "a"
+    ]
+   ],
+   "edges": [
+    [
+     "p",
+     "r",
+     "facts"
+    ],
+    [
+     "r",
+     "f",
+     "habits"
+    ],
+    [
+     "f",
+     "d",
+     "taste"
+    ]
+   ]
+  },
+  "archNotes": [
+   [
+    "Start at the left",
+    "Each step right costs more data, more engineering and more maintenance. Move right only when evaluation shows the previous step is not enough."
+   ],
+   [
+    "Supervised fine-tuning (SFT)",
+    "Train on input → ideal output pairs. Good for formats, classification, extraction and a consistent voice."
+   ],
+   [
+    "LoRA and QLoRA",
+    "Train small low-rank adapter matrices instead of all weights. QLoRA does this on a 4-bit quantised base model, so large models can be tuned on modest GPUs. Many adapters can share one base model in serving."
+   ],
+   [
+    "Preference tuning",
+    "DPO learns directly from pairs of preferred and rejected answers. RLHF trains a reward model and optimises against it; more complex, used by model providers."
+   ],
+   [
+    "Distillation",
+    "Generate high-quality outputs with a large model, then fine-tune a small model on them for a narrow task."
+   ]
+  ],
+  "states": [
+   [
+    "Full fine-tune",
+    "Update all weights. Highest flexibility, highest cost and risk of forgetting."
+   ],
+   [
+    "LoRA",
+    "Add trainable low-rank matrices to attention and MLP layers; typically well under 1% of parameters."
+   ],
+   [
+    "QLoRA",
+    "LoRA on a 4-bit base; fits large models on fewer GPUs."
+   ],
+   [
+    "DPO",
+    "Preference pairs, no separate reward model."
+   ],
+   [
+    "Provider fine-tuning",
+    "Hosted APIs that fine-tune supported models on uploaded examples."
+   ]
+  ],
+  "seq": {
+   "actors": [
+    "Data team",
+    "Dataset",
+    "Trainer",
+    "Evaluator",
+    "Serving"
+   ],
+   "msgs": [
+    [
+     0,
+     1,
+     "collect 20k labelled examples"
+    ],
+    [
+     1,
+     1,
+     "dedupe, split train/val/test"
+    ],
+    [
+     1,
+     2,
+     "LoRA on base model"
+    ],
+    [
+     2,
+     3,
+     "adapter checkpoint"
+    ],
+    [
+     3,
+     3,
+     "score vs baseline on test set"
+    ],
+    [
+     3,
+     0,
+     "accuracy, cost, latency",
+     "d"
+    ],
+    [
+     "note",
+     "Promote only if it beats prompting + RAG"
+    ],
+    [
+     3,
+     4,
+     "deploy adapter on shared base"
+    ]
+   ]
+  },
+  "seqNotes": [
+   "Hold out a test set that the model never sees, and compare against the cheapest baseline, not just the original prompt.",
+   "Version the dataset, base model and adapter together."
+  ],
+  "code": [
+   [
+    "LoRA fine-tune (Hugging Face PEFT)",
+    "python",
+    "from peft import LoraConfig, get_peft_model\nfrom transformers import AutoModelForCausalLM\n\nbase = AutoModelForCausalLM.from_pretrained(\"meta-llama/Llama-3.1-8B-Instruct\", torch_dtype=\"bfloat16\")\ncfg = LoraConfig(r=16, lora_alpha=32, lora_dropout=0.05,\n                 target_modules=[\"q_proj\", \"k_proj\", \"v_proj\", \"o_proj\"], task_type=\"CAUSAL_LM\")\nmodel = get_peft_model(base, cfg)\nmodel.print_trainable_parameters()     # a small fraction of the 8B weights\n# train with your SFT trainer on {\"messages\": [...]} examples, then save the adapter only"
+   ],
+   [
+    "Training example format",
+    "json",
+    "{ \"messages\": [\n  { \"role\": \"system\", \"content\": \"Classify the support ticket. Reply with one category id.\" },\n  { \"role\": \"user\", \"content\": \"I was charged twice for my annual plan\" },\n  { \"role\": \"assistant\", \"content\": \"billing.duplicate_charge\" } ] }"
+   ]
+  ],
+  "platforms": [
+   [
+    "Prompting",
+    [
+     "A versioned system prompt, 3–10 good examples, an evaluation set."
+    ]
+   ],
+   [
+    "RAG",
+    [
+     "Clean, chunked documents with metadata and permissions; labelled questions for retrieval evaluation."
+    ]
+   ],
+   [
+    "Fine-tuning",
+    [
+     "Thousands of high-quality input/output pairs representative of production; a held-out test set."
+    ]
+   ],
+   [
+    "Preference tuning",
+    [
+     "Pairs of better and worse answers, ideally from real reviewer edits."
+    ]
+   ]
+  ],
+  "tech": [
+   [
+    "Training libraries",
+    "Hugging Face Transformers · PEFT · TRL · Axolotl · Unsloth",
+    "PEFT + TRL for LoRA, SFT and DPO; Unsloth or Axolotl for fast recipes."
+   ],
+   [
+    "Hosted fine-tuning",
+    "Fine-tuning APIs from major providers and cloud platforms",
+    "When you want no training infrastructure and the base model is supported."
+   ],
+   [
+    "Serving adapters",
+    "vLLM multi-LoRA · TGI",
+    "Serve many adapters on one base model."
+   ],
+   [
+    "Experiment tracking",
+    "Weights & Biases · MLflow",
+    "Version data, configs, metrics and checkpoints."
+   ]
+  ],
+  "real": [],
+  "metrics": [
+   [
+    "Task accuracy / F1 on held-out test",
+    "The main decision metric."
+   ],
+   [
+    "Regression on general behaviour",
+    "Fine-tuning can degrade other skills; test them."
+   ],
+   [
+    "Cost and latency per request",
+    "Often the reason to fine-tune a small model."
+   ],
+   [
+    "Human preference win rate",
+    "For style and tone tasks."
+   ]
+  ],
+  "edges": [
+   [
+    "Facts baked into weights go stale",
+    "Use retrieval for anything that changes."
+   ],
+   [
+    "Training data leaks personal data",
+    "Redact before training; models can memorise."
+   ],
+   [
+    "Overfitting to a narrow dataset",
+    "Diverse examples, held-out evaluation, early stopping."
+   ],
+   [
+    "Base model upgrade",
+    "Adapters are tied to a base; plan to retrain."
+   ]
+  ],
+  "interview": [
+   [
+    "When would you fine-tune instead of RAG?",
+    "When the problem is behaviour, format or cost on a narrow, high-volume task, not missing facts. Facts that change belong in retrieval."
+   ],
+   [
+    "What is LoRA and why is it popular?",
+    "It freezes the base model and trains small low-rank matrices, so training is cheap, adapters are small files, and many adapters can share one base in serving."
+   ],
+   [
+    "How do you know fine-tuning helped?",
+    "Compare against the best prompt + RAG baseline on a held-out test set, including cost and latency, and check for regressions on other skills."
+   ]
+  ]
+ },
+ {
+  "id": "agents-mcp",
+  "group": "ai",
+  "title": "Tool use, agents and MCP",
+  "kicker": "AI handbook · integrations",
+  "labels": {
+   "does": "What agents can do",
+   "doesnt": "What they should not do unsupervised",
+   "scenario": "An operations agent in practice",
+   "arch": "Agent architecture with MCP",
+   "states": "Key concepts",
+   "seq": "One agent loop over MCP",
+   "platforms": "Design rules",
+   "tech": "Frameworks and protocols",
+   "metrics": "Agent metrics",
+   "edges": "Risks and controls"
+  },
+  "summary": "Tool use lets a model call functions you define: it outputs a structured request, your code runs it, and the result goes back into the conversation. An agent is a loop of that pattern with a goal. The Model Context Protocol (MCP) standardises how AI applications connect to tools and data, so one integration works across many AI clients.",
+  "does": [
+   "Look up live data through APIs",
+   "Take actions such as creating tickets or bookings",
+   "Plan multi-step tasks and recover from errors",
+   "Work across systems through standard MCP servers"
+  ],
+  "doesnt": [
+   "Irreversible or costly actions without human confirmation",
+   "Act with more permissions than the user who asked",
+   "Trust instructions found inside tool results or documents",
+   "Loop without limits on steps, time and cost"
+  ],
+  "scenario": [
+   "An on-call engineer asks the internal assistant: ‘Why did checkout errors spike at 14:00, and open an incident if it’s still happening?’ The assistant is an MCP host connected to MCP servers for metrics, logs, the deploy system and the incident tool.",
+   "The model calls metrics.query and sees errors rising at 13:58. It calls deploys.list and finds a payments-service release at 13:55, then logs.search for that service and finds a timeout to the payment provider introduced by a config change.",
+   "Errors are still elevated, so it proposes incidents.create with a summary, links and severity. Because creating an incident pages people, the host shows a confirmation card. The engineer approves; the incident opens with the evidence attached.",
+   "Every tool call, its arguments and results are traced. The agent had read-only access to metrics and logs and write access only to incidents, scoped to the engineer’s own permissions."
+  ],
+  "arch": {
+   "cols": 4,
+   "rows": 3,
+   "groups": [
+    [
+     "MCP host (your app)",
+     0,
+     1,
+     0,
+     2
+    ],
+    [
+     "MCP servers",
+     2,
+     3,
+     0,
+     2
+    ]
+   ],
+   "nodes": [
+    [
+     "user",
+     "User",
+     "goal",
+     0,
+     0,
+     "c"
+    ],
+    [
+     "loop",
+     "Agent loop",
+     "plan · act · observe",
+     1,
+     0,
+     "a"
+    ],
+    [
+     "llm",
+     "Model",
+     "tool-calling LLM",
+     0,
+     1,
+     "x"
+    ],
+    [
+     "client",
+     "MCP clients",
+     "one per server",
+     1,
+     1,
+     "s"
+    ],
+    [
+     "guard",
+     "Approvals",
+     "policy · confirm writes",
+     0,
+     2,
+     "s"
+    ],
+    [
+     "trace",
+     "Tracing",
+     "steps · cost",
+     1,
+     2,
+     "s"
+    ],
+    [
+     "m",
+     "Metrics server",
+     "tools: query",
+     2,
+     0,
+     "s"
+    ],
+    [
+     "l",
+     "Logs server",
+     "tools: search",
+     3,
+     0,
+     "s"
+    ],
+    [
+     "dpl",
+     "Deploys server",
+     "resources: releases",
+     2,
+     1,
+     "s"
+    ],
+    [
+     "inc",
+     "Incidents server",
+     "tools: create",
+     3,
+     1,
+     "s"
+    ],
+    [
+     "sys",
+     "Internal APIs",
+     "existing services",
+     2,
+     2,
+     "d"
+    ],
+    [
+     "auth",
+     "Auth",
+     "OAuth · user scopes",
+     3,
+     2,
+     "s"
+    ]
+   ],
+   "edges": [
+    [
+     "user",
+     "loop",
+     ""
+    ],
+    [
+     "loop",
+     "llm",
+     "prompt + tools"
+    ],
+    [
+     "loop",
+     "client",
+     "call"
+    ],
+    [
+     "client",
+     "dpl",
+     "JSON-RPC"
+    ],
+    [
+     "dpl",
+     "m",
+     ""
+    ],
+    [
+     "m",
+     "l",
+     ""
+    ],
+    [
+     "dpl",
+     "inc",
+     ""
+    ],
+    [
+     "client",
+     "guard",
+     "writes?"
+    ],
+    [
+     "client",
+     "trace",
+     ""
+    ],
+    [
+     "dpl",
+     "sys",
+     ""
+    ],
+    [
+     "sys",
+     "auth",
+     ""
+    ]
+   ]
+  },
+  "archNotes": [
+   [
+    "Tool calling",
+    "You describe tools with names, descriptions and JSON schemas. The model returns a tool call with arguments; your code executes it and returns the result as a message. The model never runs code itself."
+   ],
+   [
+    "Agent loop",
+    "Repeat: send messages and tools to the model, execute any tool calls, append results, stop when the model answers or a limit is hit. Limits on steps, time and tokens are mandatory."
+   ],
+   [
+    "MCP",
+    "An open protocol introduced by Anthropic in late 2024 and adopted widely since. A host application runs MCP clients that connect to MCP servers. Servers expose tools (actions), resources (data to read) and prompts (templates). Messages use JSON-RPC 2.0 over local stdio or HTTP-based transports."
+   ],
+   [
+    "Why MCP matters",
+    "Without a standard, every AI app writes custom integrations for every system. With MCP, a team writes one server for its system and any MCP-capable client can use it."
+   ],
+   [
+    "Policy and approvals",
+    "Read tools run freely within the user’s scope; write tools need confirmation; destructive tools may be excluded entirely."
+   ]
+  ],
+  "states": [
+   [
+    "Tool",
+    "A callable function with a schema, e.g. create_incident."
+   ],
+   [
+    "Resource",
+    "Readable context exposed by a server, e.g. a release record or file."
+   ],
+   [
+    "Host / client / server",
+    "The AI application / its connector to one server / the integration exposing capabilities."
+   ],
+   [
+    "Workflow vs agent",
+    "Workflows follow fixed steps with LLM calls inside; agents choose their own steps. Prefer workflows when steps are known."
+   ],
+   [
+    "Human in the loop",
+    "Required confirmation before consequential actions."
+   ]
+  ],
+  "seq": {
+   "actors": [
+    "User",
+    "Host + agent loop",
+    "Model",
+    "MCP client",
+    "Incidents server"
+   ],
+   "msgs": [
+    [
+     0,
+     1,
+     "goal"
+    ],
+    [
+     1,
+     3,
+     "tools/list on connect"
+    ],
+    [
+     3,
+     1,
+     "tool schemas",
+     "d"
+    ],
+    [
+     1,
+     2,
+     "messages + tools"
+    ],
+    [
+     2,
+     1,
+     "tool_call create_incident(args)",
+     "d"
+    ],
+    [
+     1,
+     0,
+     "confirm card",
+     "d"
+    ],
+    [
+     0,
+     1,
+     "approve"
+    ],
+    [
+     1,
+     3,
+     "tools/call create_incident"
+    ],
+    [
+     3,
+     4,
+     "JSON-RPC request"
+    ],
+    [
+     4,
+     3,
+     "result: INC-482",
+     "d"
+    ],
+    [
+     1,
+     2,
+     "tool result"
+    ],
+    [
+     2,
+     1,
+     "final answer",
+     "d"
+    ]
+   ]
+  },
+  "seqNotes": [
+   "The host, not the model, decides whether a call needs approval.",
+   "Tool results are data; instructions inside them must not be followed blindly."
+  ],
+  "code": [
+   [
+    "A minimal MCP server (TypeScript SDK)",
+    "ts",
+    "import { McpServer } from \"@modelcontextprotocol/sdk/server/mcp.js\";\nimport { StdioServerTransport } from \"@modelcontextprotocol/sdk/server/stdio.js\";\nimport { z } from \"zod\";\n\nconst server = new McpServer({ name: \"incidents\", version: \"1.0.0\" });\n\nserver.tool(\"create_incident\",\n  { title: z.string(), severity: z.enum([\"sev1\", \"sev2\", \"sev3\"]), summary: z.string() },\n  async ({ title, severity, summary }) => {\n    const inc = await incidentsApi.create({ title, severity, summary });   // runs with the caller's scopes\n    return { content: [{ type: \"text\", text: \"Created \" + inc.id }] };\n  });\n\nawait server.connect(new StdioServerTransport());"
+   ],
+   [
+    "Agent loop with limits (TypeScript)",
+    "ts",
+    "const MAX_STEPS = 8, MAX_COST_USD = 0.50;\nfor (let step = 0; step < MAX_STEPS; step++) {\n  const res = await model.create({ messages, tools: mcpTools });\n  cost += res.usage.cost; if (cost > MAX_COST_USD) return stop('budget');\n  if (!res.toolCalls.length) return res.text;\n  for (const call of res.toolCalls) {\n    if (policy.needsApproval(call) && !(await askUser(call))) return stop('declined');\n    const out = await mcp.callTool(call.name, call.args);          // scoped to the user\n    messages.push(res.message, { role: 'tool', toolCallId: call.id, content: truncate(out, 4000) });\n  }\n}\nreturn stop('step limit');"
+   ]
+  ],
+  "platforms": [
+   [
+    "Design rules",
+    [
+     "Start with a workflow; promote to an agent only when steps genuinely vary.",
+     "Few, well-described tools beat many overlapping ones.",
+     "Return compact, structured tool results; truncate large outputs."
+    ]
+   ],
+   [
+    "Security",
+    [
+     "Run tools with the end user’s permissions, never a super-user.",
+     "Require confirmation for writes; block destructive tools.",
+     "Treat tool output as untrusted input (prompt injection)."
+    ]
+   ],
+   [
+    "Operations",
+    [
+     "Trace every step with arguments, results, tokens and cost.",
+     "Evaluate on scripted tasks with expected tool trajectories."
+    ]
+   ]
+  ],
+  "tech": [
+   [
+    "Protocols",
+    "MCP (tools, resources, prompts) · provider tool-calling APIs",
+    "MCP to expose systems once for many clients; direct tool calling inside a single app."
+   ],
+   [
+    "Agent frameworks",
+    "Provider agent SDKs · LangGraph · LlamaIndex · plain code",
+    "Plain code for simple loops; a framework when you need state machines, retries and persistence."
+   ],
+   [
+    "MCP servers",
+    "Official SDKs (TypeScript, Python, others) · existing servers for GitHub, databases, docs",
+    "Wrap internal APIs as servers owned by the teams that own the APIs."
+   ],
+   [
+    "Coding agents",
+    "Claude Code and similar terminal or IDE agents",
+    "Agents that read code, run commands and edit files under developer supervision."
+   ]
+  ],
+  "real": [
+   [
+    "Anthropic",
+    "Introduced MCP as an open standard in November 2024, with SDKs and reference servers."
+   ],
+   [
+    "Industry adoption",
+    "Through 2025, major AI platforms and developer tools added MCP client support, making it a common way to connect assistants to tools."
+   ]
+  ],
+  "metrics": [
+   [
+    "Task success rate",
+    "Did the agent achieve the goal on the evaluation set?"
+   ],
+   [
+    "Steps and cost per task",
+    "Detects loops and inefficient plans."
+   ],
+   [
+    "Tool error rate by tool",
+    "Points to unclear tool descriptions or flaky APIs."
+   ],
+   [
+    "Approval rate",
+    "How often humans accept proposed actions."
+   ]
+  ],
+  "edges": [
+   [
+    "Prompt injection via a ticket or web page",
+    "Untrusted content cannot authorise actions; writes need user confirmation."
+   ],
+   [
+    "Agent loops forever",
+    "Step, time and cost limits; detect repeated identical calls."
+   ],
+   [
+    "Over-privileged tools",
+    "Scope tokens per user and per server; least privilege."
+   ],
+   [
+    "Huge tool output floods context",
+    "Paginate and summarise in the server; truncate in the host."
+   ]
+  ],
+  "interview": [
+   [
+    "What is MCP and why would you adopt it?",
+    "An open protocol for connecting AI applications to tools and data through servers that expose tools, resources and prompts over JSON-RPC. Teams build one server per system and every MCP-capable client can use it, instead of N×M custom integrations."
+   ],
+   [
+    "Workflow or agent?",
+    "A workflow when the steps are known: cheaper, testable, predictable. An agent when the path depends on what it discovers. Many production systems are workflows with small agentic steps."
+   ],
+   [
+    "How do you make an agent safe?",
+    "Least-privilege tools scoped to the user, confirmation for consequential actions, limits on steps and cost, untrusted handling of tool output, full tracing, and evaluation on scripted tasks."
+   ]
+  ]
+ },
+ {
+  "id": "llm-integration",
+  "group": "ai",
+  "title": "Integrating LLMs into products",
+  "kicker": "AI handbook · integration patterns",
+  "labels": {
+   "does": "Patterns that work",
+   "doesnt": "Anti-patterns",
+   "scenario": "Adding AI to an existing app",
+   "arch": "An LLM gateway",
+   "states": "Patterns at a glance",
+   "seq": "A resilient LLM call",
+   "platforms": "Client-side concerns",
+   "tech": "Building blocks",
+   "metrics": "Operational metrics",
+   "edges": "Production failures"
+  },
+  "summary": "Most LLM features are ordinary software with one unreliable, slow, expensive dependency in the middle. The patterns that make them production-grade are the same ones you use for payments or search: a gateway, contracts, retries, fallbacks, caching, budgets and observability.",
+  "does": [
+   "One internal gateway in front of all model providers",
+   "Versioned prompt templates with owners",
+   "Structured outputs validated against a schema",
+   "Streaming to the client with cancel",
+   "Fallback models and graceful degradation",
+   "Per-feature budgets and per-user limits"
+  ],
+  "doesnt": [
+   "Calling providers directly from mobile apps with embedded keys",
+   "Free-text parsing of model output with regex",
+   "Unbounded retries on a slow provider",
+   "Logging full prompts with personal data",
+   "Shipping prompt changes without an evaluation run"
+  ],
+  "scenario": [
+   "A product team wants to add three features in a quarter: listing description rewrite, review summaries and a support assistant. Instead of each team calling providers directly, the platform team ships an LLM gateway in two weeks.",
+   "The gateway authenticates internal callers, looks up the prompt template version for the feature, routes to the configured model, enforces JSON schemas on output, retries once on transient errors, falls back to a second provider, and records tokens and cost per feature.",
+   "Review summaries run nightly through the provider’s batch API at a lower price. Description rewrites stream to the mobile app over server-sent events. The support assistant uses tools through the same gateway.",
+   "When one provider has an outage, traffic moves to the fallback automatically. When cost spikes, the dashboard shows which feature and prompt version caused it."
+  ],
+  "arch": {
+   "cols": 4,
+   "rows": 3,
+   "groups": [
+    [
+     "Callers",
+     0,
+     0,
+     0,
+     2
+    ],
+    [
+     "LLM gateway",
+     1,
+     2,
+     0,
+     2
+    ],
+    [
+     "Providers",
+     3,
+     3,
+     0,
+     2
+    ]
+   ],
+   "nodes": [
+    [
+     "app",
+     "Mobile + web",
+     "SSE streams",
+     0,
+     0,
+     "c"
+    ],
+    [
+     "svc",
+     "Backend services",
+     "sync calls",
+     0,
+     1,
+     "c"
+    ],
+    [
+     "jobs",
+     "Batch jobs",
+     "nightly",
+     0,
+     2,
+     "c"
+    ],
+    [
+     "auth",
+     "Auth + quotas",
+     "per feature · user",
+     1,
+     0,
+     "s"
+    ],
+    [
+     "tmpl",
+     "Prompt registry",
+     "versioned",
+     1,
+     1,
+     "d"
+    ],
+    [
+     "cache",
+     "Caches",
+     "prefix · semantic",
+     1,
+     2,
+     "d"
+    ],
+    [
+     "route",
+     "Router",
+     "model per feature",
+     2,
+     0,
+     "s"
+    ],
+    [
+     "val",
+     "Validator",
+     "JSON schema · guardrails",
+     2,
+     1,
+     "a"
+    ],
+    [
+     "obs",
+     "Metering + traces",
+     "tokens · cost",
+     2,
+     2,
+     "s"
+    ],
+    [
+     "p1",
+     "Provider A",
+     "primary",
+     3,
+     0,
+     "x"
+    ],
+    [
+     "p2",
+     "Provider B",
+     "fallback",
+     3,
+     1,
+     "x"
+    ],
+    [
+     "self",
+     "Self-hosted",
+     "open models",
+     3,
+     2,
+     "a"
+    ]
+   ],
+   "edges": [
+    [
+     "app",
+     "auth",
+     ""
+    ],
+    [
+     "svc",
+     "tmpl",
+     ""
+    ],
+    [
+     "jobs",
+     "cache",
+     ""
+    ],
+    [
+     "auth",
+     "route",
+     ""
+    ],
+    [
+     "tmpl",
+     "val",
+     ""
+    ],
+    [
+     "route",
+     "p1",
+     ""
+    ],
+    [
+     "val",
+     "p2",
+     ""
+    ],
+    [
+     "obs",
+     "self",
+     ""
+    ],
+    [
+     "route",
+     "val",
+     "output"
+    ],
+    [
+     "val",
+     "obs",
+     ""
+    ]
+   ]
+  },
+  "archNotes": [
+   [
+    "Gateway",
+    "One service owns provider keys, routing, retries, fallbacks, quotas and metering. Teams call a stable internal API instead of provider SDKs."
+   ],
+   [
+    "Prompt registry",
+    "Templates stored with versions and owners; features reference a version, and rollbacks are configuration."
+   ],
+   [
+    "Structured output",
+    "Ask for JSON that matches a schema, using the provider’s schema or tool features where available, then validate. Invalid output triggers one repair attempt, then a fallback."
+   ],
+   [
+    "Resilience",
+    "Timeouts sized to the feature, one retry with jitter for transient errors, circuit breakers per provider, and a fallback model or non-AI path."
+   ],
+   [
+    "Metering",
+    "Tokens, latency and cost per feature, prompt version and model; daily budgets with alerts."
+   ]
+  ],
+  "states": [
+   [
+    "Streaming",
+    "Server-sent events from gateway to client; render in small batches; support cancel."
+   ],
+   [
+    "Structured outputs",
+    "JSON schema in the request, validation on the response."
+   ],
+   [
+    "Fallback",
+    "Second provider or smaller model; then a non-AI experience."
+   ],
+   [
+    "Batch processing",
+    "Offline jobs through batch APIs at lower cost."
+   ],
+   [
+    "Prompt caching",
+    "Stable prefixes reused across calls for lower cost and latency."
+   ]
+  ],
+  "seq": {
+   "actors": [
+    "Service",
+    "Gateway",
+    "Provider A",
+    "Provider B",
+    "Validator"
+   ],
+   "msgs": [
+    [
+     0,
+     1,
+     "feature=review_summary, input"
+    ],
+    [
+     1,
+     1,
+     "template v7, model routing"
+    ],
+    [
+     1,
+     2,
+     "request (timeout 8 s)"
+    ],
+    [
+     2,
+     1,
+     "503",
+     "d"
+    ],
+    [
+     1,
+     2,
+     "one retry with jitter"
+    ],
+    [
+     2,
+     1,
+     "timeout",
+     "d"
+    ],
+    [
+     1,
+     3,
+     "fallback request"
+    ],
+    [
+     3,
+     1,
+     "JSON output",
+     "d"
+    ],
+    [
+     1,
+     4,
+     "validate schema"
+    ],
+    [
+     4,
+     1,
+     "valid",
+     "d"
+    ],
+    [
+     1,
+     0,
+     "result + usage",
+     "d"
+    ]
+   ]
+  },
+  "seqNotes": [
+   "Retries are bounded and fallback is automatic.",
+   "The caller receives the same schema whichever provider answered."
+  ],
+  "code": [
+   [
+    "Gateway request contract",
+    "json",
+    "POST /v1/llm/generate\n{ \"feature\": \"review_summary\", \"template_version\": \"v7\",\n  \"input\": { \"reviews\": [\"...\"], \"language\": \"en\" },\n  \"output_schema\": { \"type\": \"object\", \"required\": [\"summary\", \"pros\", \"cons\"],\n    \"properties\": { \"summary\": { \"type\": \"string\", \"maxLength\": 400 },\n      \"pros\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n      \"cons\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } } } },\n  \"stream\": false, \"user_id\": \"u-91\" }"
+   ],
+   [
+    "Validate and repair once (TypeScript)",
+    "ts",
+    "const out = await callModel(req);\nlet parsed = safeJson(out.text);\nif (!schema.validate(parsed)) {\n  const fix = await callModel({ ...req, messages: [...req.messages,\n    { role: 'user', content: 'Return valid JSON matching the schema. Errors: ' + schema.errors() }] });\n  parsed = safeJson(fix.text);\n  if (!schema.validate(parsed)) return fallback(req.feature);   // non-AI path or cached result\n}\nreturn parsed;"
+   ]
+  ],
+  "platforms": [
+   [
+    "Mobile apps",
+    [
+     "Never embed provider keys; call your gateway with the user’s session.",
+     "Stream with SSE, render in batches, allow cancel and retry.",
+     "Cache results in SQLite; show something useful offline."
+    ]
+   ],
+   [
+    "Web",
+    [
+     "Same gateway; stream with fetch and ReadableStream.",
+     "Disable submit while streaming to avoid duplicate calls."
+    ]
+   ],
+   [
+    "Privacy",
+    [
+     "Redact personal data before logging; set provider data-retention options.",
+     "Region-pin traffic where residency rules apply."
+    ]
+   ]
+  ],
+  "tech": [
+   [
+    "Gateways",
+    "In-house service · open-source LLM proxies · cloud AI gateways",
+    "In-house when you need custom policy; a proxy to start quickly."
+   ],
+   [
+    "Schemas",
+    "JSON Schema · Zod · Pydantic",
+    "Define once, use for prompts, validation and types."
+   ],
+   [
+    "Observability",
+    "OpenTelemetry · LLM tracing tools (e.g. Langfuse, LangSmith)",
+    "Trace prompts, outputs, tokens and cost per feature."
+   ],
+   [
+    "Cost controls",
+    "Batch APIs · prompt caching · routing · output caps",
+    "Combine; each alone is partial."
+   ]
+  ],
+  "real": [],
+  "metrics": [
+   [
+    "Error rate and fallback rate per provider",
+    "Provider health and resilience."
+   ],
+   [
+    "Schema validation failure rate",
+    "Prompt or model regressions."
+   ],
+   [
+    "Cost per feature per day",
+    "Budget control."
+   ],
+   [
+    "p95 latency per feature",
+    "User experience."
+   ]
+  ],
+  "edges": [
+   [
+    "Provider outage",
+    "Circuit breaker, fallback provider, then a non-AI path."
+   ],
+   [
+    "Model update changes behaviour",
+    "Pin model versions; re-run evaluations before switching."
+   ],
+   [
+    "Runaway cost from a loop",
+    "Per-feature budgets and per-request token caps."
+   ],
+   [
+    "Personal data in logs",
+    "Redaction at the gateway; restricted access."
+   ]
+  ],
+  "interview": [
+   [
+    "Why put a gateway in front of LLM providers?",
+    "Central keys, routing, retries, fallbacks, quotas, metering and policy. Teams ship features faster and the company can switch models without touching every service."
+   ],
+   [
+    "How do you get reliable structured data from a model?",
+    "Schema in the request using provider features where available, validation on the response, one repair attempt, then a fallback."
+   ],
+   [
+    "How do you add an LLM to a mobile app safely?",
+    "The app calls your backend, never the provider. Stream responses, support cancel, cache results, and design a useful experience when the AI path fails."
+   ]
+  ]
+ },
+ {
+  "id": "ai-dev-accel",
+  "group": "ai",
+  "title": "Using AI to accelerate engineering teams",
+  "kicker": "AI handbook · leadership",
+  "labels": {
+   "does": "Where AI helps engineers most",
+   "doesnt": "Where to be careful",
+   "scenario": "Rolling out AI coding tools to 150 engineers",
+   "arch": "AI across the delivery pipeline",
+   "states": "Tool categories",
+   "seq": "An AI-assisted change",
+   "platforms": "Guardrails that make it safe",
+   "tech": "Tools",
+   "metrics": "Measuring impact honestly",
+   "edges": "Failure modes"
+  },
+  "summary": "As a principal engineer you will be asked how AI changes the way your teams build software, and how you would roll it out responsibly. The answer covers tools, workflow changes, guardrails, measurement and culture, not just which assistant to buy.",
+  "does": [
+   "Reading and explaining unfamiliar code",
+   "Writing tests, migrations and boilerplate",
+   "Refactors with clear patterns across many files",
+   "First drafts of RFCs, runbooks and incident timelines",
+   "Reviewing diffs for common mistakes",
+   "Investigating failures with logs and traces"
+  ],
+  "doesnt": [
+   "Security-sensitive code without expert review",
+   "Architecture decisions without human ownership",
+   "Merging generated code nobody understands",
+   "Sending proprietary code to tools without an enterprise agreement"
+  ],
+  "scenario": [
+   "Leadership wants AI tools for 150 mobile and backend engineers. You start with a four-week pilot in two teams: one mobile, one backend, with an enterprise plan that keeps code private and disables training on company data.",
+   "Engineers use an IDE assistant for completion and chat, and an agentic coding tool such as Claude Code for multi-file changes: it reads the repo, runs Gradle and tests, and proposes diffs that engineers review. A repository-level instructions file captures conventions: module boundaries, test commands and banned APIs.",
+   "CI adds an AI review pass that comments on likely bugs and missing tests; humans still approve. Test-generation is targeted at the sync engine, where coverage was weakest.",
+   "You measure before and after: PR cycle time, change failure rate, escaped defects, and a short developer survey. Results are shared openly, including where the tools did not help, before expanding to all teams with a paved-road setup."
+  ],
+  "arch": {
+   "cols": 4,
+   "rows": 2,
+   "groups": [
+    [
+     "Build",
+     0,
+     1,
+     0,
+     1
+    ],
+    [
+     "Verify and run",
+     2,
+     3,
+     0,
+     1
+    ]
+   ],
+   "nodes": [
+    [
+     "plan",
+     "Plan",
+     "RFC drafts · research",
+     0,
+     0,
+     "s"
+    ],
+    [
+     "code",
+     "Code",
+     "IDE assistant · coding agent",
+     1,
+     0,
+     "a"
+    ],
+    [
+     "ctx",
+     "Team context",
+     "instructions file · MCP to docs",
+     0,
+     1,
+     "d"
+    ],
+    [
+     "test",
+     "Tests",
+     "generated · reviewed",
+     1,
+     1,
+     "a"
+    ],
+    [
+     "review",
+     "Review",
+     "AI pre-review + human",
+     2,
+     0,
+     "a"
+    ],
+    [
+     "ci",
+     "CI gates",
+     "lint · tests · security scan",
+     3,
+     0,
+     "s"
+    ],
+    [
+     "ops",
+     "Operate",
+     "log + trace analysis",
+     2,
+     1,
+     "a"
+    ],
+    [
+     "learn",
+     "Learn",
+     "postmortems · docs",
+     3,
+     1,
+     "s"
+    ]
+   ],
+   "edges": [
+    [
+     "plan",
+     "code",
+     ""
+    ],
+    [
+     "ctx",
+     "test",
+     ""
+    ],
+    [
+     "code",
+     "review",
+     "PR"
+    ],
+    [
+     "review",
+     "ci",
+     ""
+    ],
+    [
+     "test",
+     "ops",
+     ""
+    ],
+    [
+     "ops",
+     "learn",
+     ""
+    ]
+   ]
+  },
+  "archNotes": [
+   [
+    "Context is the multiplier",
+    "Assistants perform far better with repository instructions, architecture docs and access to internal docs through MCP. Treat that context as maintained infrastructure."
+   ],
+   [
+    "Agents for multi-step changes",
+    "Agentic tools can run builds and tests and iterate on failures. Keep them in sandboxes with the developer approving commands and diffs."
+   ],
+   [
+    "Human ownership",
+    "Every merged line has a human owner who understands it. AI review supplements, never replaces, human approval."
+   ],
+   [
+    "Same quality gates",
+    "Generated code passes the same lint, tests, security scanning and dependency checks as any other code."
+   ]
+  ],
+  "states": [
+   [
+    "Completion",
+    "Inline suggestions as you type."
+   ],
+   [
+    "Chat in IDE",
+    "Explain, refactor, generate with selected context."
+   ],
+   [
+    "Coding agents",
+    "Read the repo, run commands, edit files, iterate on test failures."
+   ],
+   [
+    "AI code review",
+    "Automated comments on pull requests."
+   ],
+   [
+    "Ops assistants",
+    "Query logs, metrics and traces in natural language."
+   ]
+  ],
+  "seq": {
+   "actors": [
+    "Engineer",
+    "Coding agent",
+    "Repo + tests",
+    "CI",
+    "Reviewer"
+   ],
+   "msgs": [
+    [
+     0,
+     1,
+     "task + acceptance criteria"
+    ],
+    [
+     1,
+     2,
+     "read code, instructions file"
+    ],
+    [
+     1,
+     2,
+     "edit files, run tests"
+    ],
+    [
+     2,
+     1,
+     "2 failures",
+     "d"
+    ],
+    [
+     1,
+     2,
+     "fix, re-run"
+    ],
+    [
+     2,
+     1,
+     "green",
+     "d"
+    ],
+    [
+     1,
+     0,
+     "diff + explanation",
+     "d"
+    ],
+    [
+     0,
+     0,
+     "review, adjust, own it"
+    ],
+    [
+     0,
+     3,
+     "open PR"
+    ],
+    [
+     3,
+     4,
+     "AI pre-review + checks"
+    ],
+    [
+     4,
+     0,
+     "approve",
+     "d"
+    ]
+   ]
+  },
+  "seqNotes": [
+   "The engineer defines done and owns the result.",
+   "CI and human review are unchanged; AI shortens the loop before them."
+  ],
+  "code": [
+   [
+    "Repository instructions file (e.g. CLAUDE.md or AGENTS.md)",
+    "markdown",
+    "# Mobile app conventions\n- Kotlin, Jetpack Compose, Hilt. Feature modules: :feature:<name>:api and :impl.\n- Never depend on another feature's :impl module.\n- Database access only through Room DAOs in :core:db; every write in withTransaction.\n- Run before proposing a change: ./gradlew :app:lintDebug testDebugUnitTest\n- Sync engine changes need a fault-injection test in :core:sync:test.\n- Do not add dependencies without asking."
+   ],
+   [
+    "AI review step in CI (GitHub Actions sketch)",
+    "yaml",
+    "name: ai-review\non: pull_request\njobs:\n  review:\n    runs-on: ubuntu-latest\n    permissions: { pull-requests: write, contents: read }\n    steps:\n      - uses: actions/checkout@v4\n      - name: AI pre-review (comments only, never approves)\n        run: ./scripts/ai-review.sh --diff origin/main...HEAD --rules .review-rules.md"
+   ]
+  ],
+  "platforms": [
+   [
+    "Data and security",
+    [
+     "Enterprise agreements with no training on your code and clear retention terms.",
+     "Secrets scanning before any code leaves the machine; block tools on regulated repositories if needed."
+    ]
+   ],
+   [
+    "Quality",
+    [
+     "Same CI gates for all code; stricter review on security-sensitive paths.",
+     "Track escaped defects and change failure rate for AI-heavy changes."
+    ]
+   ],
+   [
+    "Culture",
+    [
+     "Share prompts, instructions files and good workflows in a guild.",
+     "Make it optional at first; publish results honestly."
+    ]
+   ]
+  ],
+  "tech": [
+   [
+    "IDE assistants",
+    "GitHub Copilot · Cursor · JetBrains AI · others",
+    "Pick by IDE coverage, enterprise controls and model choice."
+   ],
+   [
+    "Coding agents",
+    "Claude Code · other terminal and IDE agents",
+    "For multi-file changes, test fixing and codebase exploration."
+   ],
+   [
+    "Review",
+    "AI review bots in CI",
+    "Comments only; humans approve."
+   ],
+   [
+    "Context",
+    "Instructions files · MCP servers for docs, tickets, logs",
+    "Keep them versioned with the code."
+   ]
+  ],
+  "real": [],
+  "metrics": [
+   [
+    "PR cycle time and lead time",
+    "Delivery speed (DORA)."
+   ],
+   [
+    "Change failure rate and escaped defects",
+    "Quality must not drop."
+   ],
+   [
+    "Review load per reviewer",
+    "AI can increase PR volume; watch reviewer burnout."
+   ],
+   [
+    "Developer survey",
+    "Perceived productivity and where it helps."
+   ]
+  ],
+  "edges": [
+   [
+    "More code, more review burden",
+    "Smaller PRs, AI pre-review, clear ownership."
+   ],
+   [
+    "Subtle bugs in plausible code",
+    "Tests first, fault injection for critical modules, careful review."
+   ],
+   [
+    "Licensing and IP concerns",
+    "Tools with code-reference filters and enterprise terms."
+   ],
+   [
+    "Skills atrophy in juniors",
+    "Pairing, explain-before-merge, and code reading practice."
+   ]
+  ],
+  "interview": [
+   [
+    "How would you roll out AI coding tools across teams?",
+    "A measured pilot with enterprise controls, instructions files and shared workflows, the same quality gates, before/after metrics including failure rates, then an honest review before scaling."
+   ],
+   [
+    "How do you measure whether AI helps?",
+    "Delivery metrics such as cycle time and lead time, quality metrics such as change failure rate and escaped defects, review load, and developer surveys, compared with a baseline."
+   ],
+   [
+    "What would you never let an AI agent do?",
+    "Merge without human review, use production credentials, change security-sensitive code without an expert, or send proprietary code to an unapproved tool."
+   ]
+  ]
+ }
+]

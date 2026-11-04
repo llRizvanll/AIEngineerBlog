@@ -1,0 +1,2800 @@
+{
+ "offline-field": {
+  "simple": {
+   "what": "An app that pipeline technicians carry to inspection sites. They open a job, walk the site, answer a long checklist, take photos and short videos as evidence, and submit. Supervisors in the office watch jobs arrive on a web dashboard and send back corrections.",
+   "who": [
+    "Technicians: a phone, gloves, bright sun or dark basements, and often no signal for hours.",
+    "Supervisors: a laptop with a live dashboard; they review evidence and change instructions.",
+    "Auditors: months later, they need to trust that each photo is genuine."
+   ],
+   "journey": [
+    "7:30 am on office Wi-Fi: the app quietly downloads today’s six jobs with their drawings.",
+    "10:00 am underground: no signal. The checklist saves every answer instantly; photos attach in under a second.",
+    "10:40 am: the technician taps Submit. The app says ‘Saved on this phone. Sending when you’re back online.’",
+    "11:05 am at street level: the phone finds signal. Records go first, then photos, all in the background.",
+    "11:07 am: the supervisor sees the job and thumbnails; she asks for one more photo, which pops up on the technician’s phone."
+   ],
+   "hard": [
+    [
+     "No internet for hours",
+     "Every screen must work from the phone’s own database, not from the server."
+    ],
+    [
+     "Gigabytes of media",
+     "Uploads must survive weak signal, network switches and the app being closed."
+    ],
+    [
+     "Two people edit one job",
+     "The technician answers while the supervisor edits instructions; neither may overwrite the other."
+    ],
+    [
+     "Evidence must be trustworthy",
+     "We must prove a photo wasn’t replaced or edited after it was taken."
+    ]
+   ],
+   "analogy": "Think of a courier’s paper notebook. At every stop he writes everything down, and the office copies the notebook whenever he passes a phone booth. The notebook is the truth; the phone booth is a bonus.",
+   "oneLine": "A local-first app with an outbox for records and a resumable pipeline for files, synced by OS-scheduled jobs to a stateless backend that keeps an ordered change log."
+  },
+  "fe": {
+   "intro": "The technician app is the hardest part of this system to get right. It must be fast with gloves on, readable in sunlight, and honest about what has and has not reached the office. The team uses React Native for screens, with native modules for everything that runs in the background.",
+   "screens": {
+    "cols": 4,
+    "rows": 2,
+    "groups": [],
+    "nodes": [
+     [
+      "jobs",
+      "Today’s jobs",
+      "list · sync badges",
+      0,
+      0,
+      "c"
+     ],
+     [
+      "detail",
+      "Job detail",
+      "site · drawings · status",
+      1,
+      0,
+      "c"
+     ],
+     [
+      "check",
+      "Checklist",
+      "sectioned form · autosave",
+      2,
+      0,
+      "c"
+     ],
+     [
+      "cam",
+      "Camera",
+      "capture · annotate",
+      3,
+      0,
+      "c"
+     ],
+     [
+      "setup",
+      "Sign-in + device",
+      "download jobs on Wi-Fi",
+      0,
+      1,
+      "c"
+     ],
+     [
+      "conf",
+      "Resolve conflict",
+      "mine vs supervisor",
+      1,
+      1,
+      "c"
+     ],
+     [
+      "review",
+      "Review + submit",
+      "missing items",
+      2,
+      1,
+      "c"
+     ],
+     [
+      "synccentre",
+      "Sync centre",
+      "queue · errors · retry",
+      3,
+      1,
+      "c"
+     ]
+    ],
+    "edges": [
+     [
+      "jobs",
+      "detail",
+      ""
+     ],
+     [
+      "detail",
+      "check",
+      "start"
+     ],
+     [
+      "check",
+      "cam",
+      "attach"
+     ],
+     [
+      "check",
+      "review",
+      "submit"
+     ],
+     [
+      "detail",
+      "conf",
+      "needs review"
+     ],
+     [
+      "review",
+      "synccentre",
+      "status"
+     ],
+     [
+      "setup",
+      "jobs",
+      ""
+     ]
+    ]
+   },
+   "screenNotes": [
+    [
+     "Today’s jobs",
+     "A FlashList of jobs read from SQLite with a status chip per row: draft, saved on phone, sending 23/52, synced, needs review. Pull-to-refresh asks for a sync but never blocks the list."
+    ],
+    [
+     "Checklist",
+     "A schema-driven form: the server sends a JSON definition of sections, questions, conditional rules and required photos, so new checklists ship without an app release. Each answer saves on change."
+    ],
+    [
+     "Camera",
+     "CameraX on Android and AVFoundation on iOS through a native module. Capture writes straight to app storage, hashes in native code and returns a thumbnail path to JavaScript."
+    ],
+    [
+     "Resolve conflict",
+     "Shows the technician’s value and the supervisor’s value side by side with who changed what and when; one tap keeps either."
+    ],
+    [
+     "Sync centre",
+     "Lists every pending record and file with progress, the last error in plain words and a Retry button. Support teams ask users to open this screen first."
+    ]
+   ],
+   "layers": [
+    [
+     "Screens",
+     "React Native (New Architecture, Fabric), FlashList",
+     "Render state, collect input, never call the network"
+    ],
+    [
+     "View state",
+     "Zustand stores + WatermelonDB observables",
+     "Derive what each screen shows from the database"
+    ],
+    [
+     "Form engine",
+     "JSON-schema checklist + react-hook-form",
+     "Conditional questions, validation, per-field autosave"
+    ],
+    [
+     "Repository",
+     "TypeScript module",
+     "Write row + outbox in one database transaction"
+    ],
+    [
+     "Native modules",
+     "Turbo Modules: Sync, Transfer, Camera",
+     "Background sync, file transfer, hashing, capture"
+    ],
+    [
+     "Local database",
+     "WatermelonDB on SQLite (JSI)",
+     "Jobs, answers, outbox, upload parts"
+    ]
+   ],
+   "uiStates": [
+    [
+     "Saved on phone",
+     "Grey clock icon and ‘Saved on this phone’",
+     "sync_state = pending on the job row"
+    ],
+    [
+     "Sending",
+     "Progress ring with ‘Sending 23 of 52 photos’",
+     "Reads transfer_part counts from SQLite"
+    ],
+    [
+     "Synced",
+     "Green tick and time synced",
+     "sync_state = synced"
+    ],
+    [
+     "Needs review",
+     "Amber badge; opens the conflict screen",
+     "sync_state = conflict with server values stored"
+    ],
+    [
+     "Failed",
+     "Red badge, the reason in plain words, Retry",
+     "Outbox row status = failed"
+    ],
+    [
+     "Offline",
+     "Thin banner: ‘Offline · 12 changes waiting’",
+     "Network state + outbox count"
+    ],
+    [
+     "Storage low",
+     "Warning before the camera opens",
+     "Free space below 1 GB"
+    ]
+   ],
+   "code": [
+    [
+     "Per-field autosave hook (React Native, TypeScript)",
+     "ts",
+     "export function useAnswer(jobId: string, fieldId: string) {\n  const answer = useObservable(() => answers.observeOne(jobId, fieldId), [jobId, fieldId]);\n\n  const save = useMemo(() => debounce(async (value: string) => {\n    await database.write(async () => {\n      await answerRepo.upsert(jobId, fieldId, value);                     // the row\n      await outboxRepo.add({ entity: 'answer', entityId: jobId + ':' + fieldId,\n                             op: 'upsert', payload: { value } });        // the intent\n    });\n    SyncModule.requestSync('user_edit');                                   // native, returns at once\n  }, 400), [jobId, fieldId]);\n\n  return { value: answer ? answer.value : '', syncState: answer ? answer.syncState : 'synced', save };\n}"
+    ],
+    [
+     "Capture, hash and queue without blocking the UI (Kotlin, CameraX)",
+     "kotlin",
+     "fun capture(jobId: String) {\n  val file = File(context.filesDir, \"media/\" + UUID.randomUUID() + \".jpg\")\n  val options = ImageCapture.OutputFileOptions.Builder(file).build()\n  imageCapture.takePicture(options, cameraExecutor, object : ImageCapture.OnImageSavedCallback {\n    override fun onImageSaved(result: ImageCapture.OutputFileResults) {\n      scope.launch(Dispatchers.IO) {\n        val sha = sha256(file)                                    // evidence hash at capture time\n        repo.attachMedia(jobId, file.path, sha, bootTimeMs = SystemClock.elapsedRealtime())\n        transfers.enqueue(file, owner = jobId, priority = Priority.BACKGROUND)\n        events.emit(CameraEvent.Saved(thumbnailFor(file)))       // JS gets a small thumbnail path\n      }\n    }\n    override fun onError(e: ImageCaptureException) { events.tryEmit(CameraEvent.Failed(e.message)) }\n  })\n}"
+    ]
+   ],
+   "perf": [
+    "The job list uses FlashList with fixed item heights, so 300 jobs scroll smoothly on a 3 GB Android phone.",
+    "Thumbnails of 256 px are generated on device; full photos are never decoded in lists.",
+    "Checklist sections mount lazily; only the visible section renders.",
+    "Hashing, compression and copying run in native code off the JavaScript thread."
+   ],
+   "a11y": [
+    "Touch targets of at least 48 dp for gloved hands, and a high-contrast theme for sunlight.",
+    "Every status uses an icon and words, never colour alone.",
+    "English and Hindi with correct font fallbacks; numbers and dates formatted for the locale.",
+    "Voice dictation in free-text notes fields."
+   ],
+   "followups": [
+    [
+     "How do you keep a 200-question form fast?",
+     "Sections are mounted lazily, each field autosaves with a short debounce, and validation runs on the visible section only, so typing never re-renders the whole form."
+    ],
+    [
+     "What does the technician see after killing the app mid-upload?",
+     "On the next open the job immediately shows ‘Sending 23 of 52’ because progress lives in SQLite, and uploading resumes without any tap."
+    ],
+    [
+     "How do you ship a new checklist without an app release?",
+     "Checklists are JSON definitions versioned on the server; the app renders them with a form engine and stores which version each answer used."
+    ]
+   ]
+  }
+ },
+ "chat": {
+  "simple": {
+   "what": "Chat inside a services marketplace: customers and providers message each other one-to-one or in small groups, share photos, and see when messages are sent, delivered and read. Think of WhatsApp built into the booking app.",
+   "who": [
+    "Customers: chat about a booking, often while travelling with patchy data.",
+    "Providers: busy, frequently on low-end Android phones, replying between jobs.",
+    "Support agents: join a conversation when something goes wrong."
+   ],
+   "journey": [
+    "A customer opens the chat from her booking and types ‘Running 10 minutes late’.",
+    "The message appears instantly with a clock, then one tick when the server has it.",
+    "The provider’s phone is in his pocket with the app closed; he gets a push notification.",
+    "He opens it; messages load from his phone first, then any missing ones arrive.",
+    "Her screen shows two blue ticks the moment he has read it."
+   ],
+   "hard": [
+    [
+     "Order must be right",
+     "Two people typing at once must see the same order on every device."
+    ],
+    [
+     "Connections drop constantly",
+     "Phones switch networks every few minutes; nothing may be lost or sent twice."
+    ],
+    [
+     "A million open connections",
+     "Real-time delivery means keeping sockets open for every online user."
+    ],
+    [
+     "Push is unreliable",
+     "Notifications can be delayed or dropped; the app must still end up complete."
+    ]
+   ],
+   "analogy": "Like a post office that numbers every letter in a conversation. Anyone holding letters 1 to 40 who receives letter 43 knows exactly which two to ask for.",
+   "oneLine": "Persistent sockets for speed, a per-conversation sequence number for correctness, and history sync by cursor as the guarantee."
+  },
+  "fe": {
+   "intro": "The chat client is a small real-time system of its own: a connection manager, a local message store, an outbox for sends and a UI that never jumps or flickers as messages change state.",
+   "screens": {
+    "cols": 4,
+    "rows": 2,
+    "groups": [],
+    "nodes": [
+     [
+      "inbox",
+      "Inbox",
+      "conversations · unread",
+      0,
+      0,
+      "c"
+     ],
+     [
+      "thread",
+      "Thread",
+      "messages · receipts",
+      1,
+      0,
+      "c"
+     ],
+     [
+      "composer",
+      "Composer",
+      "text · photo · draft",
+      2,
+      0,
+      "c"
+     ],
+     [
+      "viewer",
+      "Photo viewer",
+      "zoom · save",
+      3,
+      0,
+      "c"
+     ],
+     [
+      "push",
+      "Notification",
+      "tap → thread",
+      0,
+      1,
+      "c"
+     ],
+     [
+      "search",
+      "Search",
+      "local full-text",
+      1,
+      1,
+      "c"
+     ],
+     [
+      "info",
+      "Group info",
+      "members · mute",
+      2,
+      1,
+      "c"
+     ],
+     [
+      "picker",
+      "Photo picker",
+      "system picker",
+      3,
+      1,
+      "c"
+     ]
+    ],
+    "edges": [
+     [
+      "inbox",
+      "thread",
+      ""
+     ],
+     [
+      "thread",
+      "composer",
+      ""
+     ],
+     [
+      "composer",
+      "picker",
+      "attach"
+     ],
+     [
+      "thread",
+      "viewer",
+      ""
+     ],
+     [
+      "push",
+      "thread",
+      "deep link"
+     ],
+     [
+      "search",
+      "thread",
+      "jump to"
+     ],
+     [
+      "thread",
+      "info",
+      ""
+     ]
+    ]
+   },
+   "screenNotes": [
+    [
+     "Inbox",
+     "Reads conversations from the local database ordered by last message, with unread counts from the server’s inbox index. Swipe actions for mute and archive."
+    ],
+    [
+     "Thread",
+     "A reversed list keyed by client message ID so a message keeps its place as it moves from pending to sent to read. Older history pages in from the local database, then the server."
+    ],
+    [
+     "Composer",
+     "Drafts persist per conversation. Photos are compressed and queued through the transfer manager; the message shows a local thumbnail immediately."
+    ],
+    [
+     "Notification",
+     "On Android an FCM data message triggers a quick sync before the notification shows; on iOS a notification service extension can enrich the preview."
+    ]
+   ],
+   "layers": [
+    [
+     "UI",
+     "Jetpack Compose / SwiftUI",
+     "Lists, composer, receipts"
+    ],
+    [
+     "ViewModels",
+     "StateFlow / @Observable",
+     "Map database queries to UI state"
+    ],
+    [
+     "Connection manager",
+     "OkHttp WebSocket / URLSessionWebSocketTask",
+     "Connect, heartbeat, reconnect with jitter, route events"
+    ],
+    [
+     "Message repository",
+     "Room / GRDB",
+     "Insert pending, apply acks, fill gaps by sequence"
+    ],
+    [
+     "Outbox",
+     "Local table",
+     "Resend unacked messages after reconnect with the same ID"
+    ],
+    [
+     "Notifications",
+     "FCM / APNs + service extension",
+     "Wake, sync, show"
+    ]
+   ],
+   "uiStates": [
+    [
+     "Sending",
+     "Clock icon",
+     "Inserted locally with status pending"
+    ],
+    [
+     "Sent",
+     "One tick",
+     "Server ack with sequence number"
+    ],
+    [
+     "Delivered",
+     "Two ticks",
+     "Recipient device acknowledged"
+    ],
+    [
+     "Read",
+     "Two blue ticks",
+     "Cumulative ‘read up to’ receipt"
+    ],
+    [
+     "Failed",
+     "Red ‘!’ with Tap to retry",
+     "Rejected or retries exhausted"
+    ],
+    [
+     "Reconnecting",
+     "Small ‘Connecting…’ in the title bar",
+     "Socket closed, backoff running"
+    ],
+    [
+     "Gap",
+     "Spinner row between messages",
+     "Sequence gap detected, fetching history"
+    ]
+   ],
+   "code": [
+    [
+     "Connection manager with reconnect and resend (Kotlin)",
+     "kotlin",
+     "class ConnectionManager(private val client: OkHttpClient, private val repo: MessageRepo) {\n  private var socket: WebSocket? = null\n  private var attempt = 0\n  val state = MutableStateFlow(ConnState.CONNECTING)\n\n  fun connect(token: String) {\n    val req = Request.Builder().url(WS_URL).header(\"Authorization\", \"Bearer \" + token).build()\n    socket = client.newWebSocket(req, object : WebSocketListener() {\n      override fun onOpen(ws: WebSocket, r: Response) {\n        attempt = 0; state.value = ConnState.ONLINE\n        scope.launch { repo.pending().forEach { ws.send(it.toSendFrame()) } }      // same client_msg_id\n      }\n      override fun onMessage(ws: WebSocket, text: String) { scope.launch { repo.applyFrame(Frame.parse(text)) } }\n      override fun onFailure(ws: WebSocket, t: Throwable, r: Response?) { retry(token) }\n      override fun onClosed(ws: WebSocket, code: Int, reason: String) { retry(token) }\n    })\n  }\n\n  private fun retry(token: String) {\n    state.value = ConnState.RECONNECTING\n    val delayMs = Random.nextLong(0, min(30_000L, 1_000L shl min(attempt++, 5)))   // full jitter\n    scope.launch { delay(delayMs); connect(token) }\n  }\n}"
+    ],
+    [
+     "Thread list that never flickers (Compose)",
+     "kotlin",
+     "@Composable\nfun Thread(messages: List<MessageUi>, onLoadOlder: () -> Unit) {\n  val listState = rememberLazyListState()\n  LazyColumn(state = listState, reverseLayout = true) {\n    items(messages, key = { it.clientMsgId }, contentType = { it.kind }) { m ->\n      MessageBubble(m)                                    // status icon changes, item identity does not\n    }\n  }\n  LaunchedEffect(listState) {\n    snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }\n      .filterNotNull().filter { it > messages.size - 10 }.collect { onLoadOlder() }\n  }\n}"
+    ]
+   ],
+   "perf": [
+    "Keys are client message IDs, so pending → sent → read updates the same row instead of inserting a new one.",
+    "Receipts are batched: ‘read up to 1042’ is sent once when the thread is visible, not per message.",
+    "Images reserve their aspect ratio before loading so the list never jumps.",
+    "The socket closes in the background; delivery then relies on push plus sync on open, which saves battery."
+   ],
+   "a11y": [
+    "Screen readers announce incoming messages politely without stealing focus.",
+    "Ticks have text equivalents: sent, delivered, read.",
+    "Dynamic type and right-to-left layouts are supported in bubbles."
+   ],
+   "followups": [
+    [
+     "Why key messages by client ID rather than server sequence?",
+     "The client ID exists from the moment the user taps send, so the row keeps its identity and animation state when the server sequence arrives."
+    ],
+    [
+     "How do you avoid draining battery?",
+     "No socket in the background; push wakes the app, a short sync runs, and the socket reconnects only when the app is in the foreground."
+    ]
+   ]
+  }
+ },
+ "feed": {
+  "simple": {
+   "what": "The home screen of a social shopping app: an endless scroll of posts from brands and people you follow plus recommendations, with photos and short videos. It is the first thing users see and the place they spend most time.",
+   "who": [
+    "Shoppers: open the app many times a day for a few minutes, mostly on mid-range Android phones.",
+    "Brands: post several times a day to millions of followers.",
+    "The ranking team: tunes what appears, using every impression and tap."
+   ],
+   "journey": [
+    "She opens the app on the metro; yesterday’s feed appears instantly from the phone.",
+    "A second later fresh posts load in above, without moving what she is looking at.",
+    "She scrolls; the next page is already there before she reaches the end.",
+    "A video starts only when it is fully on screen and is muted by default.",
+    "Everything she sees and taps is reported in small batches to improve the ranking."
+   ],
+   "hard": [
+    [
+     "Instant open",
+     "Users judge the app in the first second, before any network call returns."
+    ],
+    [
+     "Smooth scrolling on cheap phones",
+     "Each frame has 16 milliseconds; images and video fight for memory."
+    ],
+    [
+     "Huge accounts",
+     "A brand with five million followers makes naive timeline building explode."
+    ],
+    [
+     "Freshness without jumpiness",
+     "New content must arrive without yanking the scroll position."
+    ]
+   ],
+   "analogy": "Like a newspaper vendor who keeps yesterday’s paper on the counter so you can start reading immediately, while today’s edition is being fetched from the van.",
+   "oneLine": "Cached first page, cursor-paged fresh content, sized images from a CDN, one active video, and hybrid fan-out on the backend."
+  },
+  "fe": {
+   "intro": "For a feed, front-end engineering is the product. The client owns perceived speed, scroll smoothness, media memory and data use, and it produces the event stream that ranking depends on.",
+   "screens": {
+    "cols": 4,
+    "rows": 2,
+    "groups": [],
+    "nodes": [
+     [
+      "home",
+      "Home feed",
+      "ranked · cached",
+      0,
+      0,
+      "c"
+     ],
+     [
+      "post",
+      "Post detail",
+      "comments · products",
+      1,
+      0,
+      "c"
+     ],
+     [
+      "pdp",
+      "Product page",
+      "price · add to cart",
+      2,
+      0,
+      "c"
+     ],
+     [
+      "profile",
+      "Brand profile",
+      "posts grid",
+      3,
+      0,
+      "c"
+     ],
+     [
+      "video",
+      "Full-screen video",
+      "swipe next",
+      0,
+      1,
+      "c"
+     ],
+     [
+      "newpill",
+      "New posts pill",
+      "tap to jump up",
+      1,
+      1,
+      "c"
+     ],
+     [
+      "share",
+      "Share sheet",
+      "system share",
+      2,
+      1,
+      "c"
+     ],
+     [
+      "saved",
+      "Saved posts",
+      "offline list",
+      3,
+      1,
+      "c"
+     ]
+    ],
+    "edges": [
+     [
+      "home",
+      "post",
+      ""
+     ],
+     [
+      "post",
+      "pdp",
+      "shop"
+     ],
+     [
+      "post",
+      "profile",
+      ""
+     ],
+     [
+      "home",
+      "video",
+      "tap video"
+     ],
+     [
+      "home",
+      "newpill",
+      ""
+     ],
+     [
+      "post",
+      "share",
+      ""
+     ],
+     [
+      "home",
+      "saved",
+      ""
+     ]
+    ]
+   },
+   "screenNotes": [
+    [
+     "Home feed",
+     "A paged list backed by the local database: Paging 3 with a RemoteMediator on Android, a cursor-paged store on iOS, FlashList in React Native."
+    ],
+    [
+     "Media",
+     "Images come from the CDN at one of four width buckets. Video uses one shared player instance attached to the most visible item."
+    ],
+    [
+     "New posts pill",
+     "When fresh items arrive while the user is reading, they are inserted above the fold only when the user taps the pill."
+    ]
+   ],
+   "layers": [
+    [
+     "UI",
+     "Compose LazyColumn / SwiftUI List or UICollectionView / FlashList",
+     "Render items with stable keys and content types"
+    ],
+    [
+     "Paging",
+     "Paging 3 RemoteMediator / custom cursor pager",
+     "Load from DB, fetch next page, write to DB"
+    ],
+    [
+     "Images",
+     "Coil / Nuke or Kingfisher / expo-image",
+     "Sized requests, memory + disk cache, downsampling"
+    ],
+    [
+     "Video",
+     "Media3 ExoPlayer / AVPlayer",
+     "One active player, preload first segment of the next"
+    ],
+    [
+     "Events",
+     "Batched logger",
+     "Impressions, dwell, taps; flushed every 30 s or on background"
+    ]
+   ],
+   "uiStates": [
+    [
+     "First launch",
+     "Skeleton cards with shimmer",
+     "No cache yet"
+    ],
+    [
+     "Cached",
+     "Yesterday’s posts, subtle ‘Updating’",
+     "Rendered from DB while fetching"
+    ],
+    [
+     "Fresh content",
+     "‘New posts’ pill",
+     "Head page changed while user is scrolled"
+    ],
+    [
+     "Loading more",
+     "Footer spinner",
+     "Next page request in flight"
+    ],
+    [
+     "Offline",
+     "Banner; cached posts still scroll",
+     "Network unavailable"
+    ],
+    [
+     "End",
+     "‘You’re all caught up’ with suggestions",
+     "Cursor returned no more items"
+    ]
+   ],
+   "code": [
+    [
+     "Paging from the database with a RemoteMediator (Android)",
+     "kotlin",
+     "@OptIn(ExperimentalPagingApi::class)\nclass FeedMediator(private val api: FeedApi, private val db: AppDb) : RemoteMediator<Int, PostEntity>() {\n  override suspend fun load(type: LoadType, state: PagingState<Int, PostEntity>): MediatorResult {\n    val cursor = when (type) {\n      LoadType.REFRESH -> null\n      LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)\n      LoadType.APPEND -> db.feedMeta().nextCursor() ?: return MediatorResult.Success(true)\n    }\n    return try {\n      val page = api.feed(cursor, limit = 20)\n      db.withTransaction {\n        if (type == LoadType.REFRESH) db.posts().clearFeed()\n        db.posts().insertAll(page.items.map { it.toEntity() })\n        db.feedMeta().setNextCursor(page.nextCursor)\n      }\n      MediatorResult.Success(endOfPaginationReached = page.nextCursor == null)\n    } catch (e: IOException) { MediatorResult.Error(e) }\n  }\n}"
+    ],
+    [
+     "One player for the whole feed (React Native, FlashList)",
+     "tsx",
+     "export function Feed({ posts }: { posts: Post[] }) {\n  const [activeId, setActiveId] = useState<string | null>(null);\n  const onViewable = useRef(({ viewableItems }: any) => {\n    const v = viewableItems.find((i: any) => i.item.kind === 'video' && i.isViewable);\n    setActiveId(v ? v.item.id : null);                     // only the fully visible video plays\n  }).current;\n\n  return (\n    <FlashList\n      data={posts}\n      keyExtractor={p => p.id}\n      getItemType={p => p.kind}                             // separate recycling pools\n      estimatedItemSize={420}\n      onViewableItemsChanged={onViewable}\n      viewabilityConfig={{ itemVisiblePercentThreshold: 80 }}\n      renderItem={({ item }) => <PostCard post={item} playing={item.id === activeId} />}\n    />\n  );\n}"
+    ]
+   ],
+   "perf": [
+    "Baseline Profiles on Android and pre-warming on iOS cut cold start; measure time to first post per device class.",
+    "Stable keys, content types and immutable models keep recomposition and recycling cheap.",
+    "Decode images to displayed size; cap memory caches by device RAM.",
+    "Track dropped frames in production (JankStats, MetricKit) and fail releases that regress them."
+   ],
+   "a11y": [
+    "Every image has alt text from the post or generated captions.",
+    "Autoplay respects the system’s reduce-motion setting.",
+    "Video captions on by default when the device is muted."
+   ],
+   "followups": [
+    [
+     "How do you insert fresh posts without moving the user?",
+     "Hold them in a pending list and show a pill. On tap, scroll to top and prepend; otherwise insert only when the user is already at the top."
+    ],
+    [
+     "How do you limit data use?",
+     "Width-bucketed images, HLS with adaptive bitrate, no video preloading on metered networks unless the user opts in."
+    ]
+   ]
+  }
+ },
+ "payments": {
+  "simple": {
+   "what": "The checkout of a shopping app: confirm the cart, choose card, UPI or wallet, approve the payment, and get an order confirmation. During big sales it handles tens of thousands of orders an hour.",
+   "who": [
+    "Shoppers: in a hurry, sometimes on bad networks, sometimes tapping Pay twice.",
+    "Banks and payment providers: approve payments, sometimes minutes later.",
+    "Finance teams: must match every rupee received with an order."
+   ],
+   "journey": [
+    "He taps Pay ₹2,499 with UPI.",
+    "His UPI app opens; he approves with his PIN and returns.",
+    "The app shows ‘Confirming payment…’ because the bank has not replied yet.",
+    "Thirty seconds later the provider tells the server the payment succeeded.",
+    "His screen switches to ‘Order placed’ and he gets a notification and email."
+   ],
+   "hard": [
+    [
+     "Never charge twice",
+     "Double taps, retries and lost responses must still produce one charge."
+    ],
+    [
+     "Answers arrive late",
+     "Some payments confirm minutes after the user acts, or the response is lost."
+    ],
+    [
+     "Card data is dangerous",
+     "Storing card numbers brings heavy compliance obligations."
+    ],
+    [
+     "Money must reconcile",
+     "Every payment must match an order and a ledger entry."
+    ]
+   ],
+   "analogy": "Like ordering at a counter with a numbered token: if you ask twice, the cashier sees the same token number and doesn’t make a second order.",
+   "oneLine": "An idempotency key from the first tap, a server-side order state machine, the provider’s webhook as the source of truth, and daily reconciliation."
+  },
+  "fe": {
+   "intro": "Checkout UI is mostly about honesty under uncertainty: never let users create a second charge, never claim success or failure before the server knows, and survive the app being killed while the user is in another app approving payment.",
+   "screens": {
+    "cols": 4,
+    "rows": 2,
+    "groups": [],
+    "nodes": [
+     [
+      "cart",
+      "Cart",
+      "items · totals",
+      0,
+      0,
+      "c"
+     ],
+     [
+      "addr",
+      "Address",
+      "saved · new",
+      1,
+      0,
+      "c"
+     ],
+     [
+      "method",
+      "Payment method",
+      "UPI · card · wallet",
+      2,
+      0,
+      "c"
+     ],
+     [
+      "sdk",
+      "Provider sheet",
+      "PSP SDK UI",
+      3,
+      0,
+      "x"
+     ],
+     [
+      "result",
+      "Success",
+      "order id · ETA",
+      0,
+      1,
+      "c"
+     ],
+     [
+      "confirm",
+      "Confirming",
+      "polling + push",
+      1,
+      1,
+      "c"
+     ],
+     [
+      "failed",
+      "Failed",
+      "reason · retry",
+      2,
+      1,
+      "c"
+     ],
+     [
+      "upi",
+      "UPI app",
+      "external approval",
+      3,
+      1,
+      "x"
+     ]
+    ],
+    "edges": [
+     [
+      "cart",
+      "addr",
+      ""
+     ],
+     [
+      "addr",
+      "method",
+      ""
+     ],
+     [
+      "method",
+      "sdk",
+      "pay"
+     ],
+     [
+      "sdk",
+      "upi",
+      "intent"
+     ],
+     [
+      "upi",
+      "confirm",
+      "return"
+     ],
+     [
+      "confirm",
+      "result",
+      "paid"
+     ],
+     [
+      "confirm",
+      "failed",
+      "failed"
+     ]
+    ]
+   },
+   "screenNotes": [
+    [
+     "Payment method",
+     "Saved methods are tokens from the provider, displayed as ‘Visa •• 4417’. The app never sees full card numbers."
+    ],
+    [
+     "Provider sheet",
+     "The provider SDK collects card details or launches the UPI intent; it returns a token or a status to the app."
+    ],
+    [
+     "Confirming",
+     "Shows a calm message and a timer. It polls the order with backoff and listens for a push; it never retries the charge itself."
+    ],
+    [
+     "Return from another app",
+     "Android returns through an activity result or deep link; iOS through a universal link. Either way the screen reloads the order from the server by its ID."
+    ]
+   ],
+   "layers": [
+    [
+     "UI",
+     "Compose / SwiftUI / React Native",
+     "Checkout screens and result states"
+    ],
+    [
+     "Checkout ViewModel",
+     "Kotlin sealed state machine",
+     "Holds the idempotency key and order ID"
+    ],
+    [
+     "Saved state",
+     "SavedStateHandle / SceneStorage / persisted store",
+     "Keeps key and order ID across process death"
+    ],
+    [
+     "Payment SDK",
+     "Stripe, Adyen, Razorpay SDKs",
+     "Collect payment details, 3-D Secure, UPI intents"
+    ],
+    [
+     "Order client",
+     "Retrofit / URLSession",
+     "Create order, poll status"
+    ]
+   ],
+   "uiStates": [
+    [
+     "Ready",
+     "Pay button enabled with amount",
+     "No order yet"
+    ],
+    [
+     "Submitting",
+     "Button disabled with spinner",
+     "POST /orders in flight with key K"
+    ],
+    [
+     "Awaiting approval",
+     "‘Approve in your UPI app’",
+     "External app launched"
+    ],
+    [
+     "Confirming",
+     "‘Confirming payment…’ and timer",
+     "Order is payment_pending"
+    ],
+    [
+     "Paid",
+     "Order placed with summary",
+     "Server says paid"
+    ],
+    [
+     "Failed",
+     "Reason in plain words, try another method",
+     "Server says failed"
+    ],
+    [
+     "Unknown",
+     "‘We’ll confirm within 10 minutes; you won’t be charged twice’",
+     "Pending past the polling window"
+    ]
+   ],
+   "code": [
+    [
+     "Checkout state that survives process death (Kotlin)",
+     "kotlin",
+     "sealed interface CheckoutUi {\n  data object Ready : CheckoutUi\n  data object Submitting : CheckoutUi\n  data class Confirming(val orderId: String) : CheckoutUi\n  data class Paid(val orderId: String) : CheckoutUi\n  data class Failed(val reason: String) : CheckoutUi\n}\n\nclass CheckoutViewModel(private val saved: SavedStateHandle, private val api: OrderApi) : ViewModel() {\n  private val idemKey: String = saved[\"idemKey\"] ?: UUID.randomUUID().toString().also { saved[\"idemKey\"] = it }\n  val ui = MutableStateFlow<CheckoutUi>(saved.get<String>(\"orderId\")?.let { CheckoutUi.Confirming(it) } ?: CheckoutUi.Ready)\n\n  fun pay(cart: Cart, method: MethodToken) {\n    if (ui.value !is CheckoutUi.Ready) return                       // no second submit\n    ui.value = CheckoutUi.Submitting\n    viewModelScope.launch {\n      val order = api.createOrder(cart, method, idempotencyKey = idemKey)   // same key on every retry\n      saved[\"orderId\"] = order.id\n      ui.value = CheckoutUi.Confirming(order.id)\n      pollUntilFinal(order.id)\n    }\n  }\n\n  private suspend fun pollUntilFinal(id: String) {\n    var wait = 1_000L\n    repeat(12) {\n      when (val s = api.order(id).state) {\n        \"paid\" -> { ui.value = CheckoutUi.Paid(id); return }\n        \"failed\" -> { ui.value = CheckoutUi.Failed(api.order(id).reason); return }\n      }\n      delay(wait); wait = min(wait * 2, 15_000L)\n    }                                                                  // stays Confirming; push will update\n  }\n}"
+    ]
+   ],
+   "perf": [
+    "Preload the provider SDK and saved methods when the cart opens, so the payment sheet appears instantly.",
+    "Show the amount and a single primary action; every extra field costs conversion.",
+    "Keep the confirming screen lightweight; it may be on screen for minutes."
+   ],
+   "a11y": [
+    "Amounts are read correctly by screen readers, including currency.",
+    "Indian number grouping (₹1,23,456) via locale-aware formatting.",
+    "Error messages say what to do next, not error codes."
+   ],
+   "followups": [
+    [
+     "The app is killed while the user is in the UPI app. What happens on return?",
+     "SavedStateHandle restored the order ID, so the screen reloads the order from the server and shows its real state; the idempotency key prevents a second charge if Pay is tapped again."
+    ],
+    [
+     "Why not show success when the SDK says success?",
+     "The SDK result can be lost or wrong; the order’s server state, driven by the provider webhook, is the only truth."
+    ]
+   ]
+  }
+ },
+ "booking": {
+  "simple": {
+   "what": "A platform where patients book appointments at clinics, practitioners manage their availability, and clinic admins configure services and hours. Popular slots open at 9 a.m. and are gone within seconds.",
+   "who": [
+    "Patients: book from the app, often for a specific practitioner.",
+    "Practitioners: check their day on a partner app, sometimes without signal in treatment rooms.",
+    "Clinic admins: set hours, services and prices on a web dashboard."
+   ],
+   "journey": [
+    "At 8:59 she opens Dr Rao’s calendar; Thursday’s slots show as opening at 9:00.",
+    "At 9:00:01 she taps 10:30; the app holds it for five minutes and shows a countdown.",
+    "Another patient who tapped the same slot a moment later sees ‘Just taken, 11:00 is free’.",
+    "She confirms and pays a deposit; the booking appears in both apps.",
+    "Dr Rao’s partner app, which synced the day’s schedule earlier, shows the new patient."
+   ],
+   "hard": [
+    [
+     "Thousands want one slot",
+     "Exactly one person may get it, instantly and fairly."
+    ],
+    [
+     "Holds must expire",
+     "Abandoned checkouts must release slots automatically."
+    ],
+    [
+     "Time zones",
+     "A 10 a.m. appointment is 10 a.m. at the clinic, wherever the patient is."
+    ],
+    [
+     "Health privacy",
+     "Who visits which clinic is sensitive; clinical notes even more so."
+    ]
+   ],
+   "analogy": "Like a theatre box office that puts a ticket aside for five minutes while you get your wallet out. If you walk away, it goes back on sale.",
+   "oneLine": "Slot rows with capacity, an atomic conditional update to place a short hold, confirmation as a second idempotent step, and audit on every change."
+  },
+  "fe": {
+   "intro": "There are three front ends: the patient app, the partner app and the admin web dashboard. Each has a different job, but all must show availability honestly and react gracefully when someone else got there first.",
+   "screens": {
+    "cols": 4,
+    "rows": 2,
+    "groups": [],
+    "nodes": [
+     [
+      "search",
+      "Find care",
+      "service · area",
+      0,
+      0,
+      "c"
+     ],
+     [
+      "prac",
+      "Practitioner",
+      "profile · reviews",
+      1,
+      0,
+      "c"
+     ],
+     [
+      "slots",
+      "Slot picker",
+      "date strip · times",
+      2,
+      0,
+      "c"
+     ],
+     [
+      "hold",
+      "Hold + confirm",
+      "countdown · deposit",
+      3,
+      0,
+      "c"
+     ],
+     [
+      "day",
+      "Partner: my day",
+      "offline schedule",
+      0,
+      1,
+      "c"
+     ],
+     [
+      "visit",
+      "Partner: visit",
+      "check-in · notes",
+      1,
+      1,
+      "c"
+     ],
+     [
+      "admin",
+      "Admin: hours",
+      "weekly editor",
+      2,
+      1,
+      "c"
+     ],
+     [
+      "mine",
+      "My bookings",
+      "reschedule · cancel",
+      3,
+      1,
+      "c"
+     ]
+    ],
+    "edges": [
+     [
+      "search",
+      "prac",
+      ""
+     ],
+     [
+      "prac",
+      "slots",
+      ""
+     ],
+     [
+      "slots",
+      "hold",
+      "tap slot"
+     ],
+     [
+      "hold",
+      "mine",
+      "confirmed"
+     ],
+     [
+      "day",
+      "visit",
+      ""
+     ],
+     [
+      "admin",
+      "day",
+      "publishes"
+     ]
+    ]
+   },
+   "screenNotes": [
+    [
+     "Slot picker",
+     "A horizontal date strip and a grid of time chips. Availability comes from a cached count that can be a second stale; the hold request is the real check."
+    ],
+    [
+     "Hold + confirm",
+     "A visible five-minute countdown based on the server’s expiry time, not the device clock. Leaving the screen keeps the hold until it expires."
+    ],
+    [
+     "Partner app: my day",
+     "Today and tomorrow are synced into SQLite so the schedule opens without signal. Edits are proposals the server validates."
+    ],
+    [
+     "Admin: weekly hours",
+     "A React drag-to-select weekly grid that edits availability rules, with a preview of generated slots and warnings for existing bookings."
+    ]
+   ],
+   "layers": [
+    [
+     "Patient app",
+     "React Native or native",
+     "Search, slot picker, hold flow, my bookings"
+    ],
+    [
+     "Partner app",
+     "Native with local DB",
+     "Offline day view, check-in, notes"
+    ],
+    [
+     "Admin web",
+     "React + TanStack Query",
+     "Availability rules, services, reports"
+    ],
+    [
+     "Real-time",
+     "WebSocket or polling for open slot screens",
+     "Mark slots taken while the user is looking"
+    ],
+    [
+     "Time",
+     "Clinic IANA zone on every slot",
+     "Format in clinic time with the zone shown"
+    ]
+   ],
+   "uiStates": [
+    [
+     "Opening soon",
+     "Slots greyed with ‘Opens at 9:00’",
+     "Server release time"
+    ],
+    [
+     "Available",
+     "Time chip enabled",
+     "Remaining capacity above zero"
+    ],
+    [
+     "Just taken",
+     "Chip shakes, next free slot highlighted",
+     "Hold returned zero rows"
+    ],
+    [
+     "Held",
+     "Countdown ‘Held for 4:32’",
+     "Hold expiry from server"
+    ],
+    [
+     "Hold expired",
+     "‘This slot was released’ with Try again",
+     "Countdown reached zero"
+    ],
+    [
+     "Booked",
+     "Confirmation with add-to-calendar",
+     "Hold converted"
+    ]
+   ],
+   "code": [
+    [
+     "Hold with a server-based countdown (React Native)",
+     "tsx",
+     "function HoldTimer({ expiresAt, serverOffsetMs, onExpire }: Props) {\n  const [left, setLeft] = useState(() => expiresAt - (Date.now() + serverOffsetMs));\n  useEffect(() => {\n    const t = setInterval(() => {\n      const ms = expiresAt - (Date.now() + serverOffsetMs);   // server time, not the phone's clock\n      setLeft(ms);\n      if (ms <= 0) { clearInterval(t); onExpire(); }\n    }, 1000);\n    return () => clearInterval(t);\n  }, [expiresAt, serverOffsetMs]);\n  const s = Math.max(0, Math.round(left / 1000));\n  return <Text accessibilityLiveRegion=\"polite\">Held for {Math.floor(s / 60)}:{String(s % 60).padStart(2, '0')}</Text>;\n}\n\nasync function onTapSlot(slot: Slot) {\n  const res = await api.hold(slot.id, { idempotencyKey: holdKey(slot.id) });\n  if (res.status === 'taken') { haptics.warning(); showNext(res.nextFree); return; }\n  navigation.navigate('Hold', { holdId: res.holdId, expiresAt: res.expiresAt });\n}"
+    ],
+    [
+     "Admin availability editor data flow (React + TanStack Query)",
+     "tsx",
+     "const rules = useQuery({ queryKey: ['rules', clinicId], queryFn: () => api.rules(clinicId) });\nconst save = useMutation({\n  mutationFn: (next: Rules) => api.saveRules(clinicId, next, rules.data!.version),   // optimistic concurrency\n  onError: (e: ApiError) => { if (e.status === 409) toast('Someone else changed these hours. Reloading.'); },\n  onSettled: () => queryClient.invalidateQueries({ queryKey: ['rules', clinicId] }),\n});"
+    ]
+   ],
+   "perf": [
+    "Prefetch the next seven days of slot counts when a practitioner page opens.",
+    "Keep the hold request tiny so it wins races on slow networks.",
+    "The partner app’s day view reads only local data and opens in under a second."
+   ],
+   "a11y": [
+    "Time chips announce date, time and availability.",
+    "The countdown is a polite live region, not a constantly interrupting announcement.",
+    "All times show the clinic’s time zone when it differs from the device."
+   ],
+   "followups": [
+    [
+     "Why base the countdown on server time?",
+     "Phone clocks can be minutes off. The app computes an offset from server response headers and counts down to the server’s expiry."
+    ],
+    [
+     "How do you stop users seeing slots that are already gone?",
+     "Short-lived cached counts, live updates while the picker is open, and graceful handling of ‘just taken’ with the next free slot."
+    ]
+   ]
+  }
+ },
+ "release": {
+  "simple": {
+   "what": "Not a feature but the machine that ships every feature: how 150 engineers in 20 teams change one Android app and one iOS app safely every week, instead of monthly releases that break.",
+   "who": [
+    "Feature teams: want to ship without waiting for others.",
+    "Release captain: owns the weekly train.",
+    "Users: should never notice a release except new features."
+   ],
+   "journey": [
+    "Monday: the release branch is cut automatically; unfinished features are hidden behind flags.",
+    "CI builds and tests only the modules each change touched, in under ten minutes.",
+    "Tuesday: the release goes to 1% of users; dashboards watch crashes and key flows.",
+    "Wednesday: a checkout regression appears at 10%; the team switches its flag off in seconds.",
+    "Friday: the release reaches everyone; nobody shipped an emergency build."
+   ],
+   "hard": [
+    [
+     "Teams block each other",
+     "Shared code and long branches create conflicts and waiting."
+    ],
+    [
+     "Slow builds",
+     "40-minute builds kill focus and encourage big risky changes."
+    ],
+    [
+     "Bad releases are slow to fix",
+     "App stores take time; a bug can sit on phones for days."
+    ],
+    [
+     "Change across 20 teams",
+     "Good architecture fails if teams don’t adopt it."
+    ]
+   ],
+   "analogy": "Like a train timetable: the train leaves every Monday whether your carriage is ready or not, so nobody holds up the train, and unfinished carriages travel locked.",
+   "oneLine": "Feature modules with owners, affected-only CI with a remote cache, a weekly train with staged rollouts, and flags with kill switches."
+  },
+  "fe": {
+   "intro": "In a platform round, the front end is the architecture of the app itself: how screens are split into modules, how they navigate without depending on each other, how a design system keeps 20 teams consistent, and how UI regressions are caught before users see them.",
+   "screens": {
+    "cols": 4,
+    "rows": 2,
+    "groups": [],
+    "nodes": [
+     [
+      "shell",
+      "App shell",
+      "navigation host",
+      0,
+      0,
+      "c"
+     ],
+     [
+      "navapi",
+      "Navigation API",
+      "routes as contracts",
+      1,
+      0,
+      "s"
+     ],
+     [
+      "featA",
+      "Booking module",
+      ":feature:booking",
+      2,
+      0,
+      "c"
+     ],
+     [
+      "featB",
+      "Payments module",
+      ":feature:payments",
+      3,
+      0,
+      "c"
+     ],
+     [
+      "ds",
+      "Design system",
+      "tokens · components",
+      0,
+      1,
+      "d"
+     ],
+     [
+      "flags",
+      "Flag provider",
+      "remote config",
+      1,
+      1,
+      "s"
+     ],
+     [
+      "shots",
+      "Screenshot tests",
+      "Paparazzi · snapshots",
+      2,
+      1,
+      "s"
+     ],
+     [
+      "sdui",
+      "Server-driven screens",
+      "content only",
+      3,
+      1,
+      "s"
+     ]
+    ],
+    "edges": [
+     [
+      "shell",
+      "navapi",
+      ""
+     ],
+     [
+      "navapi",
+      "featA",
+      "route"
+     ],
+     [
+      "featA",
+      "featB",
+      "via API"
+     ],
+     [
+      "ds",
+      "flags",
+      ""
+     ],
+     [
+      "flags",
+      "shots",
+      ""
+     ],
+     [
+      "shots",
+      "sdui",
+      ""
+     ]
+    ]
+   },
+   "screenNotes": [
+    [
+     "App shell",
+     "Owns the navigation host, dependency injection graph and app-wide concerns; contains almost no UI."
+    ],
+    [
+     "Navigation API",
+     "Each feature publishes routes in its :api module. Other features navigate by route, never by importing screens."
+    ],
+    [
+     "Design system",
+     "Tokens (colour, type, spacing), components and accessibility rules in one module, with its own screenshot tests and a gallery app."
+    ],
+    [
+     "Screenshot tests",
+     "Every component and key screen renders in light, dark, large-font and right-to-left variants in CI; image diffs fail the build."
+    ]
+   ],
+   "layers": [
+    [
+     "Navigation",
+     "Compose Navigation type-safe routes / SwiftUI NavigationStack with route enums",
+     "Decouple features"
+    ],
+    [
+     "Design system",
+     "Compose components / SwiftUI views + tokens",
+     "Consistency and accessibility by default"
+    ],
+    [
+     "Feature flags",
+     "Firebase Remote Config, LaunchDarkly, in-house",
+     "Ship dark, roll out, kill"
+    ],
+    [
+     "UI testing",
+     "Paparazzi or Roborazzi / swift-snapshot-testing; Maestro for flows",
+     "Catch visual and flow regressions"
+    ],
+    [
+     "Performance",
+     "Baseline Profiles, Macrobenchmark / XCTest metrics",
+     "Startup and scroll budgets per release"
+    ]
+   ],
+   "uiStates": [
+    [
+     "Flag off",
+     "Old screen; new code present but unreachable",
+     "Flag evaluated at navigation time"
+    ],
+    [
+     "Flag on for cohort",
+     "New screen for 5% of users",
+     "Server-side targeting"
+    ],
+    [
+     "Killed",
+     "Instantly back to the old path",
+     "Kill switch overrides targeting"
+    ],
+    [
+     "Forced upgrade",
+     "Blocking screen with store link",
+     "Minimum version from config"
+    ]
+   ],
+   "code": [
+    [
+     "Feature navigation through an API module (Compose, type-safe routes)",
+     "kotlin",
+     "// :feature:booking:api\n@Serializable data class BookingRoute(val practitionerId: String)\n\n// :feature:booking:impl\nfun NavGraphBuilder.bookingGraph(nav: NavController) {\n  composable<BookingRoute> { entry -> BookingScreen(entry.toRoute<BookingRoute>().practitionerId) }\n}\n\n// :feature:search:impl  — depends only on :feature:booking:api\nButton(onClick = { nav.navigate(BookingRoute(practitioner.id)) }) { Text(\"Book\") }"
+    ],
+    [
+     "Screenshot test for a design-system component (Paparazzi)",
+     "kotlin",
+     "class SlotChipTest {\n  @get:Rule val paparazzi = Paparazzi(deviceConfig = DeviceConfig.PIXEL_5)\n\n  @Test fun states() = paparazzi.snapshot {\n    AppTheme {\n      Column {\n        SlotChip(\"10:30\", SlotState.Available)\n        SlotChip(\"11:00\", SlotState.Held(secondsLeft = 272))\n        SlotChip(\"11:30\", SlotState.Taken)\n      }\n    }\n  }\n}"
+    ]
+   ],
+   "perf": [
+    "Startup and scroll benchmarks run on real devices for every release candidate; regressions block the train.",
+    "Baseline Profiles ship with each build to speed up cold start on Android.",
+    "Modules keep incremental builds small, which keeps engineers fast."
+   ],
+   "a11y": [
+    "Accessibility checks live in the design system: contrast, touch targets, content descriptions.",
+    "Screenshot tests include large font and right-to-left variants."
+   ],
+   "followups": [
+    [
+     "How do 20 teams avoid breaking each other’s screens?",
+     "Feature modules depend only on other features’ API modules, navigation goes through routes, and a dependency rule check fails the build on violations."
+    ],
+    [
+     "When would you use server-driven UI?",
+     "For content-heavy, frequently changing screens such as promotions, not for core flows that must work offline or perform under load."
+    ]
+   ]
+  }
+ },
+ "ai-assistant": {
+  "simple": {
+   "what": "A chat assistant inside a wellness booking app. Users ask questions in plain language (‘which physio near me does sports injuries?’) and can also say ‘move my Thursday massage to Friday evening’, and the assistant does it after they confirm.",
+   "who": [
+    "Users: want answers and quick changes without hunting through menus.",
+    "Clinics: want fewer support calls and no wrong bookings.",
+    "The company: wants it safe, on-brand and affordable per user."
+   ],
+   "journey": [
+    "She types: ‘Move my Thursday massage to Friday evening.’",
+    "Words start appearing within a second: ‘Let me check Friday…’ with a small ‘Checking slots’ chip.",
+    "The assistant shows a card: ‘Move to Fri 6:30 pm with Anita? Confirm · Cancel’.",
+    "She taps Confirm; the booking changes through the normal booking system.",
+    "She gives a thumbs-up; that feedback is stored with the prompt version that produced the answer."
+   ],
+   "hard": [
+    [
+     "The model can be wrong",
+     "It can invent a slot or a price; actions must be checked and confirmed."
+    ],
+    [
+     "Actions have consequences",
+     "A wrong cancellation upsets a real customer and a real clinic."
+    ],
+    [
+     "Untrusted text everywhere",
+     "Reviews and bios could contain instructions trying to hijack the model."
+    ],
+    [
+     "Cost grows with usage",
+     "Every message costs tokens; a popular feature can blow the budget."
+    ]
+   ],
+   "analogy": "Like a capable new receptionist: she can look anything up and fill in forms for you, but she always reads the change back and waits for your ‘yes’ before pressing the button.",
+   "oneLine": "A backend orchestrator that streams answers, calls typed tools with the user’s own permissions, turns every write into a confirm card, and meters cost per user."
+  },
+  "fe": {
+   "intro": "The assistant’s front end decides whether it feels magical or broken. It must stream text smoothly, show what the assistant is doing, present actions as clear cards, let users stop or retry, and stay usable when the AI path fails.",
+   "screens": {
+    "cols": 4,
+    "rows": 2,
+    "groups": [],
+    "nodes": [
+     [
+      "entry",
+      "Entry points",
+      "FAB · booking screen",
+      0,
+      0,
+      "c"
+     ],
+     [
+      "chat",
+      "Chat",
+      "streaming answers",
+      1,
+      0,
+      "c"
+     ],
+     [
+      "card",
+      "Action card",
+      "confirm · cancel",
+      2,
+      0,
+      "c"
+     ],
+     [
+      "done",
+      "Result",
+      "booking updated",
+      3,
+      0,
+      "c"
+     ],
+     [
+      "history",
+      "History",
+      "past conversations",
+      0,
+      1,
+      "c"
+     ],
+     [
+      "voice",
+      "Voice input",
+      "speech to text",
+      1,
+      1,
+      "c"
+     ],
+     [
+      "fb",
+      "Feedback",
+      "thumbs · reason",
+      2,
+      1,
+      "c"
+     ],
+     [
+      "fallback",
+      "Fallback",
+      "link to normal flow",
+      3,
+      1,
+      "c"
+     ]
+    ],
+    "edges": [
+     [
+      "entry",
+      "chat",
+      ""
+     ],
+     [
+      "chat",
+      "card",
+      "proposal"
+     ],
+     [
+      "card",
+      "done",
+      "confirm"
+     ],
+     [
+      "voice",
+      "chat",
+      ""
+     ],
+     [
+      "chat",
+      "fb",
+      ""
+     ],
+     [
+      "chat",
+      "fallback",
+      "AI down"
+     ],
+     [
+      "history",
+      "chat",
+      ""
+     ]
+    ]
+   },
+   "screenNotes": [
+    [
+     "Chat",
+     "Messages render as markdown; the latest assistant message grows as tokens arrive. Tool activity appears as small chips such as ‘Checking your bookings’."
+    ],
+    [
+     "Action card",
+     "A native component, not text: what will change, before and after, and two buttons. It expires after five minutes because availability changes."
+    ],
+    [
+     "Fallback",
+     "If the assistant is unavailable or unsure, it links straight to the normal booking screen with fields pre-filled."
+    ]
+   ],
+   "layers": [
+    [
+     "UI",
+     "Compose / SwiftUI / React Native",
+     "Message list, streaming bubble, cards"
+    ],
+    [
+     "Stream client",
+     "OkHttp SSE / URLSession bytes / react-native-sse",
+     "Parse events: token, tool, card, done, error"
+    ],
+    [
+     "Render buffer",
+     "50 ms batching",
+     "Avoid re-layout per token"
+    ],
+    [
+     "Conversation store",
+     "SQLite",
+     "History offline, drafts, message status"
+    ],
+    [
+     "Actions",
+     "Existing booking APIs via the backend",
+     "Executed only after Confirm"
+    ]
+   ],
+   "uiStates": [
+    [
+     "Thinking",
+     "Three-dot indicator",
+     "Request sent, no tokens yet"
+    ],
+    [
+     "Streaming",
+     "Text grows; Stop button visible",
+     "Token events arriving"
+    ],
+    [
+     "Using a tool",
+     "Chip: ‘Checking Friday slots’",
+     "Tool event from orchestrator"
+    ],
+    [
+     "Needs confirmation",
+     "Action card with Confirm and Cancel",
+     "Card event; nothing changed yet"
+    ],
+    [
+     "Done",
+     "Final message, feedback buttons",
+     "Done event with usage"
+    ],
+    [
+     "Error",
+     "‘Something went wrong’ + Retry + normal flow link",
+     "Error event or timeout"
+    ],
+    [
+     "Limit reached",
+     "Friendly daily-limit message",
+     "429 from the gateway"
+    ]
+   ],
+   "code": [
+    [
+     "Server-sent events to a Flow (Kotlin, OkHttp)",
+     "kotlin",
+     "fun stream(req: Request): Flow<AssistantEvent> = callbackFlow {\n  val source = EventSources.createFactory(client).newEventSource(req, object : EventSourceListener() {\n    override fun onEvent(es: EventSource, id: String?, type: String?, data: String) {\n      trySend(when (type) {\n        \"token\" -> AssistantEvent.Token(json.decode<TokenData>(data).t)\n        \"tool\" -> AssistantEvent.Tool(json.decode<ToolData>(data).label)\n        \"card\" -> AssistantEvent.Card(json.decode<ActionCard>(data))\n        \"done\" -> AssistantEvent.Done(json.decode<Usage>(data))\n        else -> AssistantEvent.Ignored\n      })\n    }\n    override fun onFailure(es: EventSource, t: Throwable?, r: Response?) { close(t ?: IOException(\"stream failed\")) }\n    override fun onClosed(es: EventSource) { close() }\n  })\n  awaitClose { source.cancel() }                         // Stop button cancels the collector\n}"
+    ],
+    [
+     "Smooth rendering with a 50 ms buffer (Compose)",
+     "kotlin",
+     "val text = remember { mutableStateOf(\"\") }\nLaunchedEffect(messageId) {\n  val buffer = StringBuilder()\n  launch { stream(req).collect { e -> if (e is AssistantEvent.Token) synchronized(buffer) { buffer.append(e.t) } } }\n  while (isActive) {\n    delay(50)                                            // ~20 UI updates per second, not one per token\n    val chunk = synchronized(buffer) { buffer.toString().also { buffer.clear() } }\n    if (chunk.isNotEmpty()) text.value += chunk\n  }\n}\nMarkdownText(text.value)"
+    ]
+   ],
+   "perf": [
+    "Render tokens in batches; re-parse markdown only for the last paragraph.",
+    "Keep the conversation list virtualised; long chats can hold hundreds of messages.",
+    "Open the stream immediately on send and show the thinking indicator within 100 ms."
+   ],
+   "a11y": [
+    "Screen readers get the final message, not every token; announce when the answer is complete.",
+    "Action cards are real buttons with clear labels, reachable by keyboard and switch control.",
+    "Voice input and text-to-speech for replies."
+   ],
+   "followups": [
+    [
+     "Why render confirmation as a card instead of text?",
+     "A card is structured data the app controls: it shows exactly what will change and only the app can execute it. Text from a model could be misleading or manipulated."
+    ],
+    [
+     "How does the UI handle a dropped stream?",
+     "It shows the partial answer with a Retry option; the backend makes retries safe, and any pending action card stays unconfirmed."
+    ]
+   ]
+  }
+ },
+ "on-device": {
+  "simple": {
+   "what": "Deciding where three AI features run: smart reply suggestions in chat, short summaries of long service descriptions, and recognising products in photos. Some phones can run AI models themselves; others need the cloud.",
+   "who": [
+    "Users: want instant, private features that work offline.",
+    "Product: wants the features on every phone, not just new ones.",
+    "Finance: wants cloud AI costs to stay low."
+   ],
+   "journey": [
+    "On a new phone, tapping Summarise returns a summary in about a second, with no network call.",
+    "On an older phone, the same button calls the cloud and takes a little longer.",
+    "Offline on an older phone, the button shows the first two sentences instead of failing.",
+    "Taking a photo of a product identifies it on the phone; the photo never leaves the device.",
+    "A weekly dashboard shows which phones run which path, and rules change remotely if a model is slow on some devices."
+   ],
+   "hard": [
+    [
+     "Phones differ hugely",
+     "The same model can take 300 ms on one phone and 5 seconds on another."
+    ],
+    [
+     "Models are big",
+     "Even small language models are hundreds of megabytes."
+    ],
+    [
+     "Privacy",
+     "Photos and messages are personal; sending them to a server needs a reason and consent."
+    ],
+    [
+     "Same experience everywhere",
+     "Users shouldn’t notice which path served them."
+    ]
+   ],
+   "analogy": "Like a shop that answers simple questions at the counter and phones head office only for the hard ones, and still gives you a leaflet if the phone line is down.",
+   "oneLine": "An on-device AI router that checks capability, consent and remote rules, then runs a system model, a bundled model or the cloud, with a non-AI fallback."
+  },
+  "fe": {
+   "intro": "Here the front end owns the decision. The router is client code, and the UI must make three different execution paths feel like one feature, including downloads, consent and fallbacks.",
+   "screens": {
+    "cols": 4,
+    "rows": 2,
+    "groups": [],
+    "nodes": [
+     [
+      "chat",
+      "Chat",
+      "smart replies row",
+      0,
+      0,
+      "c"
+     ],
+     [
+      "svc",
+      "Service page",
+      "Summarise button",
+      1,
+      0,
+      "c"
+     ],
+     [
+      "scan",
+      "Product scan",
+      "camera + result",
+      2,
+      0,
+      "c"
+     ],
+     [
+      "consent",
+      "Consent sheet",
+      "use cloud for photos?",
+      3,
+      0,
+      "c"
+     ],
+     [
+      "dl",
+      "Model download",
+      "size · Wi-Fi only",
+      0,
+      1,
+      "c"
+     ],
+     [
+      "settings",
+      "AI settings",
+      "on-device only toggle",
+      1,
+      1,
+      "c"
+     ],
+     [
+      "fallback",
+      "Fallback states",
+      "non-AI version",
+      2,
+      1,
+      "c"
+     ],
+     [
+      "debug",
+      "Debug overlay",
+      "source · latency",
+      3,
+      1,
+      "s"
+     ]
+    ],
+    "edges": [
+     [
+      "chat",
+      "dl",
+      "needs pack"
+     ],
+     [
+      "svc",
+      "fallback",
+      "offline"
+     ],
+     [
+      "scan",
+      "consent",
+      "not recognised"
+     ],
+     [
+      "settings",
+      "consent",
+      ""
+     ],
+     [
+      "svc",
+      "debug",
+      ""
+     ]
+    ]
+   },
+   "screenNotes": [
+    [
+     "Smart replies",
+     "Three chips above the keyboard, generated on device after each received message, with no spinner; if they are not ready in 300 ms, they simply don’t appear."
+    ],
+    [
+     "Summarise",
+     "A button that expands to the summary; the label never mentions where it ran, but internal builds show the source and latency."
+    ],
+    [
+     "Model download",
+     "Shown once when a feature needs a pack: size, Wi-Fi only by default, progress, cancel. The feature works in its fallback form meanwhile."
+    ],
+    [
+     "Consent sheet",
+     "Asked only when the on-device recogniser fails and cloud recognition could help; the answer is remembered and changeable in settings."
+    ]
+   ],
+   "layers": [
+    [
+     "UI",
+     "Compose / SwiftUI",
+     "Feature screens identical across paths"
+    ],
+    [
+     "AI router",
+     "Kotlin / Swift library",
+     "Capability check, consent, remote rules, timeouts"
+    ],
+    [
+     "System models",
+     "Apple Foundation Models (iOS 26) · Gemini Nano via ML Kit GenAI",
+     "On-device text generation where available"
+    ],
+    [
+     "Bundled models",
+     "Core ML · LiteRT",
+     "Image classification and small tasks"
+    ],
+    [
+     "Model packs",
+     "Downloader + checksum",
+     "On-demand models on Wi-Fi"
+    ],
+    [
+     "Telemetry",
+     "Per device class",
+     "Latency, success, battery impact"
+    ]
+   ],
+   "uiStates": [
+    [
+     "Ready",
+     "Feature works; no indicator",
+     "A path is available"
+    ],
+    [
+     "Preparing",
+     "‘Getting smart replies ready’ once",
+     "Model pack downloading"
+    ],
+    [
+     "Local",
+     "Instant result",
+     "On-device model answered"
+    ],
+    [
+     "Cloud",
+     "Same result, slightly slower",
+     "Router chose cloud"
+    ],
+    [
+     "Fallback",
+     "Simpler non-AI version",
+     "Offline and no local model"
+    ],
+    [
+     "Consent needed",
+     "Sheet with clear choice",
+     "Photo would leave the device"
+    ]
+   ],
+   "code": [
+    [
+     "Using the on-device model on iOS 26 (Foundation Models framework)",
+     "swift",
+     "import FoundationModels\n\nfunc summarise(_ text: String) async -> AiResult<String> {\n  let model = SystemLanguageModel.default\n  guard case .available = model.availability else {\n    return await cloudOrFallback(text)                         // older device or model not ready\n  }\n  let session = LanguageModelSession(instructions: \"Summarise service descriptions in 60 words or fewer.\")\n  do {\n    let response = try await session.respond(to: text)\n    return .ok(response.content, source: .systemModel)\n  } catch {\n    return await cloudOrFallback(text)\n  }\n}"
+    ],
+    [
+     "Router with a time budget and fallback (Kotlin)",
+     "kotlin",
+     "suspend fun summarise(text: String): AiResult<String> {\n  val rule = remoteRules.summarise\n  if (capabilities.hasSystemModel && capabilities.ramGb >= rule.minRamGbLocal) {\n    withTimeoutOrNull(rule.localTimeoutMs) { local.summarise(text) }?.let { return AiResult.Ok(it, Source.SYSTEM_MODEL) }\n  }\n  if (network.isOnline) return runCatching { cloud.summarise(text) }\n    .map { AiResult.Ok(it, Source.CLOUD) }\n    .getOrElse { fallback(text) }\n  return fallback(text)                                          // first two sentences, never an error\n}\n\nprivate fun fallback(text: String) = AiResult.Fallback(text.split(\". \").take(2).joinToString(\". \") + \".\", \"offline\")"
+    ]
+   ],
+   "perf": [
+    "Run inference only on user action or when a chat message arrives, never in the background.",
+    "Warm the model when the screen opens, not at app start.",
+    "Cap local generation length; long outputs drain battery."
+   ],
+   "a11y": [
+    "AI-generated text is labelled as such where it matters.",
+    "Smart reply chips are reachable and readable by screen readers.",
+    "Users can turn on-device AI features off completely."
+   ],
+   "followups": [
+    [
+     "How do you keep the experience identical across paths?",
+     "Same prompt, same output limits and the same result type from the router; the UI never branches on the source."
+    ],
+    [
+     "How do you decide which devices run locally?",
+     "Start conservative, collect latency, crash and battery telemetry per device class, and widen local routing through remote rules as data proves it safe."
+    ]
+   ]
+  }
+ },
+ "rag": {
+  "simple": {
+   "what": "An internal assistant for support and sales staff that answers questions using the company’s own documents (policies, manuals, tickets and wiki pages) and always shows where each answer came from.",
+   "who": [
+    "Support agents: need correct answers fast while a customer waits.",
+    "Sales staff: need the latest pricing and policy, by region.",
+    "Compliance: needs restricted documents to stay restricted."
+   ],
+   "journey": [
+    "An agent asks: ‘What’s the refund policy for annual plans in the UAE?’",
+    "The system searches 5 million documents, but only those she is allowed to see.",
+    "The answer appears with numbered citations like [1] and [2].",
+    "Hovering a citation shows the exact paragraph from the policy, with a link.",
+    "She marks it helpful; a wrong answer would be flagged and added to the test set."
+   ],
+   "hard": [
+    [
+     "Finding the right paragraph",
+     "Among millions of documents, retrieval quality decides answer quality."
+    ],
+    [
+     "Permissions",
+     "An answer must never be built from a document the user can’t open."
+    ],
+    [
+     "Freshness",
+     "Policies change; yesterday’s answer can be wrong today."
+    ],
+    [
+     "Trust",
+     "Users need to verify answers quickly, or they stop using it."
+    ]
+   ],
+   "analogy": "Like a librarian who first fetches the three most relevant pages from the shelves you’re allowed into, then answers using only those pages, with sticky notes showing where each fact came from.",
+   "oneLine": "Change-feed ingestion into a permission-aware hybrid index, retrieve-rerank-generate at query time, and citations users can check in one click."
+  },
+  "fe": {
+   "intro": "The web front end turns retrieval into trust. Citations, source previews, honest ‘not found’ states and fast feedback matter as much as the model.",
+   "screens": {
+    "cols": 4,
+    "rows": 2,
+    "groups": [],
+    "nodes": [
+     [
+      "ask",
+      "Ask",
+      "question box · filters",
+      0,
+      0,
+      "c"
+     ],
+     [
+      "ans",
+      "Answer",
+      "streaming · citations",
+      1,
+      0,
+      "c"
+     ],
+     [
+      "src",
+      "Source preview",
+      "exact paragraph",
+      2,
+      0,
+      "c"
+     ],
+     [
+      "doc",
+      "Open document",
+      "in source app",
+      3,
+      0,
+      "x"
+     ],
+     [
+      "hist",
+      "History",
+      "saved answers",
+      0,
+      1,
+      "c"
+     ],
+     [
+      "nf",
+      "Not found",
+      "suggest sources",
+      1,
+      1,
+      "c"
+     ],
+     [
+      "fb",
+      "Feedback",
+      "wrong · outdated",
+      2,
+      1,
+      "c"
+     ],
+     [
+      "admin",
+      "Admin",
+      "sources · lag · eval",
+      3,
+      1,
+      "c"
+     ]
+    ],
+    "edges": [
+     [
+      "ask",
+      "ans",
+      ""
+     ],
+     [
+      "ans",
+      "src",
+      "hover [1]"
+     ],
+     [
+      "src",
+      "doc",
+      "open"
+     ],
+     [
+      "ans",
+      "nf",
+      "low score"
+     ],
+     [
+      "ans",
+      "fb",
+      ""
+     ],
+     [
+      "hist",
+      "ans",
+      ""
+     ]
+    ]
+   },
+   "screenNotes": [
+    [
+     "Answer",
+     "Streams text and renders citation markers as interactive chips. Unknown citation IDs are dropped, never shown as broken links."
+    ],
+    [
+     "Source preview",
+     "A popover with the document title, section path, last updated date and the retrieved paragraph, with the supporting sentence highlighted."
+    ],
+    [
+     "Not found",
+     "Instead of guessing, says it couldn’t find this and lists the closest documents with links."
+    ],
+    [
+     "Admin",
+     "Index lag per source, recent failed queries and evaluation scores, so the platform team can see quality drift."
+    ]
+   ],
+   "layers": [
+    [
+     "UI",
+     "React + TypeScript",
+     "Ask box, answer, citations, previews"
+    ],
+    [
+     "Server state",
+     "TanStack Query",
+     "History, sources, feedback mutations"
+    ],
+    [
+     "Streaming",
+     "fetch + ReadableStream (SSE)",
+     "Tokens and citation events"
+    ],
+    [
+     "Markdown",
+     "Incremental renderer",
+     "Render text and replace [n] with chips"
+    ],
+    [
+     "Auth",
+     "SSO session",
+     "Identity forwarded to the query API for ACL filtering"
+    ]
+   ],
+   "uiStates": [
+    [
+     "Searching",
+     "‘Searching 3 sources…’",
+     "Retrieval in progress"
+    ],
+    [
+     "Answering",
+     "Text streams with citations",
+     "Generation in progress"
+    ],
+    [
+     "Answered",
+     "Citations clickable; feedback buttons",
+     "Done event"
+    ],
+    [
+     "Not found",
+     "Honest message + closest documents",
+     "Top scores below threshold"
+    ],
+    [
+     "Restricted",
+     "‘Some results are hidden by permissions’",
+     "Retriever filtered matches"
+    ],
+    [
+     "Stale source",
+     "Badge ‘Updated 2 hours ago’",
+     "Source updated after indexing"
+    ]
+   ],
+   "code": [
+    [
+     "Rendering citations as chips (React)",
+     "tsx",
+     "export function Answer({ text, citations }: { text: string; citations: Record<string, Citation> }) {\n  const parts = text.split(/(\\[\\d+\\])/g);                  // keep [1], [2] as separate parts\n  return (\n    <p className=\"answer\">\n      {parts.map((part, i) => {\n        const m = part.match(/^\\[(\\d+)\\]$/);\n        if (!m) return <span key={i}>{part}</span>;\n        const c = citations[m[1]];\n        if (!c) return null;                                   // never show a citation we can't back\n        return (\n          <SourcePopover key={i} citation={c}>\n            <button className=\"cite\" aria-label={'Source ' + m[1] + ': ' + c.title}>{m[1]}</button>\n          </SourcePopover>\n        );\n      })}\n    </p>\n  );\n}"
+    ],
+    [
+     "Streaming the answer (TypeScript)",
+     "ts",
+     "const res = await fetch('/api/ask', { method: 'POST', body: JSON.stringify({ q }), signal: abort.signal });\nconst reader = res.body!.pipeThrough(new TextDecoderStream()).getReader();\nlet buf = '';\nfor (;;) {\n  const { value, done } = await reader.read();\n  if (done) break;\n  buf += value;\n  const events = buf.split('\\n\\n'); buf = events.pop()!;   // SSE frames end with a blank line\n  for (const e of events) dispatch(parseSse(e));            // token | citation | done\n}"
+    ]
+   ],
+   "perf": [
+    "Show the ‘searching’ state immediately; retrieval often takes longer than the first token.",
+    "Cache source previews by chunk ID.",
+    "Debounce suggestions while typing; never call the model on keystrokes."
+   ],
+   "a11y": [
+    "Citation chips are buttons with descriptive labels.",
+    "Popovers are keyboard reachable and dismissable with Escape.",
+    "Answers keep a readable line length and proper headings."
+   ],
+   "followups": [
+    [
+     "Why drop citations the model invents?",
+     "Every citation must map to a chunk the retriever actually returned; anything else would mislead users into trusting an unsupported claim."
+    ],
+    [
+     "How does the UI help catch stale answers?",
+     "It shows each source’s last updated time and flags sources changed after indexing, and one-click feedback reports outdated answers."
+    ]
+   ]
+  }
+ },
+ "llm-serving": {
+  "simple": {
+   "what": "Running an open-source language model on the company’s own GPUs instead of paying an AI provider per request, for cost and data-residency reasons. It serves the assistant and internal tools at about 200 requests per second at peak.",
+   "who": [
+    "Product teams: call one internal API and expect fast, reliable streaming.",
+    "The platform team: operates GPUs, models and capacity.",
+    "Finance: wants cost per request lower than hosted APIs."
+   ],
+   "journey": [
+    "An assistant request arrives at the internal gateway.",
+    "The router sends it to the replica with the most free memory.",
+    "The GPU reads the prompt and starts streaming words back within a second.",
+    "Many other requests share the same GPUs at the same moment through batching.",
+    "When traffic rises at lunchtime, a warm spare replica joins before users notice."
+   ],
+   "hard": [
+    [
+     "The model is huge",
+     "70 billion parameters do not fit on one GPU at full precision."
+    ],
+    [
+     "Memory, not compute, runs out",
+     "Each active conversation holds a cache in GPU memory."
+    ],
+    [
+     "Slow cold starts",
+     "Loading a model onto GPUs takes minutes, so scaling must be proactive."
+    ],
+    [
+     "Expensive hardware",
+     "Idle GPUs burn money; overloaded ones hurt users."
+    ]
+   ],
+   "analogy": "Like a busy restaurant kitchen where each chef cooks many orders at once, and the limit is not the chefs but counter space for orders in progress.",
+   "oneLine": "An inference engine with continuous batching and paged KV cache, replicas across several GPUs each, routing by free memory, and warm-pool autoscaling."
+  },
+  "fe": {
+   "intro": "The users of this platform are other engineers and their apps. Its front end is the client SDK that apps use to stream from it reliably, and the operations console the platform team uses to see and control the fleet.",
+   "screens": {
+    "cols": 4,
+    "rows": 2,
+    "groups": [],
+    "nodes": [
+     [
+      "sdk",
+      "Client SDK",
+      "stream · retry · cancel",
+      0,
+      0,
+      "s"
+     ],
+     [
+      "play",
+      "Playground",
+      "prompt · model · params",
+      1,
+      0,
+      "c"
+     ],
+     [
+      "dash",
+      "Fleet dashboard",
+      "TTFT · TPOT · KV",
+      2,
+      0,
+      "c"
+     ],
+     [
+      "rep",
+      "Replica detail",
+      "GPU · queue · errors",
+      3,
+      0,
+      "c"
+     ],
+     [
+      "usage",
+      "Usage by team",
+      "tokens · cost",
+      0,
+      1,
+      "c"
+     ],
+     [
+      "models",
+      "Model catalogue",
+      "versions · status",
+      1,
+      1,
+      "c"
+     ],
+     [
+      "canary",
+      "Rollout control",
+      "canary · promote",
+      2,
+      1,
+      "c"
+     ],
+     [
+      "alerts",
+      "Alerts",
+      "SLO breaches",
+      3,
+      1,
+      "c"
+     ]
+    ],
+    "edges": [
+     [
+      "sdk",
+      "play",
+      ""
+     ],
+     [
+      "play",
+      "dash",
+      ""
+     ],
+     [
+      "dash",
+      "rep",
+      "drill down"
+     ],
+     [
+      "models",
+      "canary",
+      ""
+     ],
+     [
+      "usage",
+      "models",
+      ""
+     ],
+     [
+      "dash",
+      "alerts",
+      ""
+     ]
+    ]
+   },
+   "screenNotes": [
+    [
+     "Client SDK",
+     "Wraps streaming with timeouts, cancellation, retry on 429 and 503 with Retry-After, and returns usage with every response."
+    ],
+    [
+     "Playground",
+     "Lets teams try prompts against each model and see tokens, latency and cost before writing code."
+    ],
+    [
+     "Fleet dashboard",
+     "Live charts of time to first token, time per output token, KV cache use and queue depth per model and replica, with p95 lines."
+    ],
+    [
+     "Rollout control",
+     "Moves a new engine or model version from canary to full fleet only when evaluation and latency gates pass."
+    ]
+   ],
+   "layers": [
+    [
+     "Client SDK",
+     "TypeScript and Kotlin libraries",
+     "Streaming, retries, cancellation, usage"
+    ],
+    [
+     "Console UI",
+     "React + charting library",
+     "Fleet, usage, rollouts"
+    ],
+    [
+     "Live data",
+     "WebSocket or server-sent events from metrics API",
+     "Update charts every few seconds"
+    ],
+    [
+     "Auth",
+     "SSO with roles",
+     "Only platform engineers can roll out models"
+    ]
+   ],
+   "uiStates": [
+    [
+     "Healthy",
+     "Green status, p95 under target",
+     "All SLOs met"
+    ],
+    [
+     "Degraded",
+     "Amber with the breaching metric",
+     "TTFT or error rate above SLO"
+    ],
+    [
+     "Scaling",
+     "‘Adding 2 replicas’ progress",
+     "Autoscaler action in progress"
+    ],
+    [
+     "Canary",
+     "Split view: canary vs stable",
+     "New version on a fraction of traffic"
+    ],
+    [
+     "Rate limited (client)",
+     "Retry after N seconds",
+     "429 from the gateway"
+    ]
+   ],
+   "code": [
+    [
+     "Client SDK: stream with cancel and polite retry (TypeScript)",
+     "ts",
+     "export async function* streamChat(req: ChatRequest, opts: { signal?: AbortSignal; maxRetries?: number } = {}) {\n  for (let attempt = 0; ; attempt++) {\n    const res = await fetch(GATEWAY + '/v1/chat', { method: 'POST', body: JSON.stringify({ ...req, stream: true }), signal: opts.signal });\n    if ((res.status === 429 || res.status === 503) && attempt < (opts.maxRetries ?? 2)) {\n      const wait = Number(res.headers.get('Retry-After') ?? 1) * 1000;\n      await sleep(wait * (0.5 + Math.random()));                // jittered, server-paced\n      continue;\n    }\n    if (!res.ok) throw new LlmError(res.status, await res.text());\n    yield* parseSse(res.body!);                                   // tokens, then a usage event\n    return;\n  }\n}"
+    ],
+    [
+     "Live fleet chart subscription (React)",
+     "tsx",
+     "function useFleetMetrics(model: string) {\n  const [points, setPoints] = useState<MetricPoint[]>([]);\n  useEffect(() => {\n    const es = new EventSource('/ops/metrics?model=' + encodeURIComponent(model));\n    es.onmessage = e => setPoints(p => [...p.slice(-299), JSON.parse(e.data)]);   // keep last 300 points\n    return () => es.close();\n  }, [model]);\n  return points;\n}"
+    ]
+   ],
+   "perf": [
+    "Clients open the stream immediately and render the first token as soon as it arrives.",
+    "Dashboards downsample to a few hundred points per chart.",
+    "The SDK reuses connections (HTTP/2) to avoid handshake latency per request."
+   ],
+   "a11y": [
+    "Charts have data tables and text summaries for screen readers.",
+    "Status uses icons and words, not colour alone."
+   ],
+   "followups": [
+    [
+     "What belongs in the client SDK rather than each app?",
+     "Streaming parsing, cancellation, server-paced retries, timeouts and usage reporting, so every team behaves well under load without reimplementing it."
+    ],
+    [
+     "What would you show on the main ops screen?",
+     "TTFT and TPOT at p95, error rate, KV cache use and queue depth per model, plus active rollouts and spend today."
+    ]
+   ]
+  }
+ },
+ "ai-evals": {
+  "simple": {
+   "what": "A shared platform so every team building AI features can test them before release, guard them in production, and see when they go wrong, much like unit tests, CI and monitoring do for normal code.",
+   "who": [
+    "Feature teams: change prompts weekly and need to know if they made things worse.",
+    "Reviewers: label samples of AI output for quality.",
+    "Leadership: needs confidence that AI features won’t embarrass the company."
+   ],
+   "journey": [
+    "A product manager edits the support assistant’s prompt.",
+    "CI runs 600 test conversations and scores them automatically.",
+    "Refund accuracy drops; the change is blocked with the failing examples shown.",
+    "After a fix, the change ships to 5% of users and is monitored.",
+    "A strange answer reported by a user becomes a new test case the same day."
+   ],
+   "hard": [
+    [
+     "Quality is fuzzy",
+     "‘Good answer’ is harder to test than ‘returns 200’."
+    ],
+    [
+     "Models change",
+     "A provider update can change behaviour without any code change."
+    ],
+    [
+     "Failures are rare and varied",
+     "You need many examples and real traffic to see them."
+    ],
+    [
+     "Teams must want it",
+     "A platform nobody adopts protects nothing."
+    ]
+   ],
+   "analogy": "Like a restaurant’s tasting routine: every recipe change is tasted against a checklist before it reaches customers, inspectors sample dishes during service, and every complaint becomes a new item on the checklist.",
+   "oneLine": "Versioned prompts, layered automatic scoring calibrated against humans, CI gates and canaries, guardrails on every call, and a loop from incidents to test cases."
+  },
+  "fe": {
+   "intro": "The platform succeeds or fails on its tools. Reviewers need a fast labelling console, prompt authors need a diff-and-test editor, and teams need dashboards they actually open.",
+   "screens": {
+    "cols": 4,
+    "rows": 2,
+    "groups": [],
+    "nodes": [
+     [
+      "editor",
+      "Prompt editor",
+      "diff · variables",
+      0,
+      0,
+      "c"
+     ],
+     [
+      "run",
+      "Eval run",
+      "scores · failures",
+      1,
+      0,
+      "c"
+     ],
+     [
+      "compare",
+      "Compare",
+      "v12 vs v13",
+      2,
+      0,
+      "c"
+     ],
+     [
+      "promote",
+      "Promote",
+      "canary · rollout",
+      3,
+      0,
+      "c"
+     ],
+     [
+      "queue",
+      "Review queue",
+      "sampled outputs",
+      0,
+      1,
+      "c"
+     ],
+     [
+      "label",
+      "Label view",
+      "rubric · shortcuts",
+      1,
+      1,
+      "c"
+     ],
+     [
+      "dash",
+      "Quality dashboard",
+      "by feature · version",
+      2,
+      1,
+      "c"
+     ],
+     [
+      "trace",
+      "Trace viewer",
+      "prompt → output",
+      3,
+      1,
+      "c"
+     ]
+    ],
+    "edges": [
+     [
+      "editor",
+      "run",
+      "run suite"
+     ],
+     [
+      "run",
+      "compare",
+      ""
+     ],
+     [
+      "compare",
+      "promote",
+      "gates pass"
+     ],
+     [
+      "queue",
+      "label",
+      ""
+     ],
+     [
+      "dash",
+      "trace",
+      "drill down"
+     ],
+     [
+      "label",
+      "dash",
+      ""
+     ]
+    ]
+   },
+   "screenNotes": [
+    [
+     "Prompt editor",
+     "Templates with variables, a side-by-side diff against the live version, and a button to run the evaluation suite on the draft."
+    ],
+    [
+     "Compare",
+     "Case-by-case results between two versions, sorted by biggest regression, with the input, both outputs and every scorer’s verdict."
+    ],
+    [
+     "Label view",
+     "One output at a time with the rubric beside it, keyboard shortcuts for each score, and the source context with grounded spans highlighted."
+    ],
+    [
+     "Trace viewer",
+     "A production call end to end: prompt version, retrieved context, tool calls, guardrail results, tokens, cost and latency."
+    ]
+   ],
+   "layers": [
+    [
+     "UI",
+     "React + TypeScript",
+     "Editor, review, dashboards"
+    ],
+    [
+     "Server state",
+     "TanStack Query",
+     "Runs, cases, labels with cache and optimistic updates"
+    ],
+    [
+     "Editor",
+     "Monaco or CodeMirror",
+     "Prompt templates with syntax and diff"
+    ],
+    [
+     "Charts",
+     "A charting library",
+     "Quality and cost over time by version"
+    ],
+    [
+     "Keyboard layer",
+     "Global shortcuts",
+     "Fast labelling without the mouse"
+    ]
+   ],
+   "uiStates": [
+    [
+     "Running",
+     "Progress ‘412 / 600 cases’",
+     "Eval job streaming results"
+    ],
+    [
+     "Gate failed",
+     "Red banner with top regressions",
+     "Threshold not met"
+    ],
+    [
+     "Gate passed",
+     "Green with summary",
+     "All thresholds met"
+    ],
+    [
+     "Needs review",
+     "Count badge on the queue",
+     "Sampled outputs awaiting labels"
+    ],
+    [
+     "Judge disagreement",
+     "Flag on cases where judge and humans differ",
+     "Calibration check"
+    ]
+   ],
+   "code": [
+    [
+     "Fast labelling with keyboard shortcuts (React)",
+     "tsx",
+     "export function LabelView({ item, onLabel }: { item: ReviewItem; onLabel: (l: Label) => void }) {\n  useEffect(() => {\n    const onKey = (e: KeyboardEvent) => {\n      if (e.target instanceof HTMLTextAreaElement) return;            // don't hijack typing\n      const map: Record<string, Label> = { '1': 'good', '2': 'minor_issue', '3': 'wrong', '4': 'unsafe' };\n      if (map[e.key]) { e.preventDefault(); onLabel(map[e.key]); }\n    };\n    window.addEventListener('keydown', onKey);\n    return () => window.removeEventListener('keydown', onKey);\n  }, [item.id, onLabel]);\n\n  return (\n    <div className=\"label-view\">\n      <Context text={item.context} highlights={item.groundedSpans} />\n      <Output text={item.output} />\n      <Rubric hints={['1 good', '2 minor issue', '3 wrong', '4 unsafe']} />\n    </div>\n  );\n}"
+    ],
+    [
+     "Optimistic label save and prefetch next (TanStack Query)",
+     "tsx",
+     "const label = useMutation({\n  mutationFn: (l: Label) => api.saveLabel(item.id, l),\n  onMutate: () => queryClient.prefetchQuery({ queryKey: ['review', nextId], queryFn: () => api.item(nextId) }),\n  onSuccess: () => router.push('/review/' + nextId),                    // next item is already loaded\n});"
+    ]
+   ],
+   "perf": [
+    "Prefetch the next review item so labelling never waits.",
+    "Virtualise long case lists in eval runs.",
+    "Stream eval results as they finish instead of waiting for the whole suite."
+   ],
+   "a11y": [
+    "All review actions have keyboard shortcuts and visible focus.",
+    "Diffs use symbols as well as colour for added and removed text."
+   ],
+   "followups": [
+    [
+     "How do you make reviewers fast and consistent?",
+     "A single focused view with the rubric visible, keyboard shortcuts, highlighted grounding, prefetching, and periodic agreement checks between reviewers."
+    ],
+    [
+     "What does a prompt author see when a gate fails?",
+     "The top regressed cases with inputs, both versions’ outputs and which scorer failed, so the fix is obvious."
+    ]
+   ]
+  }
+ }
+}
