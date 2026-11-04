@@ -1471,3 +1471,16 @@ body::before {
 .reel.is-quick .r-rail svg { width: 3.2cqh; height: 3.2cqh; }
 .reel.is-quick .r-rail span { font-size: calc(1.1cqh * var(--fs)); }
 .reel.is-quick .t-cmp .col:last-of-type { margin-bottom: 0; }
+
+/* =====================================================================
+   READ REELS — several pages per screen, scaled to fill it
+   ===================================================================== */
+.t-read .sheet.measure { visibility: hidden !important; opacity: 0 !important; pointer-events: none; --fit: 1 !important; }
+.t-read .sheet > .pg:first-child { border-top: 0; padding-top: 0; }
+.t-read .sheet > .pg.say:first-child { padding-top: calc(1.8cqh * var(--fit, 1)); }
+.t-read .pg.cur .pn { color: var(--rfg); }
+.t-read .pg.cur .pn::before { content: "▸ "; color: var(--rac); }
+/* phones: keep the whole reel (caption bar + buttons) above the floating tab bar */
+@media (max-width: 860px) {
+  .rstage { height: calc(100dvh - 128px - 82px - env(safe-area-inset-bottom, 0px)); min-height: 420px; }
+}

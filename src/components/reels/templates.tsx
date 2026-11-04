@@ -1,3 +1,6 @@
+"use client";
+
+import { useLayoutEffect, useRef, useState } from "react";
 import type { Reel } from "@/content/types";
 import { Md } from "../ui";
 import { guessLang, highlightLines } from "@/lib/highlight";
@@ -45,33 +48,7 @@ const cls = (k: number, beat: number) => (k <= beat ? "show" : "") + (k === beat
 export function ReelBody({ r, beat, p, pick, onPick }: { r: Reel; beat: number; p: number; pick?: number; onPick: (i: number) => void }) {
   switch (r.template) {
     case "read":
-      return (
-        <div className="t-read">
-          <div className="pages">
-            {r.pages.map((pg, i) => (
-              <div key={i} className={"sheet" + (i === beat ? " on" : "")}>
-                <div className={"pg" + (pg.say ? " say" : "")}>
-                  <span className="pn">{pg.say ? "Interview answer" : `${i + 1} / ${r.pages.length}`}</span>
-                  {pg.h && (
-                    <h3>
-                      <Md text={pg.h} />
-                    </h3>
-                  )}
-                  <p>
-                    <Md text={pg.p} />
-                  </p>
-                  {pg.ex && (
-                    <div className="pex">
-                      <b>{pg.exLabel || r.exLabel || "In practice"}</b>
-                      <Md text={pg.ex} />
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
+      return <ReadBody r={r} beat={beat} />;
     case "hook":
       return (
         <div className={"t-hook " + (r.size === "m" ? "m" : "")}>
@@ -294,4 +271,117 @@ export function ReelBody({ r, beat, p, pick, onPick }: { r: Reel; beat: number; 
       );
     }
   }
+}
+
+type ReadReel = Extract<Reel, { template: "read" }>;
+
+function ReadPage({ pg, i, n, exLabel, cur }: { pg: ReadReel["pages"][number]; i: number; n: number; exLabel?: string; cur?: boolean }) {
+  return (
+    <div className={"pg" + (pg.say ? " say" : "") + (cur ? " cur" : "")}>
+      <span className="pn">{pg.say ? "Interview answer" : `${i + 1} / ${n}`}</span>
+      {pg.h && (
+        <h3>
+          <Md text={pg.h} />
+        </h3>
+      )}
+      <p>
+        <Md text={pg.p} />
+      </p>
+      {pg.ex && (
+        <div className="pex">
+          <b>{pg.exLabel || exLabel || "In practice"}</b>
+          <Md text={pg.ex} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Read reels: pack as many consecutive pages as fit on one screen (the question
+ * sits with its answer), then scale the type so each screen is ~90% full.
+ */
+function ReadBody({ r, beat }: { r: ReadReel; beat: number }) {
+  const n = r.pages.length;
+  const box = useRef<HTMLDivElement>(null);
+  const measure = useRef<HTMLDivElement>(null);
+  const [h, setH] = useState(0);
+  const [sheets, setSheets] = useState<number[][]>(() => r.pages.map((_, i) => [i]));
+
+  // Track the space available.
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const on = () => setH(el.clientHeight);
+    on();
+    const ro = new ResizeObserver(on);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Group pages into screens using their natural (fit = 1) heights.
+  useLayoutEffect(() => {
+    const m = measure.current;
+    if (!m || h <= 0) return;
+    const pgs = Array.from(m.children) as HTMLElement[];
+    const top = (k: number) => pgs[k].offsetTop;
+    const bottom = (k: number) => pgs[k].offsetTop + pgs[k].offsetHeight;
+    const room = h * 1.15; // pack a little past one screen; the fit step shrinks type slightly (≥ 0.6)
+    const out: number[][] = [];
+    let cur: number[] = [];
+    for (let k = 0; k < n; k++) {
+      if (cur.length && bottom(k) - top(cur[0]) > room) {
+        out.push(cur);
+        cur = [];
+      }
+      cur.push(k);
+    }
+    if (cur.length) out.push(cur);
+    setSheets((prev) => (JSON.stringify(prev) === JSON.stringify(out) ? prev : out));
+  }, [h, n, r]);
+
+  // Scale each screen's type so it fills the space without overflowing.
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el || h <= 0) return;
+    const fill = () => {
+      el.querySelectorAll<HTMLElement>(".sheet:not(.measure)").forEach((sh) => {
+        let f = 1;
+        sh.style.setProperty("--fit", "1");
+        for (let pass = 0; pass < 5; pass++) {
+          const need = sh.offsetHeight;
+          const next = Math.min(1.6, Math.max(0.6, f * Math.pow((h * 0.94) / need, 0.6)));
+          if (Math.abs(next - f) < 0.01) break;
+          f = next;
+          sh.style.setProperty("--fit", f.toFixed(3));
+        }
+        while (sh.offsetHeight > h && f > 0.6) {
+          f -= 0.03;
+          sh.style.setProperty("--fit", f.toFixed(3));
+        }
+      });
+    };
+    fill();
+    document.fonts?.ready.then(fill);
+  }, [sheets, h]);
+
+  const on = Math.max(0, sheets.findIndex((g) => g.includes(beat)));
+  return (
+    <div className="t-read">
+      <div className="pages" ref={box}>
+        <div className="sheet measure" ref={measure} aria-hidden>
+          {r.pages.map((pg, i) => (
+            <ReadPage key={i} pg={pg} i={i} n={n} exLabel={r.exLabel} />
+          ))}
+        </div>
+        {sheets.map((g, si) => (
+          <div key={g.join("-")} className={"sheet" + (si === on ? " on" : "")}>
+            {g.map((i) => (
+              <ReadPage key={i} pg={r.pages[i]} i={i} n={n} exLabel={r.exLabel} cur={g.length > 1 && i === beat} />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
