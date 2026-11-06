@@ -6,6 +6,10 @@ import { CASE_CONCEPTS } from "@/content/basics";
 import { ArchSvg, Figure, SeqSvg } from "@/components/Diagrams";
 import { Code, Faq, Footer, Table } from "@/components/ui";
 import { ConceptGrid } from "@/components/Chapters";
+import { CodeWalks } from "@/components/CodeWalk";
+import { PAGE_CODE } from "@/content/code-docs";
+import { AssetMeta } from "@/components/AssetMeta";
+import { PathLink } from "@/components/programme/PathLink";
 import { CaseRound, type RoundPart } from "@/components/interview/CaseRound";
 import { CritItem } from "@/components/interview/CritItem";
 import type { InterviewCase } from "@/content/types";
@@ -57,7 +61,7 @@ function parts(c: InterviewCase): RoundPart[] {
       sections: [
         {
           key: "simple",
-          title: "The product in plain words",
+          title: "Product in plain words",
           intro: "Who uses it, what a normal day looks like, and why it is harder than it seems.",
           body: F ? (
             <>
@@ -110,7 +114,7 @@ function parts(c: InterviewCase): RoundPart[] {
       sections: [
         {
           key: "brief",
-          title: "The brief",
+          title: "Brief and scope",
           intro: "The question exactly as the interviewer asks it, and what they want to learn from your answer.",
           body: (
             <>
@@ -161,7 +165,7 @@ function parts(c: InterviewCase): RoundPart[] {
       sections: [
         {
           key: "arch",
-          title: "The architecture",
+          title: "Architecture",
           prompt: "Sketch the components and arrows, then compare.",
           intro: c.archIntro,
           body: (
@@ -175,7 +179,7 @@ function parts(c: InterviewCase): RoundPart[] {
         },
         {
           key: "flow",
-          title: "The key flow, step by step",
+          title: "Key flow, step by step",
           prompt: "Narrate one request end to end.",
           intro: c.flowIntro,
           body: (
@@ -191,7 +195,7 @@ function parts(c: InterviewCase): RoundPart[] {
           ? [
               {
                 key: "fe",
-                title: "The front end",
+                title: "Front end",
                 prompt: "Sketch the screens, the client layers and every UI state the user can see.",
                 intro: F.fe.intro,
                 body: (
@@ -219,9 +223,19 @@ function parts(c: InterviewCase): RoundPart[] {
           intro: "The tables and contracts that make the design concrete.",
           body: <>{c.code.map((k) => <Code key={k[0]} sample={k} />)}</>,
         },
+        ...(PAGE_CODE[`/interview/${c.id}`]
+          ? [
+              {
+                key: "walk",
+                title: "Tested code, explained",
+                intro: "The core of this design as working code, with what each part does and why.",
+                body: <CodeWalks ids={PAGE_CODE[`/interview/${c.id}`]} />,
+              },
+            ]
+          : []),
         {
           key: "deep",
-          title: "The hard parts, in depth",
+          title: "Hard parts, in depth",
           prompt: "Pick two areas the interviewer will push on and explain them.",
           intro: "Where interviewers spend the second half of the round.",
           body: (
@@ -340,7 +354,7 @@ function parts(c: InterviewCase): RoundPart[] {
         },
         {
           key: "board",
-          title: "Your whiteboard",
+          title: "Whiteboard",
           intro: "Draw the design here, in this order. It stays in this browser.",
           body: <ol className="draw">{c.draw.map((d) => <li key={d}>{d}</li>)}</ol>,
         },
@@ -360,6 +374,8 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
           <Link href="/interview">Interview room</Link> · {c.track} system design · {c.minutes} minutes
         </div>
         <h1>{c.title}</h1>
+        <AssetMeta href={`/interview/${c.id}`} />
+        <PathLink href={`/interview/${c.id}`} />
       </div>
       <CaseRound id={c.id} title={c.title} minutes={c.minutes} parts={parts(c)} next={{ id: next.id, title: next.title }} />
       <Footer>AI Engineer · interview room</Footer>

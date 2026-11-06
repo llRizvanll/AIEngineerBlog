@@ -1,3 +1,4 @@
+import { ModuleShelf } from "@/components/ModuleShelf";
 import Link from "next/link";
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
@@ -23,9 +24,7 @@ export default function MobileCodingPage() {
             Build the components <span className="serif grad-text">apps run on.</span>
           </h1>
           <p>
-            The low-level design round for mobile engineers: caches, image loaders, offline sync, retries, pagination and uploads. Each solution is
-            production-style Kotlin with coroutines, Flow and structured concurrency, compiled with warnings as errors and covered by tests, then
-            explained line by line with the iOS equivalent.
+            Machine coding for mobile and AI engineers: caches, image loaders, offline sync, retries, uploads, kernels and guards. Walkthroughs explain each solution line by line.
           </p>
           <div className="btns">
             <Link className="btn" href="/reels/c-mobile">
@@ -107,6 +106,7 @@ export default function MobileCodingPage() {
             </Link>
           ))}
         </div>
+        <ModuleShelf format="machine-coding" title="AI machine coding" blurb="Kernels, adapters, guards, checkpoints" />
       </div>
       <Footer>AI Engineer · mobile machine coding</Footer>
     </main>

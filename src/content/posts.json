@@ -5,7 +5,7 @@
   "mins": 14,
   "title": "SQLite at a million rows",
   "tags": "Android · iOS · SQLite",
-  "dek": "The local database is the product. Here is the schema, the pragmas, the paging and the migration rules that keep it fast at a million rows and safe for users who skip eleven app updates.",
+  "dek": "Local databases are the product. Here are the schema, pragmas, paging and migration rules that stay fast at a million rows and safe for users who skip eleven updates.",
   "rule": "Design the database for the worst user, not the median one: a million rows, a month offline, and an app that was killed mid-write.",
   "tldr": [
    "Turn on WAL, keep transactions short and put the outbox in the same transaction as the data.",
@@ -33,7 +33,7 @@
     "h": "WAL, pragmas and short transactions",
     "p": [
      "Write-ahead logging lets readers keep reading while one writer appends to the log. That is exactly what a sync engine writing in the background and a UI reading on the main thread need. Android's Room and most iOS wrappers such as GRDB enable it for you, but you should know what it does.",
-     "The rules that matter more than any setting: one writer at a time, transactions measured in milliseconds, and never hold a transaction open across a network call. A sync batch of 500 rows is committed in chunks, not in one two-second transaction that blocks the user's tap."
+     "The rules that matter more than any setting: one writer at a time, transactions measured in milliseconds, and never hold a transaction open across a network call. Commit a sync batch of 500 rows in chunks, not in one two-second transaction that blocks the user's tap."
     ],
     "table": {
      "head": [
@@ -148,7 +148,7 @@
    ],
    [
     "How do you keep the outbox safe across migrations?",
-    "Migrations never rewrite or drop it. Operation payloads are versioned so newer code can still read old ones, and a failed migration exports the outbox before resetting anything."
+    "Migrations never rewrite or drop it. Version operation payloads so newer code can still read old ones, and export the outbox before a failed migration resets anything."
    ],
    [
     "Room, GRDB, SQLDelight, WatermelonDB or raw SQLite?",
@@ -163,7 +163,7 @@
   "mins": 15,
   "title": "Conflict resolution without losing an edit",
   "tags": "Sync · CRDT · UX",
-  "dek": "Two people edit the same record while offline. Something has to decide what the record becomes. The decision is a product choice first and an algorithm second.",
+  "dek": "Offline edits collide, and something must decide the result. Treat that as a product choice first and an algorithm second.",
   "rule": "Choose a conflict policy per field and per entity, tell the user when you chose for them, and never silently drop an edit.",
   "tldr": [
    "Last-write-wins is fine for low-value fields and dangerous for everything else. Use hybrid logical clocks, not device clocks.",
@@ -295,7 +295,7 @@
   "mins": 16,
   "title": "Uploading 4 GB on one bar of signal",
   "tags": "Files · S3 · iOS · Android",
-  "dek": "A big upload on a mobile network is a series of small, resumable, verifiable steps. This is how to build them, and what iOS and Android will and will not let you do in the background.",
+  "dek": "Big uploads on mobile networks work as small, resumable, verifiable steps. Build them here, and learn what iOS and Android allow in the background.",
   "rule": "Hash it, split it into parts, send parts straight to object storage, checkpoint each one, and finish with a server-side check.",
   "tldr": [
    "Never push file bytes through your API. Presigned part URLs send them straight to S3 or equivalent.",
@@ -304,14 +304,14 @@
   ],
   "secs": [
    {
-    "h": "The shape of the problem",
+    "h": "Shape of the problem",
     "p": [
      "A 4 GB video on a moving train sees minutes of signal, then none, then a different network. A single HTTP request cannot survive that. The design has to assume the upload will be interrupted dozens of times and cost almost nothing each time.",
      "Four ideas combine to make it work: break the file into independent parts, upload each part with its own URL, record which parts are done, and verify the whole thing at the end."
     ]
    },
    {
-    "h": "The protocol, end to end",
+    "h": "Protocol, end to end",
     "seq": {
      "actors": [
       "App",
@@ -476,7 +476,7 @@
    ],
    [
     "Why can't iOS upload a part straight from memory in the background?",
-    "Background sessions hand the transfer to a system daemon, which needs a file to read from. So parts are written to temporary files and uploaded with file-based tasks."
+    "Background sessions hand the transfer to a system daemon, which needs a file to read from. So write parts to temporary files and upload them with file-based tasks."
    ],
    [
     "How do you handle a flaky captive-portal Wi-Fi that returns 200 with HTML?",
@@ -491,7 +491,7 @@
   "mins": 13,
   "title": "React Native after the JS runtime is gone",
   "tags": "React Native · Turbo Modules · KMP",
-  "dek": "When the OS wakes your app to sync, there may be no JavaScript engine running at all. Build the parts that must run then in native code, and let React Native do what it is good at.",
+  "dek": "JavaScript may not be running when the OS wakes your app to sync. Build those parts in native code, and let React Native do what it does well.",
   "rule": "JavaScript renders and requests. Native code schedules, transfers and syncs. The database is the contract between them.",
   "tldr": [
    "The JS runtime is not reliably available in the background. Do not run sync or transfers in it.",
@@ -507,7 +507,7 @@
     ]
    },
    {
-    "h": "The split of responsibilities",
+    "h": "Split of responsibilities",
     "table": {
      "head": [
       "Layer",
@@ -639,7 +639,7 @@
   "mins": 16,
   "title": "Scaling the sync backend to 5M devices",
   "tags": "Backend · Postgres · Kafka",
-  "dek": "Five million phones that wake up at unpredictable moments, retry on failure and all arrive after an outage. This is the server design that stays up through it.",
+  "dek": "Five million phones wake unpredictably, retry on failure and all return after an outage. This server design stays up through it.",
   "rule": "Keep the API stateless and cheap, put history in a partitioned change log, and protect the backend from its own clients.",
   "tldr": [
    "Per-tenant monotonically increasing sequence numbers make pulls simple and gaps detectable.",
@@ -689,11 +689,11 @@
      ]
     },
     "p": [
-     "Two things stand out. The average is modest, so the system is dominated by spikes. And most requests find nothing, so the cheapest possible answer to 'any changes?' is the most valuable thing you can build."
+     "Two things stand out. The average stays modest, so spikes dominate the system. And most requests find nothing, so the cheapest possible answer to 'any changes?' is the most valuable thing you can build."
     ]
    },
    {
-    "h": "The architecture",
+    "h": "Architecture",
     "arch": {
      "cols": 4,
      "rows": 3,
@@ -848,7 +848,7 @@
     ]
    },
    {
-    "h": "The change log and the sequence number",
+    "h": "Change log and the sequence number",
     "p": [
      "Every accepted write appends a row to a change log with a sequence number that is monotonically increasing per tenant (or per shard). A client's cursor is just 'the last sequence I have'. Pulling is a range scan: give me everything after N. Gaps are detectable: if you receive 101 then 103, you missed 102.",
      "A global auto-increment is a bottleneck and a trap: transactions commit out of order, so a reader can see 105 before 104 commits and skip it forever. Allocate sequences per tenant inside the same transaction as the write, from a counter row, so ordering within the tenant is strict. Then readers use the highest committed sequence as a safe watermark."
@@ -924,7 +924,7 @@
   "mins": 12,
   "title": "The principal engineer interview, mobile edition",
   "tags": "Interviewing · Leadership",
-  "dek": "What panels are scoring when they ask you to design a mobile system, how to structure forty-five minutes, and how to tell decision stories that read as principal level.",
+  "dek": "Panel scoring for mobile system design: what they look for, how to structure forty-five minutes, and how decision stories read as principal level.",
   "rule": "A principal answer names the problem behind the problem, makes the trade-off explicit and talks about people and rollout, not only boxes.",
   "tldr": [
    "Spend the first five minutes on questions and numbers. Draw only after you know what you are drawing.",

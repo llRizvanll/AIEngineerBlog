@@ -6,11 +6,11 @@ import type { ReactNode } from "react";
 export type PartKey = "basics" | "question" | "detail" | "qa" | "more";
 
 export const PART_TITLES: Record<PartKey, string> = {
-  basics: "The basics",
-  question: "The question",
-  detail: "The answer in detail",
-  qa: "Questions and answers",
-  more: "Going further",
+  basics: "Basics",
+  question: "Question",
+  detail: "Detailed answer",
+  qa: "Q&A",
+  more: "Extra depth",
 };
 
 export interface ChapterSection {
@@ -84,11 +84,24 @@ export function Chapters({ parts, prefix }: { parts: ChapterPart[]; prefix: stri
         ...p.sections.map((s, si) => (
           <section key={s.id} id={`${prefix}-${s.id}`} data-toc={s.title} className={`in-${p.key}`}>
             <SectionHead num={`${pi + 1}.${si + 1}`} title={s.title} intro={s.intro} />
-            {s.body}
+            {p.key === "more" ? <Level2>{s.body}</Level2> : s.body}
           </section>
         )),
       ])}
     </>
+  );
+}
+
+/** Progressive disclosure: extra material stays one tap away, under a heading you can still scan. */
+export function Level2({ children }: { children: ReactNode }) {
+  return (
+    <details className="lvl2">
+      <summary>
+        <span className="l2-open">Show details</span>
+        <span className="l2-close">Hide details</span>
+      </summary>
+      {children}
+    </details>
   );
 }
 

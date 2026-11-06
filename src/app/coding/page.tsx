@@ -1,3 +1,4 @@
+import { ModuleShelf } from "@/components/ModuleShelf";
 import Link from "next/link";
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
@@ -26,8 +27,7 @@ export default function CodingPage() {
             Crack the coding round with <span className="serif grad-text">patterns.</span>
           </h1>
           <p>
-            Most interview problems are one of fifteen patterns in disguise. Learn the signals, keep a template in your head, and spend the
-            interview on the twist instead of the basics.
+            Fifteen patterns cover most interview problems. Learn the signals, memorise a template, and spend the interview on the twist.
           </p>
           <div className="btns">
             <Link className="btn" href="/reels/c-patterns">
@@ -151,6 +151,7 @@ export default function CodingPage() {
             </div>
           ))}
         </div>
+        <ModuleShelf format="coding-pattern" title="AI coding patterns" blurb="RRF, DPO, RAGAS, speculative decoding" />
       </div>
       <Footer>AI Engineer · coding round</Footer>
     </main>

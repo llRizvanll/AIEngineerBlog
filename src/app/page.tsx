@@ -1,55 +1,29 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { siteMap } from "@/lib/sections";
-import type { NavItem } from "@/lib/nav-types";
+import { buildCatalog } from "@/lib/catalog";
+import { curriculumCounts, systemMap } from "@/lib/system-map";
+import { CURRICULUM } from "@/types/portal";
 import { KeepReading } from "@/components/KeepReading";
 import { Icon } from "@/components/Icons";
-import { AppearanceButton, ExploreButton, HeroSearch } from "@/components/HomeActions";
+import { SystemMap } from "@/components/SystemMap";
+import { AppearanceButton, HeroSearch } from "@/components/HomeActions";
 
 const cvars = (c: [string, string]) => ({ "--c1": c[0], "--c2": c[1] }) as CSSProperties;
-const num = (s?: string) => (s ? parseInt(s, 10) || 0 : 0);
-
-const FORMATS = [
-  { icon: "book", title: "Read", text: "Long-form explanations with diagrams, analogies and interactive pieces.", c: ["#f97316", "#e11d48"] as [string, string] },
-  { icon: "play", title: "Watch", text: "Reels that step through ideas and code one beat at a time.", c: ["#f43f5e", "#f59e0b"] as [string, string] },
-  { icon: "clock", title: "Practise", text: "Timed rounds and problems with model answers to compare against.", c: ["#0ea5e9", "#6c47ff"] as [string, string] },
-  { icon: "cards", title: "Recall", text: "Flashcards and quizzes that track what you already know.", c: ["#a855f7", "#f43f5e"] as [string, string] },
-];
 
 const LOOP = [
-  ["Learn", "Build the mental model first: what it is, why it exists, how it fails."],
-  ["Practise", "Answer out loud or in code before revealing the model answer."],
-  ["Revise", "Short reels and flashcards keep it fresh with minutes a day."],
-  ["Track", "Progress, saves and notes stay on your device. No account needed."],
+  ["Learn", "Start from the whole system, then drill into one part."],
+  ["Practise", "Answer out loud or in code before you open the model answer."],
+  ["Revise", "Due cards and short reels return on schedule, minutes a day."],
+  ["Track", "Progress, saves and notes stay on your device. No account."],
 ];
 
 export default function Home() {
   const groups = siteMap();
   const items = groups.flatMap((g) => g.items);
-  const start = groups[0].items[0];
-  const totals = groups.map((g) => ({ label: g.label, n: g.items.reduce((a, it) => a + num(it.count), 0) }));
-
-  // Two rings of section icons for the hero orbit, built from the registry.
-  const inner = items.slice(0, Math.ceil(items.length / 2));
-  const outer = items.slice(Math.ceil(items.length / 2));
-  const ring = (list: NavItem[], radius: number, cls: string) =>
-    list.map((it, i) => {
-      const angle = (360 / list.length) * i - 90;
-      return (
-        <Link
-          key={it.href}
-          href={it.href}
-          className={"orb " + cls}
-          style={{ ...cvars(it.color), "--a": `${angle}deg`, "--r": `${radius}px` } as CSSProperties}
-          title={it.title}
-          aria-label={it.title}
-        >
-          <span className="orb-in">
-            <Icon name={it.icon} size={20} />
-          </span>
-        </Link>
-      );
-    });
+  const catalog = buildCatalog();
+  const count = (mode: string) => catalog.filter((a) => a.mode === mode).length;
+  const topic = curriculumCounts();
 
   return (
     <main className="landing">
@@ -60,52 +34,52 @@ export default function Home() {
               <i /> Learn · Practise · Revise
             </span>
             <h1>
-              Become the engineer <span className="serif grad-text">they hire.</span>
+              See the whole system. <span className="serif grad-text">Master each part.</span>
             </h1>
             <p className="l-lede">
-              One calm place to understand systems deeply, rehearse every interview round, and keep it all fresh. Read, watch, practise and recall,
-              at your own pace, with progress saved on your device.
+              Trace one AI request from phone to GPU, then drill into any layer. Long reads and deep dives build the model, coding and design rounds
+              test it, and spaced flashcards keep it.
             </p>
             <div className="btns">
-              <Link className="btn" href={start.href}>
-                Start with the {start.title.toLowerCase()} <Icon name="arrow" size={16} />
+              <Link className="btn" href="/aiengine">
+                Start the curriculum <Icon name="arrow" size={16} />
               </Link>
-              <ExploreButton />
+              <Link className="btn ghost" href="/explore">
+                <Icon name="grid" size={16} /> Browse the catalog
+              </Link>
             </div>
             <HeroSearch />
           </div>
-          <div className="l-visual" aria-hidden={false}>
-            <div className="orbit">
-              <div className="orbit-ring r1" />
-              <div className="orbit-ring r2" />
-              <div className="orbit-core">
-                <span className="logo-mark">AI</span>
-              </div>
-              <div className="orbit-spin s1">{ring(inner, 120, "o1")}</div>
-              <div className="orbit-spin s2">{ring(outer, 205, "o2")}</div>
-            </div>
+          <div className="l-visual">
+            <SystemMap layers={systemMap()} />
           </div>
         </section>
 
         <div className="l-stats">
-          <div>
-            <b>{items.length}</b>
-            <span>sections</span>
-          </div>
-          {totals.map((t) => (
-            <div key={t.label}>
-              <b>{t.n}</b>
-              <span>to {t.label.toLowerCase()}</span>
-            </div>
-          ))}
+          <Link href="/explore?mode=learn">
+            <b>{count("learn")}</b>
+            <span>Learn modules</span>
+          </Link>
+          <Link href="/explore?mode=practice">
+            <b>{count("practice")}</b>
+            <span>Practice problems</span>
+          </Link>
+          <Link href="/explore?mode=revise">
+            <b>{count("revise")}</b>
+            <span>Revise cards and reels</span>
+          </Link>
+          <Link href="/modules">
+            <b>{CURRICULUM.length}</b>
+            <span>Curriculum domains</span>
+          </Link>
         </div>
 
         <KeepReading />
 
         <div className="section-h" id="explore">
           <div>
-            <span className="eyebrow">Explore by goal</span>
-            <h2>What do you want to do today?</h2>
+            <span className="eyebrow">Three modes</span>
+            <h2>Learn it. Prove it. Keep it.</h2>
           </div>
         </div>
         <div className="goals">
@@ -123,6 +97,7 @@ export default function Home() {
                       <Icon name={it.icon} size={18} />
                     </span>
                     <span className="gi-tx">
+                      {it.level && <i className="gi-level">{it.level}</i>}
                       <b>{it.title}</b>
                       <span>{it.desc}</span>
                     </span>
@@ -137,26 +112,32 @@ export default function Home() {
 
         <div className="section-h">
           <div>
-            <span className="eyebrow">Formats</span>
-            <h2>Four ways to learn the same idea</h2>
+            <span className="eyebrow">Curriculum</span>
+            <h2>Eleven domains, one map</h2>
           </div>
         </div>
-        <div className="formats stagger">
-          {FORMATS.map((f) => (
-            <div key={f.title} className="format" style={cvars(f.c)}>
-              <span className="fm-ic">
-                <Icon name={f.icon} size={22} />
-              </span>
-              <h3>{f.title}</h3>
-              <p>{f.text}</p>
-            </div>
-          ))}
+        <div className="domain-grid">
+          {CURRICULUM.map((c) => {
+            const k = topic(c.n);
+            return (
+              <Link key={c.n} href={`/explore?topic=${c.n}`} className="domain-card">
+                <span className="dc-n">{String(c.n).padStart(2, "0")}</span>
+                <b>{c.title}</b>
+                <span className="dc-terms">{c.terms}</span>
+                <span className="dc-counts">
+                  <i className="am-learn">{k.learn} learn</i>
+                  <i className="am-practice">{k.practice} practice</i>
+                  <i className="am-revise">{k.revise} revise</i>
+                </span>
+              </Link>
+            );
+          })}
         </div>
 
         <div className="section-h">
           <div>
             <span className="eyebrow">How it works</span>
-            <h2>A simple loop that compounds</h2>
+            <h2>Four steps, repeated</h2>
           </div>
         </div>
         <ol className="loop">
@@ -172,8 +153,8 @@ export default function Home() {
         <section className="l-yours">
           <div>
             <span className="eyebrow">Make it yours</span>
-            <h2>Your colours, your fonts, your pace.</h2>
-            <p>Seven palettes, light, dark or sepia, and separate fonts for the interface, long reads and code. Everything is remembered on this device.</p>
+            <h2>Your colours, fonts and pace.</h2>
+            <p>Pick from seven palettes, three themes, and separate fonts for interface, reading and code. This device remembers them.</p>
             <AppearanceButton />
           </div>
           <div className="yours-swatches" aria-hidden>
@@ -187,16 +168,16 @@ export default function Home() {
         <section className="cta-band">
           <div>
             <h2>
-              Ready when <span className="serif">you are.</span>
+              Start with <span className="serif">one layer.</span>
             </h2>
-            <p>Pick a goal, or let the curriculum lead the way.</p>
+            <p>Follow the curriculum, or filter the catalog by what you need today.</p>
           </div>
           <div className="btns">
-            <Link className="btn light" href={start.href}>
-              Start now
+            <Link className="btn light" href="/aiengine">
+              Start the curriculum
             </Link>
-            <Link className="btn outline" href="#explore">
-              Browse sections
+            <Link className="btn outline" href="/explore">
+              Browse the catalog
             </Link>
           </div>
         </section>

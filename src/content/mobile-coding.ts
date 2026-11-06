@@ -380,7 +380,7 @@ export const MOBILE_PROBLEMS: MobileProblem[] = [
       { lines: [21, 26], title: "Consume if available", note: "Refill first, then take tokens or refuse." },
       { lines: [29, 33], title: "How long to wait", note: "Missing tokens divided by the refill rate, as a Duration." },
       { lines: [35, 40], title: "Lazy refill", note: "Add elapsed × rate, capped at capacity. A monotonic clock avoids time-change bugs." },
-      { lines: [48, 57], title: "Callers wait their turn", note: "Check under the lock; if there are not enough tokens, delay exactly as long as needed outside the lock, then try again." },
+      { lines: [48, 57], title: "Callers wait their turn", note: "Check under the lock; if tokens run short, delay exactly as long as needed outside the lock, then try again." },
     ],
     complexity: "O(1) per call, no background timers",
     edgeCases: ["Cost bigger than capacity never succeeds (rejected up front)", "Clock going backwards (clamped to zero)", "Many waiters wake together (they retry and most wait again)"],

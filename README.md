@@ -41,3 +41,10 @@ Node 20.9+ is required (`.nvmrc` pins 22).
 The build downloads Google Fonts through `next/font`, so the build machine needs internet access.
 
 Code samples use TypeScript or Kotlin throughout. `test:mobile` uses `kotlinc` if it is on your PATH, otherwise the Kotlin compiler that Gradle caches under `~/.gradle`.
+
+## Catalog and content checks
+
+- `src/lib/catalog.ts` builds every asset in the format of `src/content/portal-asset-schema.json`, and an invalid asset fails the build. `/explore` filters it.
+- `src/content/modules/` holds the AI systems modules, flashcards and reels. Their code samples live in `modules/code/`.
+- `npm run test:modules` runs the TypeScript samples' tests. Python samples are syntax-checked only, because they need PyTorch, Triton or Ray and a GPU.
+- `npm run lint:copy` reports "to be" verbs, wind-up phrases and sentence length per content file.

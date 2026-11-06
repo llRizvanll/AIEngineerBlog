@@ -27,6 +27,8 @@ export function Reading({ title, kind, articleId = "article", articleClass, rail
   const [cur, setCur] = useState<string>("");
   const [focus, setFocus] = useState(false);
   const [sheet, setSheet] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [toast, setToast] = useState("");
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   useEffect(() => setSheet(false), [path]);
@@ -71,7 +73,12 @@ export function Reading({ title, kind, articleId = "article", articleClass, rail
     // Jump to a hash on arrival.
     if (location.hash) {
       const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
-      if (target) setTimeout(() => target.scrollIntoView({ behavior: "smooth" }), 60);
+      if (target) {
+        // Level 2 material stays collapsed until something links straight to it.
+        target.closest("details")?.setAttribute("open", "");
+        target.querySelector("details.lvl2")?.setAttribute("open", "");
+        setTimeout(() => target.scrollIntoView({ behavior: "smooth" }), 60);
+      }
     }
     return () => {
       io.disconnect();
@@ -124,6 +131,28 @@ export function Reading({ title, kind, articleId = "article", articleClass, rail
     return () => window.removeEventListener("keydown", k);
   });
 
+  const note = lib.notes?.[path]?.text ?? "";
+  const setNote = (text: string) =>
+    updateLib((l) => {
+      const notes = { ...l.notes };
+      if (text) notes[path] = { title, kind, text, at: Date.now() };
+      else delete notes[path];
+      return { ...l, notes };
+    });
+  const share = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) await navigator.share({ title, url });
+      else {
+        await navigator.clipboard.writeText(url);
+        setToast("Link copied");
+        setTimeout(() => setToast(""), 1600);
+      }
+    } catch {
+      /* the reader closed the share sheet */
+    }
+  };
+
   const toggleSave = () =>
     updateLib((l) => {
       const s = { ...l.saved };
@@ -159,6 +188,12 @@ export function Reading({ title, kind, articleId = "article", articleClass, rail
           <button type="button" onClick={toggleSave} aria-pressed={saved} title="Save to library (b)">
             {saved ? "★ Saved" : "☆ Save"}
           </button>
+          <button type="button" onClick={() => setNoteOpen(true)} aria-pressed={!!note} title="Add your own note">
+            ✎ Note
+          </button>
+          <button type="button" onClick={share} title="Share this page">
+            ↗ Share
+          </button>
           <button type="button" onClick={() => setFocus((f) => !f)} aria-pressed={focus} title="Focus mode (f)">
             ◐ Focus
           </button>
@@ -176,6 +211,12 @@ export function Reading({ title, kind, articleId = "article", articleClass, rail
         )}
         <button type="button" onClick={toggleSave} aria-pressed={saved}>
           {saved ? "★ Saved" : "☆ Save"}
+        </button>
+        <button type="button" onClick={() => setNoteOpen(true)} aria-pressed={!!note} aria-label="Add your own note">
+          ✎
+        </button>
+        <button type="button" onClick={share} aria-label="Share this page">
+          ↗
         </button>
         <button type="button" aria-label="Back to top" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
           ↑
@@ -211,6 +252,24 @@ export function Reading({ title, kind, articleId = "article", articleClass, rail
           </div>,
           document.body
         )}
+      {mounted &&
+        noteOpen &&
+        createPortal(
+          <div className="rd-sheet-ov" onMouseDown={(e) => e.target === e.currentTarget && setNoteOpen(false)}>
+            <div className="rd-sheet" role="dialog" aria-modal="true" aria-label="Your note">
+              <div className="rd-sheet-h">
+                <b>Your note</b>
+                <button type="button" onClick={() => setNoteOpen(false)} aria-label="Close note">
+                  ✕
+                </button>
+              </div>
+              <textarea className="rd-note" rows={7} autoFocus value={note} onChange={(e) => setNote(e.target.value)} placeholder="In your own words: what did this change, and where will you use it?" />
+              <p className="rd-note-hint">Saved on this device. Find every note in My library.</p>
+            </div>
+          </div>,
+          document.body
+        )}
+      {toast && <div className="rd-toast2" role="status">{toast}</div>}
       {focus && (
         <button type="button" className="focus-exit" onClick={() => setFocus(false)}>
           Exit focus <kbd>esc</kbd>

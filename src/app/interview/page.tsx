@@ -1,3 +1,4 @@
+import { ModuleShelf } from "@/components/ModuleShelf";
 import type { Metadata } from "next";
 import { CASES } from "@/lib/content";
 import { Footer } from "@/components/ui";
@@ -15,8 +16,7 @@ export default function InterviewPage() {
             Eleven rounds. One <span className="serif grad-text">whiteboard.</span>
           </h1>
           <p>
-            Each round is a real-world system design question asked the way a principal-engineer panel asks it. Turn on practice mode to write
-            your answer before revealing the model answer, start the 45-minute clock, and draw on the built-in whiteboard.
+            Real system design questions, asked the way principal panels ask them. Practice mode hides each model answer until you write yours. Start the clock and draw on the whiteboard.
           </p>
         </section>
         <div className="iv-steps stagger">
@@ -37,6 +37,7 @@ export default function InterviewPage() {
         <CaseList
           cases={CASES.map((c) => ({ id: c.id, track: c.track, minutes: c.minutes, title: c.title, prompt: c.prompt, tags: c.tags }))}
         />
+        <ModuleShelf format="system-design" title="AI system design rounds" blurb="Semantic caches, red teams, Ray Serve" />
       </div>
       <Footer>AI Engineer · interview room</Footer>
     </main>

@@ -136,6 +136,10 @@ export function Masthead({ groups }: { groups: NavGroup[] }) {
             );
           })}
 
+          <Link href="/explore" className={"nav-top" + (isActive(path, "/explore") ? " cur" : "")} aria-current={isActive(path, "/explore") ? "page" : undefined} onMouseEnter={() => hover(null)}>
+            Explore
+          </Link>
+
           {current && (
             <div className="mega" id={`mega-${current.id}`} onMouseEnter={() => hover(current.id)} role="region" aria-label={current.label}>
               <div className="mega-intro">
@@ -180,6 +184,7 @@ function MenuCard({ it, active }: { it: NavItem; active: boolean }) {
         <Icon name={it.icon} size={19} />
       </span>
       <span className="mcard-tx">
+        {it.level && <i className="mc-level">{it.level}</i>}
         <b>
           {it.title}
           {it.count && <small>{it.count}</small>}
@@ -219,6 +224,9 @@ function MenuSheet({ groups, path, onClose }: { groups: NavGroup[]; path: string
         </button>
         <Link href="/" className={"sheet-home" + (path === "/" ? " cur" : "")}>
           <Icon name="home" size={18} /> Home
+        </Link>
+        <Link href="/explore" className={"sheet-home" + (path === "/explore" ? " cur" : "")}>
+          <Icon name="grid" size={18} /> Explore the catalog
         </Link>
         {groups.map((g) => (
           <section key={g.id} className="sheet-group">

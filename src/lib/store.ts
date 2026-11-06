@@ -64,9 +64,53 @@ export function useLocal<T extends object>(key: string, fallback: T) {
 export interface LibraryState {
   saved: Record<string, { title: string; kind: string; at: number }>;
   seen: Record<string, { title: string; kind: string; at: number; pct?: number }>;
+  /** Your own words on a page: the "sense" step of seek, sense, share */
+  notes: Record<string, { title: string; kind: string; at: number; text: string }>;
 }
 export const LIBRARY_KEY = "pae-library";
-export const emptyLibrary: LibraryState = { saved: {}, seen: {} };
+export const emptyLibrary: LibraryState = { saved: {}, seen: {}, notes: {} };
+
+export const PROGRAMME_KEY = "pae-programme-v1";
+export interface ProgrammeState {
+  /** "4:/deep/sync-engine" */
+  items: Record<string, boolean>;
+  /** "8:2" */
+  rubric: Record<string, boolean>;
+  /** day number */
+  done: Record<string, boolean>;
+}
+export const emptyProgramme: ProgrammeState = { items: {}, rubric: {}, done: {} };
+
+/** Leitner spaced repetition: each card sits in a box, and each box waits longer. */
+export interface SrsCard {
+  box: number;
+  due: number;
+  reviews: number;
+}
+export interface SrsState {
+  cards: Record<string, SrsCard>;
+}
+export const SRS_KEY = "pae-srs";
+export const emptySrs: SrsState = { cards: {} };
+export const SRS_DAYS = [0, 1, 3, 7, 14, 30, 60];
+const DAY = 86_400_000;
+
+export type Rating = "again" | "good" | "easy";
+
+export function nextSrs(prev: SrsCard | undefined, rating: Rating, now: number): SrsCard {
+  const box = prev?.box ?? 0;
+  const reviews = (prev?.reviews ?? 0) + 1;
+  if (rating === "again") return { box: 0, due: now + 10 * 60_000, reviews };
+  const next = Math.min(box + (rating === "easy" ? 2 : 1), SRS_DAYS.length - 1);
+  return { box: next, due: now + SRS_DAYS[next] * DAY, reviews };
+}
+
+export const intervalLabel = (prev: SrsCard | undefined, rating: Rating): string => {
+  if (rating === "again") return "10 min";
+  const box = Math.min((prev?.box ?? 0) + (rating === "easy" ? 2 : 1), SRS_DAYS.length - 1);
+  const days = SRS_DAYS[box];
+  return days === 1 ? "1 day" : `${days} days`;
+};
 
 export interface InterviewState {
   notes: Record<string, Record<string, string>>;

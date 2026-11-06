@@ -8,7 +8,7 @@
   "tag": "How a device with nothing gets an address.",
   "intro": [
    "A device that has just joined a network knows nothing: no address, no router, no DNS server. DHCP is how it asks. It shouts into the network with a broadcast, and a DHCP server (usually your router) answers with a lease: an address to use for a while, plus the other settings the device needs.",
-   "The exchange is called DORA: Discover, Offer, Request, Acknowledge. Four short UDP messages and the device is on the network."
+   "Engineers call the exchange DORA: Discover, Offer, Request, Acknowledge. Four short UDP messages and the device is on the network."
   ],
   "ideas": [
    [
@@ -17,7 +17,7 @@
    ],
    [
     "Broadcast is the bootstrap",
-    "Before there is an address, the only way to talk is the broadcast address. That is why DHCP uses odd source 0.0.0.0 and port 68 to 67."
+    "With no address yet, a device can only talk through broadcast. That is why DHCP uses odd source 0.0.0.0 and port 68 to 67."
    ],
    [
     "More than an address",
@@ -199,7 +199,7 @@
    ],
    [
     "MTU and fragmentation",
-    "Links have a maximum packet size, typically 1500 bytes. Larger packets are fragmented, or dropped if DF is set, which is why path MTU discovery exists."
+    "Links have a maximum packet size, typically 1500 bytes. Routers fragment larger packets, or drop them if DF is set, which is why path MTU discovery exists."
    ],
    [
     "NAT",
@@ -258,7 +258,7 @@
      {
       "n": "TTL",
       "x": "40",
-      "d": "Each router subtracts 1. At 0 the packet is dropped and an ICMP Time Exceeded comes back. traceroute uses this."
+      "d": "Each router subtracts 1. At 0 the router drops the packet and sends back ICMP Time Exceeded. traceroute uses this."
      },
      {
       "n": "Protocol",
@@ -322,7 +322,7 @@
   "port": "IP protocol 1",
   "tag": "The network’s way of telling you what went wrong.",
   "intro": [
-   "ICMP is carried inside IP but is not for user data. It is how routers and hosts report errors and answer simple questions: this host is unreachable, this packet is too big, your TTL expired, are you there?",
+   "ICMP travels inside IP but carries no user data. It is how routers and hosts report errors and answer simple questions: this host is unreachable, this packet is too big, your TTL expired, are you there?",
    "Two famous tools are built on it. ping sends Echo requests and times the replies. traceroute sends packets with TTL 1, 2, 3 and so on and collects the Time Exceeded replies to learn each router on the path."
   ],
   "ideas": [
@@ -340,7 +340,7 @@
    ],
    [
     "ICMPv6 is essential",
-    "In IPv6 it also does neighbour discovery and address autoconfiguration, so it cannot be blocked wholesale."
+    "In IPv6 it also does neighbour discovery and address autoconfiguration, so you cannot block it wholesale."
    ]
   ],
   "gotchas": [
@@ -485,11 +485,11 @@
    ],
    [
     "Amplification",
-    "Because the source can be forged, a small request that triggers a large reply can be abused for DDoS. Servers limit response size."
+    "Attackers can forge the source, so a small request that triggers a large reply enables DDoS. Servers limit response size."
    ]
   ],
   "gotchas": [
-   "Datagrams larger than the path MTU get fragmented and are often dropped.",
+   "Datagrams larger than the path MTU get fragmented, and networks often drop them.",
    "NAT and firewalls expire UDP “connections” after seconds, so long-lived flows need keepalives.",
    "Never assume ordering or delivery."
   ],
@@ -564,7 +564,7 @@
   "tag": "The internet’s phone book.",
   "intro": [
    "People remember names, networks route addresses. DNS translates example.com into 93.184.216.34. It is a distributed database: no single server knows everything, but each knows where to ask next.",
-   "Your device asks a recursive resolver. If the answer is not cached, the resolver walks the hierarchy: root servers, then the .com servers, then example.com’s own authoritative servers. The answer is cached for its TTL."
+   "Your device asks a recursive resolver. If the answer is not cached, the resolver walks the hierarchy: root servers, then the .com servers, then example.com’s own authoritative servers. Resolvers cache the answer for its TTL."
   ],
   "ideas": [
    [
@@ -577,7 +577,7 @@
    ],
    [
     "Name compression",
-    "Repeated names are replaced with a two-byte pointer back to the first occurrence."
+    "A two-byte pointer replaces repeated names, pointing back to the first occurrence."
    ],
    [
     "Security",
@@ -600,7 +600,7 @@
    ],
    [
     "Why does the QNAME have no dots on the wire?",
-    "Each label is prefixed by its length and a zero byte ends the name, so dots are unnecessary."
+    "A length prefixes each label and a zero byte ends the name, so dots are unnecessary."
    ]
   ],
   "packets": [
@@ -765,7 +765,7 @@
     1,
     0,
     "93.184.216.34",
-    "The resolver returns the answer. For the next hour, repeats are answered from cache."
+    "The resolver returns the answer. For the next hour, the cache answers repeats."
    ]
   ]
  },
@@ -1034,7 +1034,7 @@
    ],
    [
     "AEAD",
-    "Each record is encrypted and authenticated together. Tampering is detected."
+    "TLS encrypts and authenticates each record together. The receiver detects tampering."
    ],
    [
     "Resumption and 0-RTT",
@@ -1209,7 +1209,7 @@
      {
       "n": "key_share",
       "x": "00330024001d002005427fbcf93673b0ed2a67a4e11e5b98d5124f8cc9064380bdfa3774b1ee2b68",
-      "d": "The server’s x25519 public key. The shared secret is derived from both keys."
+      "d": "The server’s x25519 public key. Both sides derive the shared secret from both keys."
      }
     ]
    }
@@ -1332,7 +1332,7 @@
    },
    {
     "tab": "Response",
-    "note": "The server replies with a status line, headers and a body whose length is given by Content-Length.",
+    "note": "The server replies with a status line, headers and a body, and Content-Length gives its size.",
     "fields": [
      {
       "n": "Status line",
@@ -1476,7 +1476,7 @@
      {
       "n": "Authentication tag",
       "x": "638cb5de07305982abd4fd264f78a1ca",
-      "d": "AEAD tag. If a single bit is changed in transit, decryption fails and the connection is dropped."
+      "d": "AEAD tag. If a single bit changes in transit, decryption fails and the connection drops."
      }
     ]
    },
@@ -1781,7 +1781,7 @@
      {
       "n": "DELE",
       "x": "44454c4520310d0a",
-      "d": "Mark for deletion. Deletion is applied at QUIT.",
+      "d": "Mark for deletion. Deletions take effect at QUIT.",
       "k": "t"
      },
      {
@@ -2120,7 +2120,7 @@
    ],
    [
     "Channels",
-    "Shell, commands, forwarded ports and SFTP are multiplexed over one TCP connection."
+    "One TCP connection multiplexes shell, commands, forwarded ports and SFTP."
    ],
    [
     "Port forwarding",
@@ -2207,7 +2207,7 @@
     0,
     1,
     "SSH-2.0-OpenSSH_9.6",
-    "Banners are exchanged first, in clear text, both ways."
+    "Both sides exchange banners first, in clear text."
    ],
    [
     0,

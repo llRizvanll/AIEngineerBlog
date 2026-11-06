@@ -11,6 +11,7 @@ export function routeFor(target: string, section?: string): string {
   if (target.startsWith("reels-")) return `/reels/${target.slice(6)}`;
   if (target.startsWith("coding-")) return `/coding/${target.slice(7)}${hash}`;
   if (target.startsWith("mobile-")) return `/mobile-coding/${target.slice(7)}${hash}`;
+  if (target.startsWith("module-")) return `/modules/${target.slice(7)}${hash}`;
   const simple: Record<string, string> = {
     home: "/",
     interview: "/interview",
@@ -26,6 +27,9 @@ export function routeFor(target: string, section?: string): string {
   };
   return (simple[target] ?? "/") + hash;
 }
+
+/** Stable key for a round's flashcard. */
+export const critKey = (caseId: string, sec: string, i: number) => `${caseId}|${sec}|${i}`;
 
 export const SECTION_NAME: Record<string, string> = {
   simple: "Use case",
@@ -54,3 +58,6 @@ export const CASE_SHORT: Record<string, string> = {
   "ai-evals": "AI evals",
 };
 
+
+export const PROGRAMME_HREF = "/paths/mobile-principal";
+export const dayHref = (n: number) => `${PROGRAMME_HREF}/day/${n}`;

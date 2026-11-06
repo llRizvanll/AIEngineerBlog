@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PROTOCOLS, getProtocol } from "@/lib/content";
 import { DoneButton, DoneMark, PacketDecoder, PacketFlow, TrackSeen } from "@/components/protocols/ProtocolLesson";
+import { CodeWalk } from "@/components/CodeWalk";
+import { AssetMeta } from "@/components/AssetMeta";
 import { PartHead, QuestionList, Roadmap, SectionHead, type PartKey } from "@/components/Chapters";
 
 export const dynamicParams = false;
@@ -24,8 +26,8 @@ export default async function ProtocolPage({ params }: { params: Promise<{ id: s
   const next = PROTOCOLS[(di + 1) % PROTOCOLS.length];
   const parts: { key: PartKey; sections: string[] }[] = [
     { key: "basics", sections: ["What it does", "Key ideas"] },
-    { key: "question", sections: ["Questions this answers"] },
-    { key: "detail", sections: ["Follow the packets", "Decode it byte by byte"] },
+    { key: "question", sections: ["Target questions"] },
+    { key: "detail", sections: ["Follow the packets", "Decode it byte by byte", "Decode it in code"] },
     { key: "qa", sections: ["Check yourself"] },
     { key: "more", sections: ["Watch out for"] },
   ];
@@ -57,6 +59,7 @@ export default async function ProtocolPage({ params }: { params: Promise<{ id: s
             <h1>{d.name}</h1>
             <p className="full">{d.full}</p>
             <p className="tag">{d.tag}</p>
+            <AssetMeta href={`/protocols/${d.id}`} />
           </div>
           <Roadmap parts={parts.map((x) => ({ key: x.key, sections: x.sections.map((t) => ({ title: t })) }))} />
           <PartHead part="basics" n={1} total={5} lead="What the protocol is for, and the ideas it is built on." />
@@ -79,7 +82,7 @@ export default async function ProtocolPage({ params }: { params: Promise<{ id: s
           </section>
           <PartHead part="question" n={2} total={5} lead="What this lesson prepares you to answer. Keep these in mind while you watch the packets." />
           <section id="pr-qs">
-            <SectionHead num="2.1" title="Questions this answers" />
+            <SectionHead num="2.1" title="Target questions" />
             <QuestionList items={d.qa.map(([q]) => q)} note="The answers are in part 4." />
           </section>
           <PartHead part="detail" n={3} total={5} lead="Watch a real exchange step by step, then take each message apart field by field." />
@@ -90,6 +93,10 @@ export default async function ProtocolPage({ params }: { params: Promise<{ id: s
           <section id="pr-bytes">
             <SectionHead num="3.2" title="Decode it byte by byte" intro="Click any byte or row. Each colour is one field." />
             <PacketDecoder packets={d.packets} />
+          </section>
+          <section id="pr-code">
+            <SectionHead num="3.3" title="Decode it in code" intro="A small decoder, tested against the exact bytes shown above." />
+            <CodeWalk id={`p-${d.id}`} />
           </section>
           <PartHead part="qa" n={4} total={5} lead="Check your understanding. Answer out loud, then open." />
           <section id="pr-qa">

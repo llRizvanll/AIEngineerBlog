@@ -1,3 +1,4 @@
+import { ModuleShelf } from "@/components/ModuleShelf";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { SERIES, SITE } from "@/lib/content";
@@ -18,7 +19,7 @@ export default function SeriesIndex() {
           <h1>
             Mobile systems <span className="serif grad-text">at scale.</span>
           </h1>
-          <p>Background sync, SQLite, conflicts, huge uploads, React Native, the backend and the interview — written for engineers going for principal.</p>
+          <p>Reference articles, for looking up detail later. To learn this material from the basics, <Link href="/paths/mobile-principal">start the two-week programme</Link>.</p>
         </section>
 
         <Link href={lead.href} className="feed-lead" style={postVars(lead.id)}>
@@ -54,6 +55,7 @@ export default function SeriesIndex() {
             </Link>
           ))}
         </div>
+        <ModuleShelf format="long-read" title="AI systems long reads" blurb="Whole systems, start to finish" />
       </div>
       <Footer>AI Engineer · Mobile systems at scale</Footer>
     </main>

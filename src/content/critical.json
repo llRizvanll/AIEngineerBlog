@@ -212,7 +212,7 @@
    "fe",
    "Incident",
    "Android ANRs spike after enabling autoplay video.",
-   "Several player instances were created and released on the main thread during scrolling. Use one shared player attached to the most visible item, prepare off the main thread, and release resources when items leave the screen."
+   "The main thread created and released several player instances during scrolling. Use one shared player attached to the most visible item, prepare off the main thread, and release resources when items leave the screen."
   ],
   [
    "fe",
@@ -280,7 +280,7 @@
    "arch",
    "Incident",
    "During a sale, customers were charged twice. Logs show two payment intents for one order.",
-   "The idempotency key was generated per request, so a retry made a new one, or it was not forwarded to the provider. Create the key when the user enters the payment step, persist it across process death, enforce it with a unique constraint, forward it to the provider, and auto-refund duplicates found by reconciliation."
+   "The client generated the idempotency key per request, so a retry made a new one, or never forwarded it to the provider. Create the key when the user enters the payment step, persist it across process death, enforce it with a unique constraint, forward it to the provider, and auto-refund duplicates found by reconciliation."
   ],
   [
    "arch",
@@ -710,7 +710,7 @@
    "arch",
    "Incident",
    "A sales rep got an answer quoting an HR document he cannot access.",
-   "Permissions were filtered after retrieval or the ACL sync lagged. Filter inside the search, sync permission changes immediately, run periodic full reconciliations, and audit every answer’s sources."
+   "The system filtered permissions after retrieval, or the ACL sync lagged. Filter inside the search, sync permission changes immediately, run periodic full reconciliations, and audit every answer’s sources."
   ],
   [
    "arch",
@@ -746,7 +746,7 @@
    "deep",
    "Incident",
    "Recall collapsed after switching embedding models.",
-   "Old and new vectors were mixed in one index. Re-embed everything into a new index, dual-run, compare on the test set and switch over."
+   "One index mixed old and new vectors. Re-embed everything into a new index, dual-run, compare on the test set and switch over."
   ],
   [
    "deep",
@@ -856,7 +856,7 @@
    "fail",
    "Incident",
    "Scaling up takes 25 minutes because of cold starts.",
-   "Weights were downloaded from object storage each time. Cache weights on local NVMe or peer nodes, keep a warm pool and scale ahead of predictable peaks."
+   "Each start downloaded the weights from object storage. Cache weights on local NVMe or peer nodes, keep a warm pool and scale ahead of predictable peaks."
   ]
  ],
  "ai-evals": [

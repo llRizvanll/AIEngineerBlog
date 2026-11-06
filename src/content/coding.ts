@@ -145,7 +145,7 @@ export const PATTERNS: Pattern[] = [
     tagline: "One pointer moves twice as fast; they meet in a cycle.",
     color: ["#f59e0b", "#ef4444"],
     signals: ["Linked list cycles", "Middle of a list", "Sequences that may loop (happy number)", "Find the duplicate with O(1) space"],
-    idea: "Move slow by one and fast by two. If there is a cycle they must meet; if fast reaches the end there is none. When fast finishes, slow is in the middle.",
+    idea: "Move slow by one and fast by two. A cycle makes them meet; fast reaching the end proves none exists. When fast finishes, slow is in the middle.",
     complexity: "O(n) time, O(1) space",
     template: {
       title: "Detect a cycle",
@@ -554,7 +554,7 @@ function kLargest(nums: number[], k: number): number[] {
     tagline: "Order tasks so every dependency comes first.",
     color: ["#a855f7", "#f43f5e"],
     signals: ["Prerequisites, build order, dependencies", "Detect a cycle in a directed graph", "Alien dictionary ordering"],
-    idea: "Count incoming edges. Start with nodes that have none, remove them and decrement their neighbours. If you cannot place every node, there is a cycle (Kahn's algorithm).",
+    idea: "Count incoming edges. Start with nodes that have none, remove them and decrement their neighbours. Unplaced nodes mean a cycle (Kahn's algorithm).",
     complexity: "O(V + E) time and space",
     template: {
       title: "Kahn's algorithm",
@@ -1005,7 +1005,7 @@ export const WORKED_BEATS: Record<string, { hl: number[]; note: string }[]> = {
   ],
   "fast-slow": [
     { hl: [1, 2, 3, 4], note: "Race: slow moves one step, fast moves two." },
-    { hl: [5], note: "If they meet, there is a cycle." },
+    { hl: [5], note: "Meeting proves a cycle." },
     { hl: [6, 7, 8, 9, 10, 11], note: "Restart one pointer at head; step together; they meet at the cycle start." },
   ],
   "binary-search": [
@@ -1043,7 +1043,7 @@ export const WORKED_BEATS: Record<string, { hl: number[]; note: string }[]> = {
     { hl: [1, 2, 3, 4, 5, 6], note: "Edges go prerequisite → course; count each course's prerequisites." },
     { hl: [7], note: "Start with courses that need nothing." },
     { hl: [9, 10, 11, 12, 13, 14], note: "Take a course and unlock the courses waiting on it." },
-    { hl: [15], note: "Everything taken means there is no cycle." },
+    { hl: [15], note: "Everything taken proves no cycle exists." },
   ],
   "union-find": [
     { hl: [1], note: "Every node starts in its own group." },

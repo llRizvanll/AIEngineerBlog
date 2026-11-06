@@ -9,6 +9,7 @@ import { Reading } from "@/components/Reading";
 import { Code, Faq, Footer } from "@/components/ui";
 import { Chapters, type ChapterPart } from "@/components/Chapters";
 import { Icon } from "@/components/Icons";
+import { AssetMeta } from "@/components/AssetMeta";
 
 export const dynamicParams = false;
 export const generateStaticParams = () => PATTERNS.map((p) => ({ id: p.id }));
@@ -38,7 +39,7 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
       sections: [
         {
           id: "idea",
-          title: "The idea",
+          title: "Core idea",
           intro: "What the pattern does, in plain words.",
           body: (
             <>
@@ -57,7 +58,7 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
         },
         {
           id: "signals",
-          title: "How to recognise it",
+          title: "Recognition signals",
           intro: "If a question has one of these clues, try this pattern first.",
           body: (
             <div className="sig-chips">
@@ -100,7 +101,7 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
       sections: [
         {
           id: "template",
-          title: "The template",
+          title: "Template",
           intro: "Memorise this shape. Most problems in this family are this code plus one twist.",
           body: (
             <>
@@ -115,7 +116,7 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
         },
         {
           id: "solution",
-          title: "The solution",
+          title: "Solution",
           intro: "Strict TypeScript, type-checked and tested.",
           body: (
             <>
@@ -147,7 +148,7 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
           ? [
               {
                 id: "practice",
-                title: "Practise on your own",
+                title: "Solo practice",
                 intro: "Try these without looking; open the hint only when stuck.",
                 body: (
                   <div className="practice">
@@ -227,6 +228,7 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
         </div>
         <h1>{p.name}</h1>
         <p className="dek">{p.tagline}</p>
+        <AssetMeta href={`/coding/${p.id}`} />
         <div className="pat-meta">
           <span>
             <Icon name="clock" size={14} /> {p.complexity}

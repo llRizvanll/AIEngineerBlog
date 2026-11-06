@@ -1,3 +1,4 @@
+import { ModuleShelf } from "@/components/ModuleShelf";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { PROTOCOLS } from "@/lib/content";
@@ -29,8 +30,7 @@ export default function ProtocolsIndex() {
             Watch the internet work, <em>packet by packet.</em>
           </h1>
           <p>
-            Fourteen interactive lessons. Every packet is decoded byte by byte, so you can see exactly what DHCP, DNS, TCP, TLS, HTTP and the rest
-            put on the wire.
+            Fourteen interactive lessons decode every packet byte by byte: DHCP, DNS, TCP, TLS, HTTP and the rest.
           </p>
           <div className="pe-cta">
             <Link className="pe-btn" href="/protocols/dhcp">
@@ -105,6 +105,7 @@ export default function ProtocolsIndex() {
             );
           })}
         </div>
+        <ModuleShelf format="protocol" title="AI infrastructure protocols" blurb="Ring all-reduce, BM25, SLURM, NCCL" />
       </div>
       <footer className="pe-foot">AI Engineer · Protocol Explorer · packets shown are examples with computed checksums</footer>
     </main>

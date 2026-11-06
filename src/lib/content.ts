@@ -22,12 +22,15 @@ export const POSTS = postsJson as unknown as Post[];
 export const PROTOCOLS = protoJson as unknown as Protocol[];
 export const CRITICAL = critJson as unknown as Record<string, CriticalQ[]>;
 import { PREP_REELS } from "./prep-reels";
+import { MODULE_REELS } from "./module-reels";
 const BASE_REELS = reelsJson as unknown as ReelCollection[];
 /** Prep collections sit after the interview-room course so they are easy to find. */
 export const REELS: ReelCollection[] = [
   ...BASE_REELS.filter((c) => c.group === "learn").slice(0, 1),
+  ...MODULE_REELS.filter((c) => c.group === "learn"),
   ...PREP_REELS.filter((c) => c.group === "learn"),
   ...BASE_REELS.filter((c) => c.group === "learn").slice(1),
+  ...MODULE_REELS.filter((c) => c.group === "quick"),
   ...PREP_REELS.filter((c) => c.group === "quick"),
   ...BASE_REELS.filter((c) => c.group === "quick"),
 ];
@@ -46,7 +49,7 @@ export const PART_ONE = {
   num: "01",
   mins: 18,
   title: "Background sync for an app the OS will kill",
-  dek: "How to keep huge data sets and files in sync on Android, iOS and React Native when the operating system can stop your process at any moment. With a simulator, an analogy you can use in interviews, and the stack that holds up at millions of users.",
+  dek: "Sync huge data sets and files on Android, iOS and React Native while the OS can stop your process at any moment. Includes a simulator, an interview-ready analogy, and a stack proven at millions of users.",
   tags: "Android · iOS · React Native · Backend",
   blurb:
     "Outbox, cursors, idempotency, resumable uploads, WorkManager, BGTaskScheduler, React Native. With a simulator you can break.",

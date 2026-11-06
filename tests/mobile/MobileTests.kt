@@ -303,6 +303,47 @@ fun main(): Unit = runBlocking {
     check(rev.moves.size == 3 && rev.deletes.isEmpty() && rev.inserts.isEmpty(), "a full reversal keeps one row still")
   }
 
+  // ───────────── LocationBatcher
+  println("LocationBatcher")
+  run {
+    val b = LocationBatcher(minMeters = 25.0, maxSilenceMs = 30_000, maxBatch = 3, flushEveryMs = 15_000, maxBuffered = 5)
+    b.offer(Fix(12.0, 77.0, 0, 10.0))
+    b.offer(Fix(12.00001, 77.0, 1_000, 10.0))           // about 1 metre: dropped
+    check(b.pending == 1, "ignores tiny movement")
+    b.offer(Fix(12.00001, 77.0, 31_000, 0.0))
+    check(b.pending == 2, "still reports a parked car after the silence limit")
+    b.offer(Fix(12.001, 77.0, 32_000, 10.0))
+    check(b.pending == 3, "keeps real movement")
+    check(b.drain(33_000, online = false).isEmpty() && b.pending == 3, "buffers while offline")
+    check(b.drain(33_000, online = true).size == 3 && b.pending == 0, "flushes a full batch when back online")
+    b.offer(Fix(12.01, 77.0, 34_000, 10.0))
+    check(b.drain(35_000, online = true).isEmpty(), "waits to batch a single fix")
+    check(b.drain(49_000, online = true).size == 1, "sends it once the flush interval passes")
+    for (i in 1..8) b.offer(Fix(12.0 + i * 0.01, 77.0, 50_000L + i, 10.0))
+    check(b.pending == 5, "a long tunnel drops the oldest fixes first")
+  }
+
+  // ───────────── FlagEvaluator
+  println("FlagEvaluator")
+  run {
+    val seen = mutableListOf<String>()
+    val f = FlagEvaluator { e, v -> seen += "$e=$v" }
+    val exp = Experiment("checkout", "s1", listOf(Variant("control", 50), Variant("new", 50)))
+    val first = f.variantFor("user-1", exp)
+    check((1..5).all { f.variantFor("user-1", exp) == first }, "the same user always gets the same variant")
+    check(seen.size == 1, "exposure is logged once")
+    check(f.variantFor("user-1", exp.copy(killed = true)) == "control", "the kill switch wins")
+    val quiet = FlagEvaluator { _, _ -> }
+    val counts = (1..20_000).groupingBy { quiet.variantFor("u$it", exp) }.eachCount()
+    check(counts.getValue("new") in 9_500..10_500, "a 50/50 split comes out near 50/50")
+    val rolled = exp.copy(key = "r", rolloutPercent = 10, variants = listOf(Variant("new", 1)))
+    val on = (1..20_000).count { quiet.variantFor("u$it", rolled) == "new" }
+    check(on in 1_700..2_300, "a 10% rollout reaches about 10%")
+    check(bucketOf("abc") == bucketOf("abc") && bucketOf("abc") in 0..9_999, "buckets are stable and in range")
+  }
+
+  programmeTests()
+
   println(if (failures == 0) "\nALL KOTLIN MOBILE TESTS PASSED" else "\n$failures FAILED")
   if (failures > 0) exitProcess(1)
 }

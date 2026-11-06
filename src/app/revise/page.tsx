@@ -1,25 +1,47 @@
 import type { Metadata } from "next";
-import { CASES, CRITICAL } from "@/lib/content";
+import { FLASHCARDS } from "@/content/modules";
+import { Revise, type ReviseCard } from "@/components/interview/Revise";
 import { Footer } from "@/components/ui";
-import { Revise } from "@/components/interview/Revise";
+import { CASES, CRITICAL } from "@/lib/content";
+import { CASE_SHORT, critKey, SECTION_NAME } from "@/lib/routes";
 
-export const metadata: Metadata = { title: "Revise critical Q&A", description: "Real incidents, hard probes and common traps for every round." };
+export const metadata: Metadata = { title: "Flashcards: spaced recall", description: "Due cards return on schedule: incidents, probes, traps and AI systems recall." };
+
+const WHY: Record<string, string> = {
+  Incident: "Panels use incidents to test whether you stop the damage first.",
+  Probe: "Probes test the mechanism behind the term, not just the term.",
+  Trap: "Traps catch answers that sound right but fail in production.",
+};
 
 export default function RevisePage() {
+  const cards: ReviseCard[] = [
+    ...FLASHCARDS.map((f) => ({ key: f.assetId, link: f.assetId, group: "ai-systems", groupLabel: "AI systems", kind: "Recall", q: f.front, a: f.back, why: f.commentary, source: f.source })),
+    ...CASES.flatMap((c) =>
+      (CRITICAL[c.id] ?? []).map((q, i) => ({
+        key: critKey(c.id, q[0], i),
+        link: `${c.id}:${i}`,
+        group: c.id,
+        groupLabel: CASE_SHORT[c.id] ?? c.title,
+        kind: q[1],
+        q: q[2],
+        a: q[3],
+        why: WHY[q[1]] ?? "",
+        source: `${c.title} · ${SECTION_NAME[q[0]] ?? q[0]}`,
+      }))
+    ),
+  ];
+  const groups = [{ id: "ai-systems", label: "AI systems" }, ...CASES.map((c) => ({ id: c.id, label: CASE_SHORT[c.id] ?? c.title }))];
   return (
     <main>
       <div className="wrap">
         <section className="rv-hero">
-          <div className="kicker">Revise</div>
+          <div className="kicker">Revise · {cards.length} cards</div>
           <h1>
-            Critical Q&amp;A, by <span className="serif grad-text">use case.</span>
+            Recall it <span className="serif grad-text">on schedule.</span>
           </h1>
-          <p>
-            Real incidents, hard probes and common traps for every section of every round. Filter, shuffle and mark what you can already answer.
-            Progress stays in this browser.
-          </p>
+          <p>Answer out loud, flip, rate yourself. Hard cards return soon; easy ones wait longer. Progress stays in this browser.</p>
         </section>
-        <Revise cases={CASES.map((c) => ({ id: c.id, title: c.title }))} crit={CRITICAL} />
+        <Revise cards={cards} groups={groups} />
       </div>
       <Footer>AI Engineer · revise</Footer>
     </main>

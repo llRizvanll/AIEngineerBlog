@@ -11,7 +11,7 @@
    "react native"
   ],
   "prompt": "We’re building an app for 200,000 field technicians who inspect pipelines. They work underground for hours with no signal, capture 30 to 60 photos and short videos per job, and fill long forms. Supervisors must see results within minutes of a technician getting signal. Design the mobile and backend architecture.",
-  "why": "Tests whether you design for process death, unreliable networks and large media, and whether you can size the backend before drawing it.",
+  "why": "Process death, unreliable networks and large media, plus whether you size the backend before drawing it.",
   "clarify": [
    [
     "How long can a device stay offline?",
@@ -374,9 +374,9 @@
    ]
   },
   "flowNotes": [
-   "The save never waits for the network. The row and its outbox entry are written in one transaction, so the intent survives a kill.",
+   "The save never waits for the network. One transaction writes the row and its outbox entry, so the intent survives a kill.",
    "When the OS runs the job, records go first. They are small and unblock the supervisor even before photos finish.",
-   "Media uses multipart uploads. Each part’s ETag is saved, so a kill or network switch costs at most the parts in flight.",
+   "Media uses multipart uploads. The app saves each part’s ETag, so a kill or network switch costs at most the parts in flight.",
    "The pull at the end brings back supervisor edits and the server’s view of the job, with the cursor saved in the same transaction."
   ],
   "code": [
@@ -410,7 +410,7 @@
     "Why sync lives in native code",
     [
      "The UI is React Native, but the OS wakes native code, not JavaScript. The sync engine and transfer manager are Turbo Modules backed by WorkManager on Android and BGTaskScheduler plus background URLSession on iOS.",
-     "Native code writes progress to SQLite and the RN screens observe it, so there is one source of truth and no bridge traffic carrying file bytes."
+     "Native code writes progress to SQLite and the RN screens observe it, so one source of truth remains and no file bytes cross the bridge."
     ]
    ]
   ],
@@ -461,7 +461,7 @@
   "followups": [
    [
     "A technician uploads the same photo twice. What happens?",
-    "The hash matches an existing object, so /files/init returns exists: true and the upload is skipped. The record just references the same media."
+    "The hash matches an existing object, so /files/init returns exists: true and the app skips the upload. The record just references the same media."
    ],
    [
     "How does the supervisor see results within minutes?",
@@ -500,7 +500,7 @@
    "ordering"
   ],
   "prompt": "Design the messaging feature for a service marketplace: customers and providers chat one-to-one and in small groups of up to 50. Messages must arrive in order, show sent, delivered and read states, work offline, and support photos. Expect 5 million daily users.",
-  "why": "Tests real-time transport, ordering and idempotency, fan-out, presence, push integration and multi-device sync.",
+  "why": "Real-time transport, ordering, idempotency, fan-out, presence, push and multi-device sync.",
   "clarify": [
    [
     "Group size limits?",
@@ -745,7 +745,7 @@
    ],
    [
     "Chat service",
-    "Assigns each message a per-conversation sequence number, dedupes on the client message ID, and appends to the store. This is where ordering is decided."
+    "Assigns each message a per-conversation sequence number, dedupes on the client message ID, and appends to the store. This step decides the order."
    ],
    [
     "Message store",
@@ -936,7 +936,7 @@
    ],
    [
     "How do you delete for everyone?",
-    "Write a tombstone event with its own sequence; clients replace the message with ‘deleted’. Media objects are removed by a worker."
+    "Write a tombstone event with its own sequence; clients replace the message with ‘deleted’. A worker removes media objects."
    ],
    [
     "What about a 10,000-member channel?",
@@ -967,7 +967,7 @@
    "prefetch"
   ],
   "prompt": "Design the home feed for a social shopping app: an endless scroll of posts with photos and short videos. It must open instantly, scroll at 60 fps on mid-range Android phones, and feel fresh. 20 million daily users.",
-  "why": "Tests client performance, caching layers, pagination, media delivery and the backend feed generation trade-off.",
+  "why": "Client performance, caching layers, pagination, media delivery and feed generation trade-offs.",
   "clarify": [
    [
     "Ranked or chronological?",
@@ -1174,7 +1174,7 @@
   "archNotes": [
    [
     "Local cache",
-    "The last few pages of post data are stored, so opening the app shows yesterday’s feed in under a second while the fresh page loads."
+    "The app stores the last few pages of posts, so it opens on yesterday’s feed in under a second while the fresh page loads."
    ],
    [
     "Image loader",
@@ -1190,7 +1190,7 @@
    ],
    [
     "Event batcher",
-    "Impressions and dwell times are buffered and sent in batches, feeding ranking without costing battery."
+    "The app buffers impressions and dwell times and sends them in batches, feeding ranking without costing battery."
    ]
   ],
   "flowIntro": "Opening the app and scrolling.",
@@ -1383,7 +1383,7 @@
    "fintech"
   ],
   "prompt": "Design checkout for a mobile commerce app processing 50,000 orders an hour at peak sales. Cards, UPI and wallets. Networks are flaky, users double-tap, and banks sometimes take minutes to confirm. No customer may ever be charged twice, and no order may be lost.",
-  "why": "Tests idempotency end to end, state machines, asynchronous confirmation, reconciliation and keeping card data out of your systems.",
+  "why": "End-to-end idempotency, state machines, asynchronous confirmation, reconciliation and keeping card data out.",
   "clarify": [
    [
     "Who processes payments?",
@@ -1814,7 +1814,7 @@
    "notifications"
   ],
   "prompt": "Design a booking platform for 3,000 clinics: patients book slots in a mobile app, practitioners manage availability in a partner app, and admins configure clinics in a web dashboard. Popular slots open at 9 a.m. and sell out in seconds. Health data must be protected.",
-  "why": "Tests concurrency control under contention, holds and expiry, time zones, notifications and privacy for health data.",
+  "why": "Concurrency under contention, holds and expiry, time zones, notifications and health-data privacy.",
   "clarify": [
    [
     "Can a slot hold more than one patient?",
@@ -2049,7 +2049,7 @@
    ],
    [
     "Read path",
-    "Search hits a Redis cache of slot counts that is updated on every change. It may be a second stale; the database write is the real arbiter."
+    "Search hits a Redis cache of slot counts, and every change updates it. It may be a second stale; the database write is the real arbiter."
    ],
    [
     "Partner app offline",
@@ -2057,7 +2057,7 @@
    ],
    [
     "Audit and privacy",
-    "Every view and change of a patient record is logged. Health details live in a separate, encrypted service with stricter access than the booking data."
+    "The system logs every view and change of a patient record. Health details live in a separate, encrypted service with stricter access than the booking data."
    ]
   ],
   "flowIntro": "Two patients tap the same last slot at 9:00:00.",
@@ -2132,7 +2132,7 @@
    ]
   },
   "flowNotes": [
-   "The database decides with a single conditional update, so there is no read-then-write race.",
+   "The database decides with a single conditional update, so no read-then-write race can occur.",
    "The loser gets an immediate, helpful answer: the next available slot, not just an error.",
    "Confirmation is a second, idempotent step; abandoning the screen lets the hold expire."
   ],
@@ -2159,13 +2159,13 @@
    [
     "Time zones",
     [
-     "Store slot times in UTC plus the clinic’s IANA zone. Render in the clinic’s zone, because a 10 a.m. appointment is 10 a.m. where the clinic is, even if the patient is travelling. Daylight-saving transitions are handled when generating slots, not when displaying them."
+     "Store slot times in UTC plus the clinic’s IANA zone. Render in the clinic’s zone, because a 10 a.m. appointment is 10 a.m. where the clinic is, even if the patient is travelling. Handle daylight-saving transitions when generating slots, not when displaying them."
     ]
    ],
    [
     "Protecting health data",
     [
-     "Keep booking data (who, when, which clinic) separate from clinical notes. Clinical notes require stricter roles, are encrypted with separate keys, and every access is audited. The patient app caches only what it needs and clears it on sign-out."
+     "Keep booking data (who, when, which clinic) separate from clinical notes. Clinical notes require stricter roles and separate encryption keys, and audits cover every access. The patient app caches only what it needs and clears it on sign-out."
     ]
    ]
   ],
@@ -2251,7 +2251,7 @@
    "release"
   ],
   "prompt": "You join as principal engineer. The company has one Android and one iOS app built by 150 engineers in 20 teams. Builds take 40 minutes, releases go out monthly and break often, and teams block each other. Design the mobile platform and release process for the next year.",
-  "why": "Tests organisational architecture: modular code ownership, build systems, CI, release trains, feature flags, observability and how you drive change across teams.",
+  "why": "Organisational architecture: code ownership, build systems, CI, release trains, flags, observability and driving change across teams.",
   "clarify": [
    [
     "Native or cross-platform?",
@@ -2565,7 +2565,7 @@
   "flowNotes": [
    "The train never waits; features opt in through flags when they are ready.",
    "Rollout percentage increases only when automatic gates pass.",
-   "Most regressions are fixed by turning a flag off, not by an emergency release."
+   "Turning a flag off fixes most regressions, with no emergency release."
   ],
   "code": [
    [
@@ -2590,7 +2590,7 @@
    [
     "Build speed",
     [
-     "Most build time is wasted rebuilding unchanged code. A remote cache shared by CI and laptops, configuration caching, and API/implementation module splits cut rebuilds dramatically. Very large codebases move to Bazel or Buck2 for fully hermetic builds."
+     "Rebuilding unchanged code wastes most build time. A remote cache shared by CI and laptops, configuration caching, and API/implementation module splits cut rebuilds dramatically. Very large codebases move to Bazel or Buck2 for fully hermetic builds."
     ]
    ],
    [
@@ -2682,7 +2682,7 @@
    "cost"
   ],
   "prompt": "Our wellness booking app has 2 million daily users. Product wants an in-app assistant that answers questions about services, recommends practitioners, and can book, reschedule or cancel appointments by chat. Design it end to end: mobile client, backend, model usage, safety and cost.",
-  "why": "Tests whether you can put an LLM into a real product: where it runs, how it acts safely through tools, how responses stream to a phone, and how you control cost and quality.",
+  "why": "LLMs in a real product: where it runs, safe actions through tools, streaming to a phone, and cost and quality control.",
   "clarify": [
    [
     "Can the assistant take actions or only answer?",
@@ -3167,7 +3167,7 @@
    "privacy"
   ],
   "prompt": "We want three AI features in our app: smart replies in chat, summarising long service descriptions, and identifying products in photos. Leadership wants low cost and strong privacy. Decide what runs on the device and what runs in the cloud, and design how they work together.",
-  "why": "Tests your understanding of on-device ML runtimes, model size and quantisation, device fragmentation, and a routing design that degrades gracefully.",
+  "why": "On-device runtimes, model size and quantisation, device fragmentation, and routing that degrades gracefully.",
   "clarify": [
    [
     "Which devices must be supported?",
@@ -3583,7 +3583,7 @@
    "permissions"
   ],
   "prompt": "Our support and sales teams want an assistant that answers questions from 5 million internal documents: policies, product manuals, tickets and wiki pages. Answers must cite sources, respect who is allowed to see what, and stay current as documents change daily.",
-  "why": "Tests the full RAG pipeline: ingestion, chunking, embeddings, hybrid retrieval, reranking, permission filtering, freshness and evaluation.",
+  "why": "The full RAG pipeline: ingestion, chunking, embeddings, hybrid retrieval, reranking, permissions, freshness and evaluation.",
   "clarify": [
    [
     "Where do documents live?",
@@ -3893,7 +3893,7 @@
    ]
   },
   "flowNotes": [
-   "The permission filter is applied inside the search, so restricted text never enters the prompt.",
+   "The search itself applies the permission filter, so restricted text never enters the prompt.",
    "Citations map back to document URLs and section anchors so users can verify.",
    "If the top chunks score too low, the system answers ‘I couldn’t find this’ rather than guessing."
   ],
@@ -4012,7 +4012,7 @@
    "autoscaling"
   ],
   "prompt": "For cost and data-residency reasons we will self-host a 70-billion-parameter open model for our assistant and internal tools. Expected load is 200 requests per second at peak, with about 2,000 input and 300 output tokens each. Design the serving platform on GPUs.",
-  "why": "Tests GPU memory arithmetic, inference engine concepts (continuous batching, KV cache, parallelism), latency metrics, autoscaling with slow cold starts, and cost.",
+  "why": "GPU memory arithmetic, engine concepts (continuous batching, KV cache, parallelism), latency metrics, slow-start autoscaling and cost.",
   "clarify": [
    [
     "Latency targets?",
@@ -4338,7 +4338,7 @@
   "flowNotes": [
    "Prefill (reading the prompt) is compute-bound and sets time to first token; decode (writing tokens) is memory-bandwidth-bound and sets tokens per second.",
    "Continuous batching keeps GPUs busy without making short requests wait for long ones.",
-   "Scaling is driven by the resource that actually runs out: KV cache memory."
+   "The resource that actually runs out drives scaling: KV cache memory."
   ],
   "code": [
    [
@@ -4456,7 +4456,7 @@
    "llmops"
   ],
   "prompt": "Three teams are shipping LLM features: a support assistant, ticket summarisation, and marketing copy generation. Each has had embarrassing failures in production. As principal engineer, design the shared platform for evaluating, guarding and monitoring LLM features.",
-  "why": "Tests whether you treat prompts and models as code with tests, release gates and observability, and whether you can build a platform other teams adopt.",
+  "why": "Prompts and models treated as code: tests, release gates, observability, and a platform other teams adopt.",
   "clarify": [
    [
     "What failures happened?",
@@ -4681,7 +4681,7 @@
   "archNotes": [
    [
     "Prompt registry",
-    "Prompts, model names, temperatures and tool lists are stored as versioned artifacts with owners. Features reference a version, so a rollback is a config change."
+    "A registry stores prompts, model names, temperatures and tool lists as versioned artifacts with owners. Features reference a version, so a rollback is a config change."
    ],
    [
     "Eval sets",
@@ -4693,7 +4693,7 @@
    ],
    [
     "Judge calibration",
-    "The LLM judge is trusted only as far as it agrees with human labels on a shared sample; agreement is tracked like any other metric."
+    "Trust the LLM judge only as far as it agrees with human labels on a shared sample, and track agreement like any other metric."
    ],
    [
     "Guardrails",
@@ -4770,7 +4770,7 @@
    ]
   },
   "flowNotes": [
-   "A prompt change is treated like a code change: it cannot ship if a gate fails.",
+   "Treat a prompt change like a code change: it cannot ship if a gate fails.",
    "Production rollout is gradual, with the same metrics compared between versions.",
    "Any failure found later becomes a permanent test case."
   ],
@@ -4790,7 +4790,7 @@
    [
     "Make the cheap checks do most of the work",
     [
-     "Deterministic checks are fast, free and never disagree with themselves. Most of the incidents listed, such as invented refund amounts and leaked phone numbers, are caught by rules: numbers must appear in the source, and phone patterns must be redacted.",
+     "Deterministic checks are fast, free and never disagree with themselves. Rules catch most of the incidents listed, such as invented refund amounts and leaked phone numbers: numbers must appear in the source, and phone patterns get redacted.",
      "Use LLM judges for qualities rules can’t capture, and only after measuring their agreement with humans."
     ]
    ],

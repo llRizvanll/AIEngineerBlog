@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "preview": "next build && next start",
     "build:static": "STATIC_EXPORT=1 next build",
-    "test:mobile": "sh scripts/test-mobile.sh"
+    "test:mobile": "sh scripts/test-mobile.sh",
+    "test:modules": "node --experimental-strip-types --no-warnings tests/modules/modules.test.mts && node --experimental-strip-types --no-warnings tests/modules/protocols.test.mts && node --experimental-strip-types --no-warnings tests/modules/code-docs.test.mts",
+    "lint:copy": "node --experimental-strip-types --no-warnings scripts/lint-copy.mts"
   },
   "dependencies": {
     "@types/node": "^26.6.6",

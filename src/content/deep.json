@@ -17,7 +17,7 @@
    "edges": "Hard cases",
    "interview": "Front-end interview questions"
   },
-  "summary": "In data-heavy mobile and web apps, the front end is not a thin skin. It owns the source of truth the user sees, the state machine of every screen, perceived performance, offline behaviour, real-time updates, streaming AI output and accessibility. Principal-level answers describe these layers as precisely as the backend.",
+  "summary": "Front ends in data-heavy apps own far more than pixels: what the user sees, each screen's state machine, perceived speed, offline behaviour, real-time updates, streaming AI and accessibility. Strong answers describe these layers as precisely as the backend.",
   "does": [
    "Render immutable UI state derived from a local source of truth",
    "Model each screen as a small state machine with explicit loading, empty, error, offline and pending states",
@@ -37,7 +37,7 @@
    "Take the job detail screen in the inspection app. When it opens, the ViewModel subscribes to a database query for the job, its answers and its media. The first frame renders from SQLite in about 50 ms, before any network activity.",
    "The technician changes an answer. The ViewModel sends an intent to the repository, which writes the answer and an outbox row in one transaction. The query emits again, the reducer produces a new immutable state with that field marked pending, and Compose recomposes only that row.",
    "In the background, the sync engine pushes the change and the server returns the supervisor’s edit to the instructions. The same query emits again; the instructions update in place and a small ‘Updated by Priya’ label fades in. No screen code knows the network exists.",
-   "If the push returns a conflict, the row’s state becomes conflict, the reducer maps it to an amber badge, and tapping it navigates to the resolver. Every one of these states was designed, named and screenshot-tested before the feature shipped."
+   "If the push returns a conflict, the row’s state becomes conflict, the reducer maps it to an amber badge, and tapping it navigates to the resolver. The team designed, named and screenshot-tested every one of these states before the feature shipped."
   ],
   "arch": {
    "cols": 4,
@@ -233,7 +233,7 @@
    ],
    [
     "Observe, don’t fetch",
-    "Screens subscribe to database queries. Network results are written to the database, which updates the screen. That gives offline support, instant reopening and one source of truth."
+    "Screens subscribe to database queries. Network results go into the database, which updates the screen. That gives offline support, instant reopening and one source of truth."
    ],
    [
     "Effects",
@@ -346,7 +346,7 @@
   },
   "seqNotes": [
    "The view never waits for the network; the user sees their change in the same frame.",
-   "The same observation path delivers local edits, sync results and real-time updates, so there is one code path to test."
+   "The same observation path delivers local edits, sync results and real-time updates, so you test one code path."
   ],
   "code": [
    [
@@ -510,7 +510,7 @@
   "id": "sync-engine",
   "title": "The sync engine",
   "kicker": "Client · low-level design",
-  "summary": "The sync engine is a small runtime inside the app with one job: move local changes to the server and server changes into the local database. It has no UI and no business logic beyond merging. It must be safe to start, stop and kill at any line, because the OS will do all three.",
+  "summary": "Sync engines move local changes to the server and server changes into the local database. No UI, and no business logic beyond merging. The OS will start, stop and kill it at any line, so every line must survive that.",
   "does": [
    "Drain the outbox in order, in batches, with op_ids",
    "Pull changes after the stored cursor, page by page",
@@ -529,7 +529,7 @@
   "scenario": [
    "Priya, a field technician, edits twelve inspection jobs in a basement with no signal. Every save writes the job row and an outbox entry in one SQLite transaction, so the app feels instant. Meanwhile two supervisors change instructions on two of those same jobs from the office.",
    "At 4:12 pm she walks outside. The phone regains a network, WorkManager’s network constraint is met, and the scheduler calls run(reason = network_back, budget = 8 minutes). The coordinator takes the single-flight lock and reads the cursor c_88411 from disk.",
-   "The push stage reads 37 outbox operations, sends them in two batches of up to 25, and gets back 36 applied and 1 conflict: the supervisor changed the same ‘valve 3 status’ field. Acknowledged operations are deleted and their rows marked synced in the same transaction; the conflicting row is marked conflict with the server’s value attached.",
+   "The push stage reads 37 outbox operations, sends them in two batches of up to 25, and gets back 36 applied and 1 conflict: the supervisor changed the same ‘valve 3 status’ field. One transaction deletes acknowledged operations and marks their rows synced; it marks a conflicting row conflict and attaches the server’s value.",
    "The pull stage asks for changes after c_88411, receives 140 changes in one page, applies them in a single transaction and stores c_88551. The run takes 2.1 seconds, emits a trace, and returns success. Priya sees eleven green ticks and one amber ‘needs review’ badge with both values side by side."
   ],
   "arch": {
@@ -900,7 +900,7 @@
    [
     "React Native",
     [
-     "The engine stays native and is exposed through a Turbo Module with requestSync(reason) and a status observable.",
+     "The engine stays native, and a Turbo Module exposes requestSync(reason) and a status observable.",
      "JavaScript reads the same SQLite database through WatermelonDB or op-sqlite and re-renders on change.",
      "No sync logic in JavaScript, because the JS runtime may not exist when the OS wakes the app."
     ]
@@ -1035,7 +1035,7 @@
   "id": "transfer-manager",
   "title": "The transfer manager",
   "kicker": "Client · low-level design",
-  "summary": "The transfer manager moves large files between the phone and object storage. It hashes, splits, uploads and downloads files in parts that each succeed or fail on their own, records progress after every part, and keeps going across network switches, app kills and reboots.",
+  "summary": "Transfer managers move large files between phone and object storage. They hash, split and send parts that succeed or fail alone, record progress after each, and survive network switches, app kills and reboots.",
   "does": [
    "Copy the source into app storage and hash it while copying",
    "Ask the server whether the content already exists",
@@ -1383,7 +1383,7 @@
    ]
   },
   "seqNotes": [
-   "The hash is computed once, during the copy, and reused for deduplication and final verification.",
+   "The app computes the hash once, during the copy, and reuses it for deduplication and final verification.",
    "Each part commits independently, so any interruption costs only the parts in flight.",
    "Expired URLs are a normal event, refreshed in bulk, never a failure."
   ],
@@ -1511,7 +1511,7 @@
    ],
    [
     "dedupe.hit_rate",
-    "How often uploads were skipped because the server already had the bytes."
+    "How often the server already had the bytes, so the app skipped the upload."
    ],
    [
     "paused.age",
@@ -1568,7 +1568,7 @@
   "id": "background-layer",
   "title": "The background-work layer",
   "kicker": "Client · low-level design",
-  "summary": "The background-work layer is a thin adapter between your app and the OS scheduler. It turns many triggers (app open, network back, push, timers, user actions) into a few well-behaved jobs, gives each job a time budget, and hands results back to the OS so it keeps trusting your app.",
+  "summary": "Background layers adapt your app to the OS scheduler. They turn many triggers (app open, network back, push, timers, user actions) into a few jobs, give each a time budget, and report results so the OS keeps trusting your app.",
   "does": [
    "Collect triggers and coalesce them into one job",
    "Map jobs to WorkManager on Android and BGTaskScheduler on iOS",
@@ -1921,7 +1921,7 @@
     [
      "BGTaskSchedulerPermittedIdentifiers and UIBackgroundModes in Info.plist.",
      "BGAppRefreshTask for short catch-up; BGProcessingTask for heavy work while charging.",
-     "Silent push only triggers a refresh; it is throttled and never guaranteed.",
+     "Silent push only triggers a refresh; the OS throttles it and guarantees nothing.",
      "Simulate launches from the Xcode debugger with _simulateLaunchForTaskWithIdentifier."
     ]
    ],
@@ -2013,7 +2013,7 @@
   "id": "server-sync",
   "title": "The server sync service",
   "kicker": "Backend · low-level design",
-  "summary": "The server sync service is the other half of the protocol. It accepts pushes idempotently, applies merge rules, assigns every change a sequence number in a per-tenant change log, serves pulls by cursor with permission filtering, and builds snapshots for new devices.",
+  "summary": "Server sync completes the protocol. It accepts pushes idempotently, applies merge rules, gives every change a sequence number in a per-tenant log, serves pulls by cursor with permission filtering, and builds snapshots for new devices.",
   "does": [
    "Deduplicate pushes by op_id and return original results",
    "Validate and merge changes per entity type",
@@ -2444,7 +2444,7 @@
   "interview": [
    [
     "Why can a global sequence make pulls skip data?",
-    "Sequence numbers are allocated when a transaction asks for them, not when it commits. A later number can commit first, a client pulls past it, and the earlier one appears behind its cursor. Per-tenant serialisation or a safe watermark fixes it."
+    "A transaction takes its sequence number when it asks, not when it commits. A later number can commit first, a client pulls past it, and the earlier one appears behind its cursor. Per-tenant serialisation or a safe watermark fixes it."
    ],
    [
     "Where do you put the idempotency check?",
@@ -2474,7 +2474,7 @@
    "metrics": "Numbers to know",
    "edges": "Failure modes and their causes"
   },
-  "summary": "A large language model is a function that takes a sequence of tokens and returns a probability for every possible next token. Generation repeats that function, appending one chosen token at a time. Almost every engineering concern, from latency and cost to hallucination and context limits, follows from this loop.",
+  "summary": "LLMs map a token sequence to a probability for every possible next token. Generation repeats that function, appending one token at a time. Latency, cost, hallucination and context limits all follow from this loop.",
   "does": [
    "Text becomes tokens; cost and limits are counted in tokens",
    "Each layer mixes information between tokens (attention) and transforms it (MLP)",
@@ -2490,8 +2490,8 @@
   ],
   "scenario": [
    "A user asks the booking assistant: “Move my massage to Friday evening.” The orchestrator builds a prompt of about 2,400 tokens: system instructions, tool definitions, the last few turns and retrieved facts.",
-   "The tokenizer turns that text into 2,400 integer IDs using a byte-pair-encoding vocabulary of roughly 100,000 to 200,000 entries. Each ID is looked up in an embedding table and becomes a vector of a few thousand numbers.",
-   "Prefill: all 2,400 vectors pass through every transformer layer in parallel. In each layer, attention lets every token weigh earlier tokens; the MLP transforms each position. The keys and values from every layer are saved in the KV cache. This step decides time to first token.",
+   "The tokenizer turns that text into 2,400 integer IDs using a byte-pair-encoding vocabulary of roughly 100,000 to 200,000 entries. An embedding table turns each ID into a vector of a few thousand numbers.",
+   "Prefill: all 2,400 vectors pass through every transformer layer in parallel. In each layer, attention lets every token weigh earlier tokens; the MLP transforms each position. The KV cache saves the keys and values from every layer. This step decides time to first token.",
    "Decode: the final position produces a score (logit) for every token in the vocabulary. The sampler applies temperature and top-p and picks one token, perhaps a tool-call marker. That single token is fed back in, attending to the cached keys and values, and the loop repeats until a stop token. Each step decides the time per output token."
   ],
   "arch": {
@@ -2914,7 +2914,7 @@
    ],
    [
     "Why can Hindi text cost more than English?",
-    "Tokenizers are trained mostly on English, so other scripts split into more tokens per word."
+    "Teams train tokenizers mostly on English, so other scripts split into more tokens per word."
    ]
   ]
  },
@@ -2935,7 +2935,7 @@
    "metrics": "Measure before and after",
    "edges": "Trade-offs to watch"
   },
-  "summary": "Inference speed and cost come down to three limits: GPU compute during prefill, memory bandwidth during decode, and memory capacity for weights and KV cache. Every acceleration technique relaxes one of them: smaller numbers, fewer tokens, better batching, or guessing ahead.",
+  "summary": "Inference limits come in three kinds: GPU compute during prefill, memory bandwidth during decode, and memory capacity for weights and KV cache. Each acceleration technique relaxes one: smaller numbers, fewer tokens, better batching, or guessing ahead.",
   "does": [
    "Route easy requests to smaller models",
    "Send fewer tokens: trim context, cache prefixes",
@@ -2951,10 +2951,10 @@
    "Quantising without re-running your evaluation set"
   ],
   "scenario": [
-   "A support summariser on a self-hosted 70B model costs too much and p95 latency is 9 seconds. The team measures first: average prompt 6,000 tokens, output 250, GPU utilisation 35% because requests are processed one at a time per replica.",
-   "Step one moves to vLLM with continuous batching and paged KV cache: throughput per GPU roughly triples and p95 drops, because the GPU now decodes many requests per step. Step two trims the prompt: ticket history is summarised once and cached, cutting input to 2,500 tokens and halving TTFT.",
+   "A support summariser on a self-hosted 70B model costs too much and p95 latency is 9 seconds. The team measures first: average prompt 6,000 tokens, output 250, GPU utilisation 35% because each replica processes one request at a time.",
+   "Step one moves to vLLM with continuous batching and paged KV cache: throughput per GPU roughly triples and p95 drops, because the GPU now decodes many requests per step. Step two trims the prompt: summarising ticket history once and caching it cuts input to 2,500 tokens and halves TTFT.",
    "Step three quantises to FP8 weights and KV cache after the evaluation set shows less than 0.5% quality change, freeing memory for more concurrent requests. Step four routes short tickets to an 8B model distilled on the 70B model’s best summaries; 60% of traffic moves there.",
-   "Result: cost per summary falls by a large multiple and p95 latency drops below 3 seconds. Every step was gated on the same evaluation set and the same latency dashboard."
+   "Result: cost per summary falls by a large multiple and p95 latency drops below 3 seconds. The same evaluation set and latency dashboard gated every step."
   ],
   "arch": {
    "cols": 4,
@@ -3351,7 +3351,7 @@
    "metrics": "Retrieval metrics",
    "edges": "Pitfalls"
   },
-  "summary": "An embedding model turns text, images or audio into a vector so that similar meanings land close together. Vector search finds the nearest vectors quickly using approximate indexes. Together they power semantic search, recommendations, deduplication and the retrieval half of RAG.",
+  "summary": "Embedding models turn text, images or audio into vectors, so similar meanings land close together. Approximate indexes find the nearest vectors quickly. Together they power semantic search, recommendations, deduplication and the retrieval half of RAG.",
   "does": [
    "Search by meaning instead of exact words",
    "Compare across languages with multilingual models",
@@ -3366,9 +3366,9 @@
   ],
   "scenario": [
    "The wellness app has 40,000 services across 3,000 clinics. Keyword search fails on ‘something for a stiff neck after long flights’ because no listing contains those words.",
-   "Each service is embedded from a short document: title, category, description and benefits. Vectors of 768 dimensions are stored in Postgres with pgvector and an HNSW index, alongside city, price and clinic ID for filtering.",
-   "A query is embedded with the same model, then searched twice: vector nearest neighbours and BM25 keyword search, both filtered by city. Results are merged with reciprocal rank fusion and the top 30 reranked by a cross-encoder.",
-   "Offline evaluation on 300 labelled queries shows recall at 10 rising substantially over keyword search, and bookings from search improve in an A/B test. Embeddings are recomputed only when a service description changes."
+   "A short document per service feeds the embedding: title, category, description and benefits. Postgres stores the 768-dimension vectors with pgvector and an HNSW index, alongside city, price and clinic ID for filtering.",
+   "The same model embeds each query, which then runs twice: vector nearest neighbours and BM25 keyword search, both filtered by city. Reciprocal rank fusion merges the results, and a cross-encoder reranks the top 30.",
+   "Offline evaluation on 300 labelled queries shows recall at 10 rising substantially over keyword search, and bookings from search improve in an A/B test. Recompute embeddings only when a service description changes."
   ],
   "arch": {
    "cols": 4,
@@ -3732,7 +3732,7 @@
    "metrics": "How to judge the result",
    "edges": "Risks"
   },
-  "summary": "There are three main ways to make a general model fit your product: better prompts, retrieval of your data at query time, and changing the model’s weights. They solve different problems. Prompts and retrieval change what the model sees; fine-tuning changes how it behaves.",
+  "summary": "Three levers fit a general model to your product: better prompts, retrieval at query time, and new weights. Prompts and retrieval change what the model sees; fine-tuning changes how it behaves.",
   "does": [
    "Prompting: format, tone, rules and few-shot examples",
    "RAG: facts that change, citations and permissions",
@@ -3749,7 +3749,7 @@
    "Feature one, a refund-policy assistant, needs current facts with citations and permissions. That is retrieval: policies change and must be quoted. Fine-tuning would freeze yesterday’s policy into weights.",
    "Feature two, ticket classification into 40 categories at 2 million tickets a day, needs speed and low cost more than broad reasoning. A small model fine-tuned with LoRA on 20,000 labelled tickets matches the large model’s accuracy on this task at a fraction of the cost.",
    "Feature three, marketing copy in a strict brand voice, first gets a strong system prompt with examples. When reviewers still edit a third of outputs, the team collects pairs of preferred and rejected drafts and applies preference tuning (DPO) to an open model.",
-   "All three share one evaluation harness, so each decision is backed by numbers rather than impressions."
+   "All three share one evaluation harness, so numbers back each decision, not impressions."
   ],
   "arch": {
    "cols": 4,
@@ -4035,7 +4035,7 @@
    "metrics": "Agent metrics",
    "edges": "Risks and controls"
   },
-  "summary": "Tool use lets a model call functions you define: it outputs a structured request, your code runs it, and the result goes back into the conversation. An agent is a loop of that pattern with a goal. The Model Context Protocol (MCP) standardises how AI applications connect to tools and data, so one integration works across many AI clients.",
+  "summary": "Tool use lets a model call your functions: it outputs a structured request, your code runs it, and the result returns to the conversation. Agents loop that pattern towards a goal. MCP standardises the connection, so one integration works across many AI clients.",
   "does": [
    "Look up live data through APIs",
    "Take actions such as creating tickets or bookings",
@@ -4052,7 +4052,7 @@
    "An on-call engineer asks the internal assistant: ‘Why did checkout errors spike at 14:00, and open an incident if it’s still happening?’ The assistant is an MCP host connected to MCP servers for metrics, logs, the deploy system and the incident tool.",
    "The model calls metrics.query and sees errors rising at 13:58. It calls deploys.list and finds a payments-service release at 13:55, then logs.search for that service and finds a timeout to the payment provider introduced by a config change.",
    "Errors are still elevated, so it proposes incidents.create with a summary, links and severity. Because creating an incident pages people, the host shows a confirmation card. The engineer approves; the incident opens with the evidence attached.",
-   "Every tool call, its arguments and results are traced. The agent had read-only access to metrics and logs and write access only to incidents, scoped to the engineer’s own permissions."
+   "Traces record every tool call, its arguments and results. The agent had read-only access to metrics and logs and write access only to incidents, scoped to the engineer’s own permissions."
   ],
   "arch": {
    "cols": 4,
@@ -4490,7 +4490,7 @@
    "metrics": "Operational metrics",
    "edges": "Production failures"
   },
-  "summary": "Most LLM features are ordinary software with one unreliable, slow, expensive dependency in the middle. The patterns that make them production-grade are the same ones you use for payments or search: a gateway, contracts, retries, fallbacks, caching, budgets and observability.",
+  "summary": "LLM features behave like ordinary software with one unreliable, slow, expensive dependency. The patterns from payments or search apply: a gateway, contracts, retries, fallbacks, caching, budgets and observability.",
   "does": [
    "One internal gateway in front of all model providers",
    "Versioned prompt templates with owners",
@@ -4805,7 +4805,7 @@
    ]
   },
   "seqNotes": [
-   "Retries are bounded and fallback is automatic.",
+   "Retries stop at a limit, and fallback runs automatically.",
    "The caller receives the same schema whichever provider answered."
   ],
   "code": [
@@ -4935,7 +4935,7 @@
    "metrics": "Measuring impact honestly",
    "edges": "Failure modes"
   },
-  "summary": "As a principal engineer you will be asked how AI changes the way your teams build software, and how you would roll it out responsibly. The answer covers tools, workflow changes, guardrails, measurement and culture, not just which assistant to buy.",
+  "summary": "AI adoption questions test principal engineers: how AI changes the way teams build, and how you roll it out responsibly. Cover tools, workflow, guardrails, measurement and culture, not just which assistant to buy.",
   "does": [
    "Reading and explaining unfamiliar code",
    "Writing tests, migrations and boilerplate",
@@ -4953,8 +4953,8 @@
   "scenario": [
    "Leadership wants AI tools for 150 mobile and backend engineers. You start with a four-week pilot in two teams: one mobile, one backend, with an enterprise plan that keeps code private and disables training on company data.",
    "Engineers use an IDE assistant for completion and chat, and an agentic coding tool such as Claude Code for multi-file changes: it reads the repo, runs Gradle and tests, and proposes diffs that engineers review. A repository-level instructions file captures conventions: module boundaries, test commands and banned APIs.",
-   "CI adds an AI review pass that comments on likely bugs and missing tests; humans still approve. Test-generation is targeted at the sync engine, where coverage was weakest.",
-   "You measure before and after: PR cycle time, change failure rate, escaped defects, and a short developer survey. Results are shared openly, including where the tools did not help, before expanding to all teams with a paved-road setup."
+   "CI adds an AI review pass that comments on likely bugs and missing tests; humans still approve. Test generation targets the sync engine, where coverage was weakest.",
+   "You measure before and after: PR cycle time, change failure rate, escaped defects, and a short developer survey. The team shares results openly, including where the tools did not help, before expanding to all teams with a paved-road setup."
   ],
   "arch": {
    "cols": 4,

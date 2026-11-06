@@ -73,6 +73,22 @@ export function ReelsPlayer({ collections, summaries, filter }: { collections: R
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
+  // Deep link: /reels/collection?r=reel-id opens that reel.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("r");
+    if (!id) return;
+    const i = list.findIndex((x) => x.r.id === id);
+    if (i < 0) return;
+    // A timeout rather than requestAnimationFrame: it also runs in a background tab.
+    const t = setTimeout(() => {
+      const root = feed.current;
+      const el = root?.querySelector<HTMLElement>(`.reel[data-i="${i}"]`);
+      if (root && el) root.scrollTop = el.offsetTop;
+    }, 60);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Which reel is on screen.
   useEffect(() => {
     const root = feed.current;

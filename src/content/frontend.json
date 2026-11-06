@@ -250,7 +250,7 @@
    ],
    "perf": [
     "The job list uses FlashList with fixed item heights, so 300 jobs scroll smoothly on a 3 GB Android phone.",
-    "Thumbnails of 256 px are generated on device; full photos are never decoded in lists.",
+    "The device generates 256 px thumbnails, and lists never decode full photos.",
     "Checklist sections mount lazily; only the visible section renders.",
     "Hashing, compression and copying run in native code off the JavaScript thread."
    ],
@@ -263,7 +263,7 @@
    "followups": [
     [
      "How do you keep a 200-question form fast?",
-     "Sections are mounted lazily, each field autosaves with a short debounce, and validation runs on the visible section only, so typing never re-renders the whole form."
+     "Sections mount lazily, each field autosaves with a short debounce, and validation runs on the visible section only, so typing never re-renders the whole form."
     ],
     [
      "What does the technician see after killing the app mid-upload?",
@@ -433,7 +433,7 @@
     ],
     [
      "Composer",
-     "Drafts persist per conversation. Photos are compressed and queued through the transfer manager; the message shows a local thumbnail immediately."
+     "Drafts persist per conversation. The transfer manager compresses and queues photos, and the message shows a local thumbnail immediately."
     ],
     [
      "Notification",
@@ -523,7 +523,7 @@
    ],
    "perf": [
     "Keys are client message IDs, so pending → sent → read updates the same row instead of inserting a new one.",
-    "Receipts are batched: ‘read up to 1042’ is sent once when the thread is visible, not per message.",
+    "The app batches receipts: it sends ‘read up to 1042’ once when the thread is visible, not per message.",
     "Images reserve their aspect ratio before loading so the list never jumps.",
     "The socket closes in the background; delivery then relies on push plus sync on open, which saves battery."
    ],
@@ -701,7 +701,7 @@
     ],
     [
      "New posts pill",
-     "When fresh items arrive while the user is reading, they are inserted above the fold only when the user taps the pill."
+     "Fresh items that arrive during reading go above the fold only when the user taps the pill."
     ]
    ],
    "layers": [
@@ -1092,7 +1092,7 @@
    "oneLine": "Slot rows with capacity, an atomic conditional update to place a short hold, confirmation as a second idempotent step, and audit on every change."
   },
   "fe": {
-   "intro": "There are three front ends: the patient app, the partner app and the admin web dashboard. Each has a different job, but all must show availability honestly and react gracefully when someone else got there first.",
+   "intro": "Three front ends serve this product: the patient app, the partner app and the admin web dashboard. Each has a different job, but all must show availability honestly and react gracefully when someone else got there first.",
    "screens": {
     "cols": 4,
     "rows": 2,
@@ -1207,7 +1207,7 @@
     ],
     [
      "Partner app: my day",
-     "Today and tomorrow are synced into SQLite so the schedule opens without signal. Edits are proposals the server validates."
+     "The app syncs today and tomorrow into SQLite, so the schedule opens without signal. Edits are proposals the server validates."
     ],
     [
      "Admin: weekly hours",
@@ -2202,7 +2202,7 @@
    "screenNotes": [
     [
      "Answer",
-     "Streams text and renders citation markers as interactive chips. Unknown citation IDs are dropped, never shown as broken links."
+     "Streams text and renders citation markers as interactive chips. The app drops unknown citation IDs and never shows broken links."
     ],
     [
      "Source preview",

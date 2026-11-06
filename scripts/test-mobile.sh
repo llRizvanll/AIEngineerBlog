@@ -6,7 +6,7 @@ set -e
 cd "$(dirname "$0")/.."
 OUT=.build/mobile
 rm -rf "$OUT" && mkdir -p "$OUT"
-SOURCES="src/content/mobile/*.kt tests/mobile/MobileTests.kt"
+SOURCES="src/content/mobile/*.kt src/content/modules/code/*.kt src/content/programme/code/*.kt tests/mobile/*.kt"
 
 find_jar() { find "$HOME/.gradle" -name "$1" 2>/dev/null | sort -V | tail -1; }
 COROUTINES=$(find_jar 'kotlinx-coroutines-core-jvm-1.*.jar')

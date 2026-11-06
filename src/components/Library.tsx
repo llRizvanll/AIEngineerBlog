@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { emptyLibrary, LIBRARY_KEY, useLocal, type LibraryState } from "@/lib/store";
 
 const ago = (t: number) => {
@@ -12,12 +13,34 @@ const ago = (t: number) => {
   return `${Math.round(h / 24)} d ago`;
 };
 
+const KIND_CLASS = (k: string) => "kd kd-" + k.replace(/\s/g, "");
+
+/** Seek: saved pages and history. Sense: your notes. Share: export them. */
 export function Library() {
   const [lib, update, hydrated] = useLocal<LibraryState>(LIBRARY_KEY, emptyLibrary);
+  const [copied, setCopied] = useState(false);
   if (!hydrated) return null;
   const saved = Object.entries(lib.saved).sort((a, b) => b[1].at - a[1].at);
   const seen = Object.entries(lib.seen).sort((a, b) => b[1].at - a[1].at);
+  const notes = Object.entries(lib.notes ?? {}).sort((a, b) => b[1].at - a[1].at);
   const finished = seen.filter(([, v]) => (v.pct ?? 0) >= 95).length;
+
+  const markdown = () =>
+    [`# My notes from AI Engineer`, ...notes.map(([href, n]) => `\n## ${n.title}\n${window.location.origin}${href}\n\n${n.text}`)].join("\n");
+  const copyNotes = async () => {
+    await navigator.clipboard.writeText(markdown());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+  };
+  const downloadNotes = () => {
+    const url = URL.createObjectURL(new Blob([markdown()], { type: "text/markdown" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "ai-engineer-notes.md";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <>
       <div className="lib-stats stagger">
@@ -26,8 +49,8 @@ export function Library() {
           <span>saved</span>
         </div>
         <div>
-          <b>{seen.length}</b>
-          <span>opened</span>
+          <b>{notes.length}</b>
+          <span>notes</span>
         </div>
         <div>
           <b>{finished}</b>
@@ -38,15 +61,16 @@ export function Library() {
           <span>average progress</span>
         </div>
       </div>
-      <div className="section-h">
-        <h2>Saved</h2>
+
+      <div className="section-h" id="seek">
+        <h2>Seek: saved pages</h2>
         <span>tap ☆ Save while reading</span>
       </div>
       {saved.length ? (
         <div className="lib-g stagger">
           {saved.map(([href, v]) => (
             <div key={href} className="lib-c">
-              <span className={"kd kd-" + v.kind.replace(/\s/g, "")}>{v.kind}</span>
+              <span className={KIND_CLASS(v.kind)}>{v.kind}</span>
               <Link href={href}>
                 <b>{v.title}</b>
               </Link>
@@ -68,8 +92,58 @@ export function Library() {
           ))}
         </div>
       ) : (
-        <div className="empty-card">Nothing saved yet. Tap ☆ Save on any article, round or deep dive to keep it here.</div>
+        <div className="empty-card">Nothing saved yet. Tap ☆ Save on any article, round or module.</div>
       )}
+
+      <div className="section-h" id="sense">
+        <h2>Sense: your notes</h2>
+        <span>tap ✎ Note while reading</span>
+      </div>
+      {notes.length ? (
+        <div className="lib-notes">
+          {notes.map(([href, n]) => (
+            <div key={href} className="lib-note">
+              <div className="ln-head">
+                <span className={KIND_CLASS(n.kind)}>{n.kind}</span>
+                <Link href={href}>
+                  <b>{n.title}</b>
+                </Link>
+                <span className="m">{ago(n.at)}</span>
+              </div>
+              <textarea
+                aria-label={`Note on ${n.title}`}
+                rows={3}
+                value={n.text}
+                onChange={(e) => {
+                  const text = e.target.value;
+                  update((l) => {
+                    const next = { ...l.notes };
+                    if (text) next[href] = { ...n, text, at: Date.now() };
+                    else delete next[href];
+                    return { ...l, notes: next };
+                  });
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-card">No notes yet. Writing one thing in your own words is what makes it stick.</div>
+      )}
+
+      <div className="section-h" id="share">
+        <h2>Share: export</h2>
+        <span>as Markdown, with links back</span>
+      </div>
+      <div className="lib-share">
+        <button type="button" className="btn ghost" disabled={!notes.length} onClick={copyNotes}>
+          {copied ? "Copied" : "Copy notes"}
+        </button>
+        <button type="button" className="btn ghost" disabled={!notes.length} onClick={downloadNotes}>
+          Download .md
+        </button>
+      </div>
+
       <div className="section-h">
         <h2>Reading history</h2>
         <span>{seen.length} pages</span>
@@ -78,7 +152,7 @@ export function Library() {
         <div className="lib-g stagger">
           {seen.map(([href, v]) => (
             <Link key={href} href={href} className="lib-c">
-              <span className={"kd kd-" + v.kind.replace(/\s/g, "")}>{v.kind}</span>
+              <span className={KIND_CLASS(v.kind)}>{v.kind}</span>
               <b>{v.title}</b>
               <span className="lib-bar">
                 <i style={{ width: `${v.pct ?? 0}%` }} />
@@ -90,7 +164,7 @@ export function Library() {
           ))}
         </div>
       ) : (
-        <div className="empty-card">Open a post, round or deep dive and it shows up here.</div>
+        <div className="empty-card">Open a post, round or module and it shows up here.</div>
       )}
       {seen.length > 0 && (
         <p style={{ marginTop: 24 }}>

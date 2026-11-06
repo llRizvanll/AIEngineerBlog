@@ -3,20 +3,23 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { Phase } from "@/lib/curriculum";
-import { emptyInterview, emptyLibrary, INTERVIEW_KEY, LIBRARY_KEY, useLocal, type InterviewState, type LibraryState } from "@/lib/store";
+import { dayHref, PROGRAMME_HREF } from "@/lib/routes";
+import { emptyInterview, emptyLibrary, emptyProgramme, INTERVIEW_KEY, LIBRARY_KEY, PROGRAMME_KEY, useLocal, type InterviewState, type LibraryState, type ProgrammeState } from "@/lib/store";
 
 interface Props {
   phases: Phase[];
-  paths: { title: string; blurb: string; items: { href: string; title: string }[] }[];
+  paths: { title: string; blurb: string; items: { href: string; title: string; why: string }[] }[];
+  programme: { days: { n: number; stop: string }[]; blurb: string };
   glossary: [string, string][];
   caseIds: string[];
   totalCrit: number;
 }
 
-export function Curriculum({ phases, paths, glossary, caseIds, totalCrit }: Props) {
+export function Curriculum({ phases, paths, programme, glossary, caseIds, totalCrit }: Props) {
   const [q, setQ] = useState("");
   const [lib] = useLocal<LibraryState>(LIBRARY_KEY, emptyLibrary);
   const [iv] = useLocal<InterviewState>(INTERVIEW_KEY, emptyInterview);
+  const [prog] = useLocal<ProgrammeState>(PROGRAMME_KEY, emptyProgramme);
   const seen = (h: string) => !!lib.seen[h];
   const ql = q.toLowerCase();
   const uniq = Array.from(new Set(phases.flatMap((p) => p.lessons.map((l) => l.href))));
@@ -36,8 +39,8 @@ export function Curriculum({ phases, paths, glossary, caseIds, totalCrit }: Prop
           dives, reels and revision cards. Follow the phases in order or pick a path.
         </p>
         <div className="btns">
-          <Link className="btn" href="/series/background-sync">
-            Start at phase 00 →
+          <Link className="btn" href={PROGRAMME_HREF}>
+            Start the two-week programme →
           </Link>
           <Link className="btn ghost" href="/revise">
             Revise
@@ -71,9 +74,25 @@ export function Curriculum({ phases, paths, glossary, caseIds, totalCrit }: Prop
 
       <div className="section-h">
         <h2>Learning paths</h2>
-        <span>ordered reading lists</span>
+        <span>each step says why it comes next</span>
       </div>
       <div className="aie-paths stagger">
+        <div className="aie-feature">
+          <h3>Mobile principal in two weeks</h3>
+          <p>{programme.blurb}</p>
+          <ol className="aie-stops">
+            {programme.days.map((d) => (
+              <li key={d.n} className={prog.done[d.n] ? "done" : ""}>
+                <Link href={dayHref(d.n)}>
+                  <b>{prog.done[d.n] ? "✓" : d.n}</b> {d.stop}
+                </Link>
+              </li>
+            ))}
+          </ol>
+          <Link className="btn" href={PROGRAMME_HREF}>
+            Open the programme →
+          </Link>
+        </div>
         {paths.map((p) => (
           <div className="aie-path" key={p.title}>
             <h3>{p.title}</h3>
@@ -83,6 +102,7 @@ export function Curriculum({ phases, paths, glossary, caseIds, totalCrit }: Prop
                 <li key={it.href}>
                   <Link href={it.href}>{it.title}</Link>
                   {seen(it.href) ? " ✓" : ""}
+                  <small>{it.why}</small>
                 </li>
               ))}
             </ol>

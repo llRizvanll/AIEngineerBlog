@@ -13,7 +13,7 @@ export default function LibraryPage() {
           <h1>
             Your reading, <span className="serif grad-text">kept.</span>
           </h1>
-          <p>Pages you saved and everything you have opened, with how far you got. Stored only in this browser.</p>
+          <p>Saved pages, your notes and reading progress. This browser keeps them, and nothing leaves it.</p>
         </section>
         <Library />
       </div>

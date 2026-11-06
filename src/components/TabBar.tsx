@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./Icons";
-import { isActive, openMenu, openSearch } from "./Masthead";
+import { isActive, openSearch } from "./Masthead";
 import { SearchIcon } from "./SearchIcon";
 
 export function TabBar() {
@@ -16,12 +16,12 @@ export function TabBar() {
         </i>
         Home
       </Link>
-      <button type="button" onClick={openMenu}>
+      <Link href="/explore" className={isActive(path, "/explore") ? "on" : undefined}>
         <i aria-hidden>
           <Icon name="grid" size={19} />
         </i>
         Explore
-      </button>
+      </Link>
       <Link href="/reels" className={isActive(path, "/reels") ? "on" : undefined}>
         <i aria-hidden>
           <Icon name="play" size={19} />

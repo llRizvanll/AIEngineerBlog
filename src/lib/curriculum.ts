@@ -1,6 +1,7 @@
 import { CASES, DEEP, POSTS, PROTOCOLS, REELS, PART_ONE, totalCritical } from "./content";
 import { PATTERNS } from "@/content/coding";
 import { MOBILE_PROBLEMS } from "@/content/mobile-coding";
+import { MODULES } from "@/content/modules";
 
 export interface Lesson {
   href: string;
@@ -58,6 +59,11 @@ const raw: [string, string, string, (Lesson | null)[]][] = [
     reels("c-behavioral"), reels("q-star"),
   ]],
   ["11", "Protocol Explorer", "Fourteen protocols decoded packet by packet: DHCP to SSH.", PROTOCOLS.map((d) => ({ href: `/protocols/${d.id}`, title: `${d.name} · ${d.full}`, kind: "Protocol" as const, meta: "" }))],
+  ["12", "AI systems in depth", "Serving, retrieval, fine-tuning, evals, safety and GPU infrastructure, whole to parts.", [
+    { href: "/modules", title: "All AI systems modules", kind: "Deep dive", meta: `${MODULES.length} modules` },
+    ...MODULES.map((m) => ({ href: `/modules/${m.assetId}`, title: m.title, kind: "Deep dive" as const, meta: `${m.minutes} min` })),
+    reels("c-ai-systems"), reels("q-ai-systems"),
+  ]],
 ];
 
 export const PHASES: Phase[] = raw.map(([num, title, blurb, lessons]) => ({
@@ -70,11 +76,29 @@ export const PHASES: Phase[] = raw.map(([num, title, blurb, lessons]) => ({
 const allLessons = PHASES.flatMap((p) => p.lessons);
 export const lessonTitle = (href: string) => allLessons.find((l) => l.href === href)?.title ?? href;
 
-export const PATHS: { title: string; blurb: string; hrefs: string[] }[] = [
-  { title: "Mobile principal in two weeks", blurb: "Everything for a mobile-led loop.", hrefs: ["/series/background-sync", "/series/sqlite", "/series/conflicts", "/series/uploads", "/series/rn", "/series/backend", "/interview/offline-field", "/interview/chat", "/interview/payments", "/series/interview"] },
-  { title: "AI engineering track", blurb: "From internals to shipping LLM features.", hrefs: ["/deep/llm-internals", "/deep/inference-accel", "/deep/embeddings", "/deep/adapt-models", "/deep/agents-mcp", "/deep/llm-integration", "/interview/rag", "/interview/llm-serving", "/interview/ai-evals"] },
-  { title: "Three-day interview crunch", blurb: "Highest value per hour.", hrefs: ["/series/interview", "/interview/offline-field", "/interview/ai-assistant", "/revise"] },
-  { title: "Offline-first deep dive", blurb: "The one topic panels love most.", hrefs: ["/series/background-sync", "/series/sqlite", "/series/conflicts", "/deep/sync-engine", "/deep/transfer-manager", "/series/uploads"] },
+export interface LearningPath {
+  title: string;
+  blurb: string;
+  /** [href, why this step follows the last] */
+  steps: [string, string][];
+}
+
+export const PATHS: LearningPath[] = [
+  {
+    title: "AI engineering track",
+    blurb: "From how a model works to shipping LLM features.",
+    steps: [
+      ["/deep/llm-internals", "Start with what a model does per token."],
+      ["/deep/inference-accel", "Those costs explain why serving needs batching and caches."],
+      ["/deep/embeddings", "Models also turn meaning into vectors, the basis of retrieval."],
+      ["/deep/adapt-models", "When prompts and retrieval fall short, change the model."],
+      ["/deep/agents-mcp", "Give the model tools, and it can take actions."],
+      ["/deep/llm-integration", "Now fit it into a real product, safely."],
+      ["/interview/rag", "Practise: design retrieval end to end."],
+      ["/interview/llm-serving", "Practise: serve it at scale."],
+      ["/interview/ai-evals", "Practise: prove that it works."],
+    ],
+  },
 ];
 
 export const GLOSSARY: [string, string][] = [
@@ -109,5 +133,15 @@ export const GLOSSARY: [string, string][] = [
   ["LoRA", "Fine-tuning by training small adapter matrices instead of all weights."],
   ["MCP", "Model Context Protocol: a standard for exposing tools and data to AI applications."],
   ["Prompt injection", "Instructions hidden in content that try to steer a model into unintended actions."],
+  ["HNSW", "Layered small-world graphs that answer nearest-neighbour queries in milliseconds."],
+  ["BM25", "Keyword ranking that rewards rare terms, saturates repeats and discounts long documents."],
+  ["RRF", "Reciprocal rank fusion: merges rankings using positions, not scores."],
+  ["NF4", "4-bit format whose levels follow a normal distribution, used by QLoRA."],
+  ["DPO", "Direct preference optimisation: trains on preference pairs with no reward model."],
+  ["ZeRO", "DeepSpeed's sharding of optimiser state, gradients and weights across GPUs."],
+  ["FSDP", "PyTorch's native sharded training, wrapped per transformer block."],
+  ["Triton", "Python-embedded language and JIT compiler for GPU kernels."],
+  ["NCCL", "NVIDIA's library for moving tensors between GPUs and servers."],
+  ["GQA", "Grouped-query attention: many query heads share fewer key-value heads, shrinking the KV cache."],
   ["Eval gate", "An automated quality check that a prompt or model change must pass before release."],
 ];

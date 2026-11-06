@@ -1,0 +1,37 @@
+{
+  "title": "AIEngineerPortalAssetMetadata",
+  "description": "Metadata contract for indexing, filtering and rendering assets across Learn, Practice and Revise. Extends the platform specification with three domains, one format, href and curriculum.",
+  "type": "object",
+  "required": ["assetId", "title", "domain", "mode", "format", "cognitiveLevel", "complexityTier", "estimatedDuration", "curationMetadata", "compositeTags", "href"],
+  "properties": {
+    "assetId": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "title": { "type": "string", "maxLength": 120 },
+    "domain": { "type": "string", "enum": ["infrastructure", "model-serving", "rag-retrieval", "fine-tuning", "evals-guardrails", "agents-apps", "mobile-systems", "core-engineering"] },
+    "mode": { "type": "string", "enum": ["learn", "practice", "revise"] },
+    "format": { "type": "string", "enum": ["long-read", "deep-dive", "protocol", "coding-pattern", "machine-coding", "system-design", "behavioral", "flashcard", "reel"] },
+    "cognitiveLevel": { "type": "string", "enum": ["remember", "understand", "apply", "analyze", "evaluate", "create"] },
+    "complexityTier": { "type": "string", "enum": ["tier1-epitome", "tier2-intermediate", "tier3-edge-cases"] },
+    "estimatedDuration": {
+      "type": "object",
+      "required": ["category", "minutes"],
+      "properties": {
+        "category": { "type": "string", "enum": ["micro:1-3m", "standard:5-15m", "deep:30m+"] },
+        "minutes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "curationMetadata": {
+      "type": "object",
+      "required": ["curationStage", "pkmCycle", "contextualCommentary"],
+      "properties": {
+        "curationStage": { "type": "string", "enum": ["collect", "categorize", "critique", "conceptualize", "circulate"] },
+        "pkmCycle": { "type": "string", "enum": ["seek", "sense", "share"] },
+        "contextualCommentary": { "type": "string" },
+        "sourceAttribution": { "type": "string" }
+      }
+    },
+    "compositeTags": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9-]+:[a-z0-9-]+:[a-z0-9-]+$" } },
+    "href": { "type": "string", "pattern": "^/" },
+    "curriculum": { "type": "integer", "minimum": 1 }
+  },
+  "additionalProperties": false
+}

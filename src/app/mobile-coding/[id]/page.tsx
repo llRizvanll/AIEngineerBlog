@@ -8,6 +8,8 @@ import { Code, Faq, Footer, Table } from "@/components/ui";
 import { Chapters, ConceptGrid, type ChapterPart } from "@/components/Chapters";
 import { MOBILE_CONCEPTS } from "@/content/basics";
 import { Icon } from "@/components/Icons";
+import { AssetMeta } from "@/components/AssetMeta";
+import { PathLink } from "@/components/programme/PathLink";
 import { kotlinLines, kotlinSource } from "@/lib/mobile-source";
 
 export const dynamicParams = false;
@@ -35,7 +37,7 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
       key: "basics",
       lead: "The concepts this component is built on. With these in mind, every line of the solution has a reason.",
       sections: [
-        { id: "concepts", title: "Concepts you need", intro: "One idea per card, in the order the solution uses them.", body: <ConceptGrid items={MOBILE_CONCEPTS[p.id] ?? []} /> },
+        { id: "concepts", title: "Key concepts", intro: "One idea per card, in the order the solution uses them.", body: <ConceptGrid items={MOBILE_CONCEPTS[p.id] ?? []} /> },
       ],
     },
     {
@@ -44,7 +46,7 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
       sections: [
         {
           id: "prompt",
-          title: "The prompt",
+          title: "Prompt",
           intro: "The question as the interviewer asks it, and the requirements to check your solution against.",
           body: (
             <>
@@ -85,7 +87,7 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
         },
         {
           id: "code",
-          title: "The solution",
+          title: "Solution",
           intro: "Complete, compiling Kotlin with coroutines, built with warnings as errors and covered by tests/mobile/MobileTests.kt.",
           body: <Code sample={[p.title, "kotlin", source]} fileName={`${p.file}.kt`} hideTitle />,
         },
@@ -126,7 +128,7 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
       sections: [
         {
           id: "edges",
-          title: "Edge cases to mention",
+          title: "Edge cases",
           intro: "Say these before the interviewer does.",
           body: (
             <ul className="traps">
@@ -166,6 +168,8 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
         </div>
         <h1>{p.title}</h1>
         <p className="dek">{p.tagline}</p>
+        <AssetMeta href={`/mobile-coding/${p.id}`} />
+        <PathLink href={`/mobile-coding/${p.id}`} />
         <div className="pat-meta">
           <span>
             <Icon name="clock" size={14} /> {p.minutes}-minute round · {p.level}

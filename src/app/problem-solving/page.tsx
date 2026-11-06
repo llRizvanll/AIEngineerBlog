@@ -20,8 +20,7 @@ export default function ProblemSolvingPage() {
             Problem-solving, <span className="serif grad-text">answered.</span>
           </h1>
           <p>
-            The competency questions panels use to test how you think. Each one has a model answer in STAR form, what the panel is really testing,
-            the follow-up probe and the red flags to avoid.
+            Competency questions test how you think. Each has a STAR model answer, what the panel really tests, the follow-up probe and the red flags.
           </p>
           <div className="btns">
             <Link className="btn" href="/reels/c-behavioral">

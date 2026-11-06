@@ -4,48 +4,51 @@ import { PATTERNS } from "@/content/coding";
 import { MORE_PROBLEMS } from "@/content/coding-more";
 import { MOBILE_PROBLEMS } from "@/content/mobile-coding";
 import { ALL_BEHAVIORAL } from "@/content/behavioral";
+import { FLASHCARDS, modulesByFormat } from "@/content/modules";
 import type { NavGroup } from "./nav-types";
 
 /**
  * The single source for the menu and the landing page. Add a section here and it
  * appears everywhere; counts follow the content automatically.
+ * Order follows the spec's ladder: Learn runs macro to micro, Practice runs micro to macro.
  */
 export function siteMap(): NavGroup[] {
   const plural = (n: number, one: string, many = one + "s") => `${n} ${n === 1 ? one : many}`;
   const reelCount = REELS.reduce((a, c) => a + c.reels.length, 0);
-  const problems = PATTERNS.length + Object.values(MORE_PROBLEMS).flat().length;
+  const n = (f: Parameters<typeof modulesByFormat>[0]) => modulesByFormat(f).length;
+  const problems = PATTERNS.length + Object.values(MORE_PROBLEMS).flat().length + n("coding-pattern");
 
   return [
     {
       id: "learn",
       label: "Learn",
-      blurb: "Understand how real systems work, one layer at a time.",
+      blurb: "Build the mental model, from whole system down to the wire.",
       items: [
-        { href: "/aiengine", title: "Curriculum", desc: "A guided path through everything, phase by phase.", icon: "compass", color: ["#6c47ff", "#ec4899"], count: plural(PHASES.length, "phase") },
-        { href: "/series", title: "Long reads", desc: "In-depth articles with diagrams and something to break.", icon: "book", color: ["#f97316", "#e11d48"], count: plural(SERIES.length, "article") },
-        { href: "/deep", title: "Deep dives", desc: "Component internals, states, code and trade-offs.", icon: "layers", color: ["#8b5cf6", "#d946ef"], count: plural(DEEP.length, "page") },
-        { href: "/protocols", title: "Protocols", desc: "Networking decoded packet by packet.", icon: "network", color: ["#06b6d4", "#10b981"], count: plural(PROTOCOLS.length, "lesson") },
+        { href: "/aiengine", title: "Curriculum", desc: "Guided path through every phase.", icon: "compass", color: ["#6c47ff", "#ec4899"], count: plural(PHASES.length, "phase") },
+        { href: "/paths/mobile-principal", title: "Mobile principal in two weeks", desc: "One edit, followed end to end, then reused.", icon: "phone", color: ["#f43f5e", "#6c47ff"], count: "14 days" },
+        { href: "/deep", title: "Deep dives", desc: "Component internals and state machines.", icon: "layers", color: ["#8b5cf6", "#d946ef"], level: "Level 2 · Meso", count: plural(DEEP.length + n("deep-dive"), "page") },
+        { href: "/protocols", title: "Protocols", desc: "Wire-level packets and low-level mechanics.", icon: "network", color: ["#06b6d4", "#10b981"], level: "Level 3 · Micro", count: plural(PROTOCOLS.length + n("protocol"), "lesson") },
       ],
     },
     {
       id: "practice",
       label: "Practice",
-      blurb: "Rehearse every interview round with model answers.",
+      blurb: "Prove it, from one function up to a whole system.",
       items: [
-        { href: "/interview", title: "System design", desc: "Timed mock rounds with a whiteboard and practice mode.", icon: "board", color: ["#0ea5e9", "#6c47ff"], count: plural(CASES.length, "round") },
-        { href: "/coding", title: "Coding patterns", desc: "Recognise the pattern, apply the template, explain it.", icon: "code", color: ["#10b981", "#0ea5e9"], count: plural(problems, "problem") },
-        { href: "/mobile-coding", title: "Machine coding", desc: "Build real components with tested, explained code.", icon: "phone", color: ["#14b8a6", "#6366f1"], count: plural(MOBILE_PROBLEMS.length, "component") },
-        { href: "/problem-solving", title: "Behavioral", desc: "Structured answers, probes and red flags.", icon: "chat", color: ["#f59e0b", "#ec4899"], count: plural(ALL_BEHAVIORAL.length, "question") },
+        { href: "/coding", title: "Coding patterns", desc: "Algorithm templates and worked problems.", icon: "code", color: ["#10b981", "#0ea5e9"], level: "Level 1 · Components", count: plural(problems, "problem") },
+        { href: "/mobile-coding", title: "Machine coding", desc: "Tested components, built and explained.", icon: "phone", color: ["#14b8a6", "#6366f1"], level: "Level 2 · Sub-systems", count: plural(MOBILE_PROBLEMS.length + n("machine-coding"), "component") },
+        { href: "/interview", title: "System design", desc: "Timed mock rounds with a whiteboard.", icon: "board", color: ["#0ea5e9", "#6c47ff"], level: "Level 3 · Integration", count: plural(CASES.length + n("system-design"), "round") },
+        { href: "/problem-solving", title: "Behavioral", desc: "STAR answers, probes and red flags.", icon: "chat", color: ["#f59e0b", "#ec4899"], count: plural(ALL_BEHAVIORAL.length, "question") },
       ],
     },
     {
       id: "revise",
       label: "Revise",
-      blurb: "Short formats for spare minutes and the night before.",
+      blurb: "Keep it, in minutes a day.",
       items: [
-        { href: "/reels", title: "Reels", desc: "Swipe through bite-sized lessons and animated code.", icon: "play", color: ["#f43f5e", "#f59e0b"], count: plural(reelCount, "reel") },
-        { href: "/revise", title: "Flashcards", desc: "Incidents, probes and traps. Flip, shuffle, track.", icon: "cards", color: ["#a855f7", "#f43f5e"], count: plural(totalCritical(), "card") },
-        { href: "/library", title: "My library", desc: "Saved pages and reading progress on this device.", icon: "bookmark", color: ["#22c55e", "#0ea5e9"] },
+        { href: "/revise", title: "Flashcards", desc: "Spaced recall: due cards return on schedule.", icon: "cards", color: ["#a855f7", "#f43f5e"], count: plural(totalCritical() + FLASHCARDS.length, "card") },
+        { href: "/reels", title: "Reels", desc: "Swipeable lessons and animated code.", icon: "play", color: ["#f43f5e", "#f59e0b"], count: plural(reelCount, "reel") },
+        { href: "/library", title: "My library", desc: "Saved pages, your notes and exports.", icon: "bookmark", color: ["#22c55e", "#0ea5e9"] },
       ],
     },
   ];

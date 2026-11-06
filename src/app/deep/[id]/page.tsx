@@ -8,6 +8,10 @@ import { Code, Faq, Footer, Table } from "@/components/ui";
 import { Chapters, ConceptGrid, QuestionList, type ChapterPart, type ChapterSection } from "@/components/Chapters";
 import { GLOSSARY } from "@/lib/curriculum";
 import { Reading } from "@/components/Reading";
+import { CodeWalks } from "@/components/CodeWalk";
+import { PAGE_CODE } from "@/content/code-docs";
+import { AssetMeta } from "@/components/AssetMeta";
+import { PathLink } from "@/components/programme/PathLink";
 
 export const dynamicParams = false;
 export const generateStaticParams = () => DEEP.map((d) => ({ id: d.id }));
@@ -21,8 +25,8 @@ export default async function DeepPage({ params }: { params: Promise<{ id: strin
   const d = getDeep((await params).id);
   if (!d) notFound();
   const L = {
-    does: "Its job", doesnt: "Not its job", scenario: "A real-life run", arch: "Anatomy", states: "States", seq: "The run loop", code: "Code",
-    platforms: "Platform implementation", tech: "Technology choices", real: "How real products do it", metrics: "Metrics to emit",
+    does: "Its job", doesnt: "Not its job", scenario: "Real-life run", arch: "Anatomy", states: "States", seq: "Run loop", code: "Code",
+    platforms: "Platforms", tech: "Technology choices", real: "How real products do it", metrics: "Metrics to emit",
     edges: "Edge cases", interview: "Interview questions",
     ...(d.labels as Record<string, string> | undefined),
   };
@@ -41,7 +45,7 @@ export default async function DeepPage({ params }: { params: Promise<{ id: strin
       sections: [
         sec(
           "ov",
-          "What it is",
+          "Definition",
           <>
             <p className="lead">{d.summary}</p>
             <div className="dd2">
@@ -67,11 +71,11 @@ export default async function DeepPage({ params }: { params: Promise<{ id: strin
       lead: "Know what you are reading for. These are the questions this deep dive prepares you to answer, and the rounds where they come up.",
       sections: [
         ...(d.interview?.length
-          ? [sec("qs", "Questions this answers", <QuestionList items={d.interview.map(([q]) => q)} note="Model answers are in part 4, after the detail that supports them." />, "Keep them in mind while you read the detail.")]
+          ? [sec("qs", "Target questions", <QuestionList items={d.interview.map(([q]) => q)} note="Model answers are in part 4, after the detail that supports them." />, "Keep them in mind while you read the detail.")]
           : []),
         sec(
           "rd",
-          "Where it comes up",
+          "Interview rounds",
           <div className="golinks">
             {rounds.map((c) => (
               <Link key={c.id} href={`/interview/${c.id}`}>
@@ -119,6 +123,7 @@ export default async function DeepPage({ params }: { params: Promise<{ id: strin
             ]
           : []),
         ...(d.code ? [sec("cd", L.code, <>{d.code.map((k) => <Code key={k[0]} sample={k} />)}</>, "Working code for the core of it.")] : []),
+        ...(PAGE_CODE[`/deep/${d.id}`] ? [sec("cw", "Tested code, explained", <CodeWalks ids={PAGE_CODE[`/deep/${d.id}`]} />, "A working implementation, then what each part does and why.")] : []),
         ...(d.platforms
           ? [
               sec(
@@ -174,6 +179,8 @@ export default async function DeepPage({ params }: { params: Promise<{ id: strin
           <Link href="/deep">Deep dives</Link> · {d.kicker}
         </div>
         <h1>{d.title}</h1>
+        <AssetMeta href={`/deep/${d.id}`} />
+        <PathLink href={`/deep/${d.id}`} />
       </div>
       <Reading title={d.title} kind="Deep dive" articleId="deep-article">
         <Chapters parts={parts} prefix="dd" />

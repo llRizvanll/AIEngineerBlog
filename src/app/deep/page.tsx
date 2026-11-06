@@ -1,3 +1,4 @@
+import { ModuleShelf } from "@/components/ModuleShelf";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { DEEP } from "@/lib/content";
@@ -20,8 +21,7 @@ export default function DeepIndex() {
             Under the <span className="serif grad-text">hood.</span>
           </h1>
           <p>
-            Panels push past the boxes on your diagram. These pages go one level down: what each component does in a real run, its internal parts
-            and states, the code, the platform details, the technology choices and the questions you will be asked.
+            Panels push past the boxes on your diagram. Go one level down: each component's real run, internal states, code, technology choices and interview questions.
           </p>
         </section>
         {GROUPS.map(([g, title, sub]) => {
@@ -49,6 +49,7 @@ export default function DeepIndex() {
             </div>
           );
         })}
+        <ModuleShelf format="deep-dive" title="AI systems deep dives" blurb="Serving, retrieval, fine-tuning, kernels" />
       </div>
       <Footer>AI Engineer · deep dives</Footer>
     </main>

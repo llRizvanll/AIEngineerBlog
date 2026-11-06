@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { emptyInterview, INTERVIEW_KEY, useLocal, type InterviewState } from "@/lib/store";
 import { Reading } from "../Reading";
 import { Whiteboard } from "./Whiteboard";
-import { PartHead, Roadmap, SectionHead, type PartKey } from "../Chapters";
+import { Level2, PartHead, Roadmap, SectionHead, type PartKey } from "../Chapters";
 
 export interface RoundSection {
   key: string;
@@ -64,7 +64,7 @@ export function CaseRound({ id, title, minutes, parts, next }: { id: string; tit
                     </button>
                   )}
                 </div>
-                <div className={"ans" + (revealed[s.key] ? " open" : "")}>{s.body}</div>
+                <div className={"ans" + (revealed[s.key] ? " open" : "")}>{p.key === "more" ? <Level2>{s.body}</Level2> : s.body}</div>
               </>
             ) : (
               <div className="ans open">
