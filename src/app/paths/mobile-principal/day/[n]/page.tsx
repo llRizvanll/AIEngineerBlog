@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { JsonLd } from "@/components/JsonLd";
+import { articleLd } from "@/lib/site";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DAY_ANSWERS, DAYS, THREE_QUESTIONS, type DayItem } from "@/content/programme/mobile-principal";
@@ -45,6 +47,7 @@ export default async function DayPage({ params }: { params: Promise<{ n: string 
 
   return (
     <main className="ls">
+      <JsonLd data={articleLd({ title: `Day ${d.n}: ${d.title}`, description: d.question, path: dayHref(d.n), section: "Mobile principal in two weeks" })} />
       <article className="ls-body">
         <p className="ls-kicker">
           <Link href={PROGRAMME_HREF}>Two-week programme</Link> · Day {d.n} of {DAYS.length}

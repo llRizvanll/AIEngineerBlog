@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Footer } from "@/components/ui";
 import { Library } from "@/components/Library";
 
-export const metadata: Metadata = { title: "My library", description: "Saved pages and reading progress." };
+export const metadata: Metadata = { title: "My library", description: "Your saved pages and reading progress.", robots: { index: false, follow: true } };
 
 export default function LibraryPage() {
   return (

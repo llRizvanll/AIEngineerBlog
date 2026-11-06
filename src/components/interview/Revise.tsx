@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { track } from "@/lib/track";
 import { emptyInterview, emptySrs, INTERVIEW_KEY, intervalLabel, nextSrs, SRS_KEY, useLocal, type InterviewState, type Rating, type SrsState } from "@/lib/store";
 
 export interface ReviseCard {
@@ -74,6 +75,7 @@ export function Revise({ cards, groups }: { cards: ReviseCard[]; groups: { id: s
     (rating: Rating) => {
       if (!card) return;
       const at = Date.now();
+      track("card_rated", { rating, group: card.group });
       updateSrs((s) => ({ cards: { ...s.cards, [card.key]: nextSrs(s.cards[card.key], rating, at) } }));
       updateIv((s) => ({ ...s, crit: { ...s.crit, [card.key]: rating !== "again" } }));
       setNow(at);

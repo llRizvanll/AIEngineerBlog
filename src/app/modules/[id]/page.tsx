@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { JsonLd } from "@/components/JsonLd";
+import { articleLd } from "@/lib/site";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getModule, MODULES } from "@/content/modules";
@@ -171,6 +173,7 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
 
   return (
     <main>
+      <JsonLd data={articleLd({ title: m.title, description: m.commentary, path: `/modules/${m.assetId}`, section: "AI systems", keywords: m.topics })} />
       <div className="post-head">
         <div className="kicker">
           <Link href="/modules">Modules</Link> · {DOMAIN_LABEL[m.domain]} · {FORMAT_LABEL[m.format]}

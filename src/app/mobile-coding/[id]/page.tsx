@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { JsonLd } from "@/components/JsonLd";
+import { articleLd } from "@/lib/site";
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
@@ -162,6 +164,7 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
 
   return (
     <main className="pattern-page" style={style}>
+      <JsonLd data={articleLd({ title: p.title, description: p.tagline, path: `/mobile-coding/${p.id}`, section: "Machine coding" })} />
       <div className="pat-hero">
         <div className="kicker">
           <Link href="/mobile-coding">Mobile machine coding</Link> · {String(i + 1).padStart(2, "0")} of {MOBILE_PROBLEMS.length}

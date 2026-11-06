@@ -5,6 +5,7 @@ import { MORE_PROBLEMS } from "@/content/coding-more";
 import { MOBILE_PROBLEMS } from "@/content/mobile-coding";
 import { ALL_BEHAVIORAL } from "@/content/behavioral";
 import { FLASHCARDS, modulesByFormat } from "@/content/modules";
+import { AI_PATHS, BASIC_CARD_COUNT, LESSON_COUNT } from "@/content/ai-interviews";
 import type { NavGroup } from "./nav-types";
 
 /**
@@ -25,6 +26,7 @@ export function siteMap(): NavGroup[] {
       blurb: "Build the mental model, from whole system down to the wire.",
       items: [
         { href: "/aiengine", title: "Curriculum", desc: "Guided path through every phase.", icon: "compass", color: ["#6c47ff", "#ec4899"], count: plural(PHASES.length, "phase") },
+        { href: "/paths/ai-interviews", title: "Crack AI interviews", desc: "Hacks, every round, a plan and a project.", icon: "bolt", color: ["#f59e0b", "#ec4899"], count: `${AI_PATHS.length} paths · ${LESSON_COUNT} lessons` },
         { href: "/paths/mobile-principal", title: "Mobile principal in two weeks", desc: "One edit, followed end to end, then reused.", icon: "phone", color: ["#f43f5e", "#6c47ff"], count: "14 days" },
         { href: "/deep", title: "Deep dives", desc: "Component internals and state machines.", icon: "layers", color: ["#8b5cf6", "#d946ef"], level: "Level 2 · Meso", count: plural(DEEP.length + n("deep-dive"), "page") },
         { href: "/protocols", title: "Protocols", desc: "Wire-level packets and low-level mechanics.", icon: "network", color: ["#06b6d4", "#10b981"], level: "Level 3 · Micro", count: plural(PROTOCOLS.length + n("protocol"), "lesson") },
@@ -46,7 +48,8 @@ export function siteMap(): NavGroup[] {
       label: "Revise",
       blurb: "Keep it, in minutes a day.",
       items: [
-        { href: "/revise", title: "Flashcards", desc: "Spaced recall: due cards return on schedule.", icon: "cards", color: ["#a855f7", "#f43f5e"], count: plural(totalCritical() + FLASHCARDS.length, "card") },
+        { href: "/revise", title: "Flashcards", desc: "Spaced recall: due cards return on schedule.", icon: "cards", color: ["#a855f7", "#f43f5e"], count: plural(totalCritical() + FLASHCARDS.length + BASIC_CARD_COUNT, "card") },
+        { href: "/paths/ai-interviews/basics", title: "Critical basics", desc: "Read, memorise and practise the AI interview essentials.", icon: "bolt", color: ["#22c55e", "#a855f7"], count: plural(BASIC_CARD_COUNT, "card") },
         { href: "/reels", title: "Reels", desc: "Swipeable lessons and animated code.", icon: "play", color: ["#f43f5e", "#f59e0b"], count: plural(reelCount, "reel") },
         { href: "/library", title: "My library", desc: "Saved pages, your notes and exports.", icon: "bookmark", color: ["#22c55e", "#0ea5e9"] },
       ],

@@ -6,6 +6,8 @@ import { PATTERNS } from "@/content/coding";
 import { MORE_PROBLEMS } from "@/content/coding-more";
 import { MOBILE_PROBLEMS } from "@/content/mobile-coding";
 import { FLASHCARDS, MODULES } from "@/content/modules";
+import { AI_PATHS, BASICS, allLessons } from "@/content/ai-interviews";
+import { basicKey } from "@/content/ai-interviews/basics";
 
 export interface SearchItem {
   href: string;
@@ -22,6 +24,11 @@ export function buildSearchIndex(): SearchItem[] {
   const items: SearchItem[] = [
     { href: "/paths/mobile-principal", title: "Mobile principal in two weeks", kind: "Page", summary: "A 14-day programme that follows one offline edit end to end.", keywords: "path plan programme schedule priya offline" },
     ...DAYS.map((d) => ({ href: `/paths/mobile-principal/day/${d.n}`, title: `Day ${d.n}: ${d.title}`, kind: "Page" as const, summary: d.question, keywords: `programme ${d.stop}` })),
+    { href: "/paths/ai-interviews", title: "Crack AI interviews", kind: "Page", summary: "AI interview hacks, every round, a plan, and a mock interviewer to build.", keywords: "ai interview prep hacks rounds meta canva google coding rag agents evals mock" },
+    { href: "/paths/ai-interviews/basics", title: "Critical basics for AI interviews", kind: "Page", summary: "Read, memorise and practise the essentials.", keywords: "basics flashcards memorise drills fundamentals llm rag agents evals prompting" },
+    ...AI_PATHS.map((p) => ({ href: `/paths/ai-interviews/${p.id}`, title: p.title, kind: "Page" as const, summary: p.blurb, keywords: "ai interview path" })),
+    ...allLessons().map(({ path, lesson }) => ({ href: `/paths/ai-interviews/${path.id}/${lesson.slug}`, title: lesson.title, kind: "Page" as const, summary: lesson.question, keywords: `${path.short} ${lesson.stop} ai interview ${lesson.words.map(([w]) => w).join(" ")}` })),
+    ...BASICS.flatMap((b) => b.memorise.map((c, i) => ({ href: `/revise?card=${basicKey(b.id, i)}`, title: c.q, kind: "Flashcard" as const, summary: b.title, keywords: "ai interview basics" }))),
     { href: "/", title: "Home", kind: "Page", summary: "Start here: rounds, deep dives, reels and the series.", keywords: "start" },
     { href: "/aiengine", title: "AIEngine curriculum", kind: "Page", summary: "Guided phases, learning paths and a glossary.", keywords: "curriculum paths glossary learn" },
     { href: "/interview", title: "Interview room", kind: "Page", summary: "Mock rounds with a timer and a whiteboard.", keywords: "system design mock" },

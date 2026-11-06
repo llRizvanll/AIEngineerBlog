@@ -8,6 +8,9 @@ import { KeepReading } from "@/components/KeepReading";
 import { Icon } from "@/components/Icons";
 import { SystemMap } from "@/components/SystemMap";
 import { AppearanceButton, HeroSearch } from "@/components/HomeActions";
+import { JsonLd } from "@/components/JsonLd";
+import { SITE } from "@/lib/content";
+import { absoluteUrl } from "@/lib/site";
 
 const cvars = (c: [string, string]) => ({ "--c1": c[0], "--c2": c[1] }) as CSSProperties;
 
@@ -27,6 +30,7 @@ export default function Home() {
 
   return (
     <main className="landing">
+      <JsonLd data={{ "@context": "https://schema.org", "@type": "WebSite", name: SITE.name, url: absoluteUrl("/"), description: SITE.description, inLanguage: "en", publisher: { "@type": "Organization", name: SITE.name, url: absoluteUrl("/") } }} />
       <div className="wrap">
         <section className="l-hero">
           <div className="l-copy">
@@ -37,8 +41,8 @@ export default function Home() {
               See the whole system. <span className="serif grad-text">Master each part.</span>
             </h1>
             <p className="l-lede">
-              Trace one AI request from phone to GPU, then drill into any layer. Long reads and deep dives build the model, coding and design rounds
-              test it, and spaced flashcards keep it.
+              A free AI engineering blog and interview prep site. Trace one AI request from phone to GPU, then learn LLMs, RAG, agents and evals with
+              tested code. Coding and design rounds test it, and spaced flashcards keep it.
             </p>
             <div className="btns">
               <Link className="btn" href="/aiengine">

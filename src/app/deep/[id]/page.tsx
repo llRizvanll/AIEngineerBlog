@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { JsonLd } from "@/components/JsonLd";
+import { articleLd } from "@/lib/site";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
@@ -174,6 +176,7 @@ export default async function DeepPage({ params }: { params: Promise<{ id: strin
 
   return (
     <main>
+      <JsonLd data={articleLd({ title: d.title, description: d.summary, path: `/deep/${d.id}`, section: "Deep dives" })} />
       <div className="post-head">
         <div className="kicker">
           <Link href="/deep">Deep dives</Link> · {d.kicker}

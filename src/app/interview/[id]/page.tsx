@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { JsonLd } from "@/components/JsonLd";
+import { articleLd } from "@/lib/site";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CASES, CRITICAL, DEEP, FRONTEND, getCase } from "@/lib/content";
@@ -369,6 +371,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
   const next = CASES[(CASES.indexOf(c) + 1) % CASES.length];
   return (
     <main>
+      <JsonLd data={articleLd({ title: c.title, description: c.prompt, path: `/interview/${c.id}`, section: "System design" })} />
       <div className="post-head">
         <div className="kicker">
           <Link href="/interview">Interview room</Link> · {c.track} system design · {c.minutes} minutes

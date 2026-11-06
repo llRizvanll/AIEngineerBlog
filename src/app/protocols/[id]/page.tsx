@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { JsonLd } from "@/components/JsonLd";
+import { articleLd } from "@/lib/site";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PROTOCOLS, getProtocol } from "@/lib/content";
@@ -12,7 +14,7 @@ export const generateStaticParams = () => PROTOCOLS.map((p) => ({ id: p.id }));
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const p = getProtocol((await params).id);
-  return p ? { title: `${p.name} · ${p.full}`, description: p.tag } : {};
+  return p ? { title: `${p.name} · ${p.full}`, description: `How ${p.name} (${p.full}) works, decoded packet by packet: ${p.tag}` } : {};
 }
 
 const LAYERS = ["Application", "Transport", "Internet"];
@@ -33,6 +35,7 @@ export default async function ProtocolPage({ params }: { params: Promise<{ id: s
   ];
   return (
     <main className="view pe pe-page" id="view-proto">
+      <JsonLd data={articleLd({ title: `${d.name}: ${d.full}`, description: d.tag, path: `/protocols/${d.id}`, section: "Protocols" })} />
       <div className="pe-wrap pe-lesson">
         <aside className="pe-side">
           <Link className="all" href="/protocols">

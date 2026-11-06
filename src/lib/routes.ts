@@ -61,3 +61,8 @@ export const CASE_SHORT: Record<string, string> = {
 
 export const PROGRAMME_HREF = "/paths/mobile-principal";
 export const dayHref = (n: number) => `${PROGRAMME_HREF}/day/${n}`;
+
+export const AI_PATHS_HREF = "/paths/ai-interviews";
+export const AI_BASICS_HREF = `${AI_PATHS_HREF}/basics`;
+export const aiPathHref = (path: string) => `${AI_PATHS_HREF}/${path}`;
+export const aiLessonHref = (path: string, lesson: string) => `${AI_PATHS_HREF}/${path}/${lesson}`;

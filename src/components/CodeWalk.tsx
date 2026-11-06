@@ -7,6 +7,7 @@ const DIRS: Record<CodeDoc["dir"], string> = {
   programme: "src/content/programme/code",
   modules: "src/content/modules/code",
   protocols: "src/content/protocol-code",
+  interview: "src/content/ai-interviews/code",
 };
 
 const LANG: Record<string, string> = { kt: "kotlin", ts: "ts", py: "python", sbatch: "bash" };

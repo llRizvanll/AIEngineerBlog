@@ -48,3 +48,7 @@ Code samples use TypeScript or Kotlin throughout. `test:mobile` uses `kotlinc` i
 - `src/content/modules/` holds the AI systems modules, flashcards and reels. Their code samples live in `modules/code/`.
 - `npm run test:modules` runs the TypeScript samples' tests. Python samples are syntax-checked only, because they need PyTorch, Triton or Ray and a GPU.
 - `npm run lint:copy` reports "to be" verbs, wind-up phrases and sentence length per content file.
+
+## SEO and metrics
+
+See [docs/SEO-AND-METRICS.md](docs/SEO-AND-METRICS.md) for the settings to add, the steps after deploying, and what to measure.

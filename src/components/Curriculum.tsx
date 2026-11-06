@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { Phase } from "@/lib/curriculum";
-import { dayHref, PROGRAMME_HREF } from "@/lib/routes";
+import { AI_BASICS_HREF, AI_PATHS_HREF, dayHref, PROGRAMME_HREF } from "@/lib/routes";
 import { emptyInterview, emptyLibrary, emptyProgramme, INTERVIEW_KEY, LIBRARY_KEY, PROGRAMME_KEY, useLocal, type InterviewState, type LibraryState, type ProgrammeState } from "@/lib/store";
 
 interface Props {
@@ -77,6 +77,18 @@ export function Curriculum({ phases, paths, programme, glossary, caseIds, totalC
         <span>each step says why it comes next</span>
       </div>
       <div className="aie-paths stagger">
+        <div className="aie-feature">
+          <h3>Crack AI interviews</h3>
+          <p>Four connected paths: AI interview hacks, every new round, a study plan with a final stretch with AI off, and a mock interviewer you build yourself. Plus critical basics to memorise.</p>
+          <div className="btns">
+            <Link className="btn" href={AI_PATHS_HREF}>
+              Open the paths →
+            </Link>
+            <Link className="btn ghost" href={AI_BASICS_HREF}>
+              Critical basics
+            </Link>
+          </div>
+        </div>
         <div className="aie-feature">
           <h3>Mobile principal in two weeks</h3>
           <p>{programme.blurb}</p>

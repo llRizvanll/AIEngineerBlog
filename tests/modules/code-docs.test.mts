@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import { CODE, LESSON_CODE, PAGE_CODE } from "../../src/content/code-docs.ts";
 
-const DIRS = { programme: "src/content/programme/code", modules: "src/content/modules/code", protocols: "src/content/protocol-code" } as const;
+const DIRS = { programme: "src/content/programme/code", modules: "src/content/modules/code", protocols: "src/content/protocol-code", interview: "src/content/ai-interviews/code" } as const;
 const failed: string[] = [];
 let checked = 0;
 

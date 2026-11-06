@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import Link from "next/link";
+import { JsonLd } from "@/components/JsonLd";
+import { articleLd } from "@/lib/site";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PART_ONE, POSTS, SITE, getPost } from "@/lib/content";
@@ -87,6 +89,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ slug: s
     const html = withEditors(fs.readFileSync(path.join(process.cwd(), "src/content/background-sync.html"), "utf8"));
     return (
       <main className="medium" style={postVars(PART_ONE.id)}>
+        <JsonLd data={articleLd({ title: PART_ONE.title, description: PART_ONE.dek, path: `/series/${PART_ONE.id}`, section: "Series" })} />
         <PostHeader m={PART_ONE} />
         <div className="m-meta">
           <PathLink href={`/series/${PART_ONE.id}`} />
@@ -106,6 +109,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ slug: s
   if (!p) notFound();
   return (
     <main className="medium" style={postVars(p.id)}>
+      <JsonLd data={articleLd({ title: p.title, description: p.dek, path: `/series/${p.id}`, section: "Series" })} />
       <PostHeader m={{ ...p, date: "Nov 4, 2026" }} />
       <div className="m-meta">
         <PathLink href={`/series/${p.id}`} />

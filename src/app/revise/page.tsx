@@ -4,6 +4,7 @@ import { Revise, type ReviseCard } from "@/components/interview/Revise";
 import { Footer } from "@/components/ui";
 import { CASES, CRITICAL } from "@/lib/content";
 import { CASE_SHORT, critKey, SECTION_NAME } from "@/lib/routes";
+import { AI_BASICS_GROUP, basicCards } from "@/lib/ai-basics-cards";
 
 export const metadata: Metadata = { title: "Flashcards: spaced recall", description: "Due cards return on schedule: incidents, probes, traps and AI systems recall." };
 
@@ -15,6 +16,7 @@ const WHY: Record<string, string> = {
 
 export default function RevisePage() {
   const cards: ReviseCard[] = [
+    ...basicCards(false),
     ...FLASHCARDS.map((f) => ({ key: f.assetId, link: f.assetId, group: "ai-systems", groupLabel: "AI systems", kind: "Recall", q: f.front, a: f.back, why: f.commentary, source: f.source })),
     ...CASES.flatMap((c) =>
       (CRITICAL[c.id] ?? []).map((q, i) => ({
@@ -30,7 +32,7 @@ export default function RevisePage() {
       }))
     ),
   ];
-  const groups = [{ id: "ai-systems", label: "AI systems" }, ...CASES.map((c) => ({ id: c.id, label: CASE_SHORT[c.id] ?? c.title }))];
+  const groups = [{ id: AI_BASICS_GROUP, label: "AI interview basics" }, { id: "ai-systems", label: "AI systems" }, ...CASES.map((c) => ({ id: c.id, label: CASE_SHORT[c.id] ?? c.title }))];
   return (
     <main>
       <div className="wrap">

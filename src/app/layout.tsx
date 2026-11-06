@@ -27,6 +27,8 @@ import { NavProgress } from "@/components/NavProgress";
 import { siteMap } from "@/lib/sections";
 import { prefsBootScript } from "@/components/Settings";
 import { SITE } from "@/lib/content";
+import { Analytics } from "@/components/Analytics";
+import { SITE_URL } from "@/lib/site";
 
 // Defaults preload; alternates download only when a reader picks them in settings.
 const geist = Geist({ subsets: ["latin"], variable: "--ff-geist", display: "swap" });
@@ -48,10 +50,18 @@ const fontVars = [geist, serif, sourceSerif, geistMono, inter, jakarta, grotesk,
   .join(" ");
 
 export const metadata: Metadata = {
-  title: { default: SITE.name, template: `%s · ${SITE.name}` },
+  metadataBase: new URL(SITE_URL),
+  title: { default: SITE.seoTitle, template: `%s · ${SITE.name}` },
   description: SITE.description,
+  applicationName: SITE.name,
   authors: [{ name: SITE.author }],
-  openGraph: { title: SITE.name, description: SITE.description, type: "website" },
+  keywords: ["AI engineering", "AI blog", "AI interview preparation", "AI engineer interview questions", "AI-enabled coding interview", "LLM", "RAG", "AI agents", "LLM evals", "system design", "mobile system design", "machine coding"],
+  // "./" resolves to each page's own address, which gives every page one canonical URL.
+  alternates: { canonical: "./", types: { "text/plain": "/llms.txt" } },
+  openGraph: { title: SITE.seoTitle, description: SITE.description, type: "website", siteName: SITE.name, url: "./", locale: "en", images: [{ url: "/og.png", width: 1200, height: 630, alt: SITE.seoTitle }] },
+  twitter: { card: "summary_large_image", title: SITE.seoTitle, description: SITE.description, images: ["/og.png"] },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-snippet": -1, "max-image-preview": "large", "max-video-preview": -1 } },
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } } : {}),
 };
 
 export const viewport: Viewport = {
@@ -77,6 +87,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <TabBar />
         <SearchPalette />
         <HashRedirect />
+        <Analytics />
       </body>
     </html>
   );

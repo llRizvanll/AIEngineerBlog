@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { JsonLd } from "@/components/JsonLd";
+import { articleLd } from "@/lib/site";
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
@@ -17,7 +19,7 @@ export const generateStaticParams = () => PATTERNS.map((p) => ({ id: p.id }));
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const p = PATTERNS.find((x) => x.id === id);
-  return p ? { title: `${p.name} pattern`, description: p.tagline } : {};
+  return p ? { title: `${p.name} pattern`, description: `The ${p.name} pattern for coding interviews: ${p.tagline}` } : {};
 }
 
 export default async function PatternPage({ params }: { params: Promise<{ id: string }> }) {
@@ -222,6 +224,7 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
 
   return (
     <main className="pattern-page" style={style}>
+      <JsonLd data={articleLd({ title: `${p.name} pattern`, description: p.tagline, path: `/coding/${p.id}`, section: "Coding patterns" })} />
       <div className="pat-hero">
         <div className="kicker">
           <Link href="/coding">Coding patterns</Link> · {String(i + 1).padStart(2, "0")} of {PATTERNS.length}

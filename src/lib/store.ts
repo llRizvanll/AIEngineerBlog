@@ -81,6 +81,17 @@ export interface ProgrammeState {
 }
 export const emptyProgramme: ProgrammeState = { items: {}, rubric: {}, done: {} };
 
+export const AI_PATHS_KEY = "pae-ai-paths-v1";
+export interface AiPathsState {
+  /** "rounds/rag-round" */
+  done: Record<string, boolean>;
+  /** "rounds/rag-round:2" */
+  rubric: Record<string, boolean>;
+  /** drill id to times completed */
+  drills: Record<string, number>;
+}
+export const emptyAiPaths: AiPathsState = { done: {}, rubric: {}, drills: {} };
+
 /** Leitner spaced repetition: each card sits in a box, and each box waits longer. */
 export interface SrsCard {
   box: number;

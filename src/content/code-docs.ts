@@ -1,7 +1,7 @@
 /* Every explained code sample on the site. Code stays in real files, so the tests run exactly
    what a page shows; this file only says why it exists and how it works. */
 
-export type CodeDir = "programme" | "modules" | "protocols";
+export type CodeDir = "programme" | "modules" | "protocols" | "interview";
 
 export interface CodeDoc {
   dir: CodeDir;
@@ -20,6 +20,8 @@ export interface CodeDoc {
 const kt = (file: string, region: string, title: string, lead: string, points: [string, string][], tail?: string): CodeDoc => ({ dir: "programme", file, region, title, lead, points, tail });
 const mod = (file: string, title: string, lead: string, points: [string, string][]): CodeDoc => ({ dir: "modules", file, title, lead, points });
 const proto = (file: string, title: string, lead: string, points: [string, string][]): CodeDoc => ({ dir: "protocols", file, title, lead, points });
+
+const iv = (file: string, region: string | undefined, title: string, lead: string, points: [string, string][]): CodeDoc => ({ dir: "interview", file, region, title, lead, points });
 
 export const CODE: Record<string, CodeDoc> = {
   /* ---------- the sync system behind the programme ---------- */
@@ -451,6 +453,201 @@ export const CODE: Record<string, CodeDoc> = {
     ["parseBanner", "Both sides send this first, and it's the only plain-text part."],
     ["4 + packetLength - padding", "Locates the payload inside the frame."],
     ["paddingFor", "Hides the exact message length, and keeps the packet aligned to the cipher's blocks."],
+  ]),
+  /* ---------- the AI interview paths ---------- */
+  "ai-hint-climb": iv("HintLadder.ts", "climb", "The rule that keeps you honest", "This is the whole ladder as code. It answers one question: have you earned the next hint?", [
+    ["tried.length < 40", "A rough test that you wrote something real. 'help' doesn't pass."],
+    ["tried === state.lastAttempt", "Asking again without changing anything earns nothing."],
+    ["state.level >= HINT_LEVELS.length - 1", "The ladder ends. After this, you read a solution and rebuild it tomorrow."],
+  ]),
+  "ai-hint-prompt": iv("HintLadder.ts", "prompt", "The prompt it builds", "The same rules, as text you can send to any assistant.", [
+    ["Never write the solution", "Goes in every request, because long chats drift away from earlier rules."],
+    ["state.lastAttempt", "Hints depend on context. Without your attempt, the model can only guess where you're stuck."],
+    ["HINT_LEVELS[state.level]", "Asks for one level of help and no more."],
+  ]),
+  "ai-plant": iv("BugPlanter.ts", "plant", "Planting the bugs", "Finds the places a small change is possible, then picks a few using a repeatable random order.", [
+    ["function seeded(seed: number)", "A tiny random generator. Math.random can't be repeated, and this can."],
+    ["text.trim().startsWith(\"//\")", "Skips comments, because changing a comment plants no bug."],
+    ["planted.some((p) => p.line === pick.line + 1)", "At most one bug per line, which makes scoring fair."],
+    ["planted.sort", "The answer key comes out in line order."],
+  ]),
+  "ai-plant-score": iv("BugPlanter.ts", "score", "Scoring your review", "Three numbers tell you more than a pass or fail.", [
+    ["falseAlarms", "Lines you flagged that were fine. In a live round, these burn time."],
+    ["missed", "The bugs that would have reached production."],
+  ]),
+  "ai-talk": iv("TalkTrack.ts", "measure", "Measuring a recording", "Takes transcript segments and works out what an interviewer would feel.", [
+    ["const REASONS", "Words that signal why. It's a rough marker, but it shows a real pattern across a whole round."],
+    ["s.start - segments[i - 1].end", "The gap between segments is your silence."],
+    ["if (gap > 3) runStart = s.start", "A pause of over 3 seconds ends a monologue. That's the interviewer's chance to step in."],
+    ["segments.length === 0", "An empty transcript means a recording problem, so it stops with a clear error."],
+  ]),
+  "ai-talk-advice": iv("TalkTrack.ts", "advice", "Turning numbers into advice", "Each number maps to one thing you can do in the next round.", [
+    ["r.longSilences > 0", "Long silences are fine if you announce them first."],
+    ["r.reasonsPerMinute < 1", "The most common gap: saying what you do, but not why."],
+  ]),
+  "ai-job-map": iv("JobPostMap.ts", "map", "Counting what the post asks for", "A word count with care taken over word edges, so 'rag' doesn't match 'fragrance' or 'storage'.", [
+    ["(^|[^a-z0-9])", "The match must start at a word edge."],
+    ["(?![a-z0-9])", "And must end at one."],
+    ["escape(k)", "Keeps a keyword such as 'c++' from being read as a regular expression."],
+  ]),
+  "ai-job-gaps": iv("JobPostMap.ts", "gaps", "From demand to a study order", "Combines what they want with what you lack.", [
+    ["hits * (5 - (myScores[skill] ?? 1))", "A skill you haven't scored counts as weak, since not knowing is a reason to look."],
+    [".filter((x) => x.priority > 0)", "A skill at 5 of 5 drops off the list, however often it's mentioned."],
+  ]),
+  "ai-ledger-weakest": iv("MistakeLedger.ts", "weakest", "What the ledger tells you", "Two views of the same rows: which topic is weak now, and which habit keeps coming back.", [
+    ["0.5 ** (ageDays / halfLifeDays)", "A miss loses half its weight every 7 days. A miss from today counts 1, and one from two weeks ago counts 0.25."],
+    ["repeatedCauses", "Counts causes without any decay, since a habit that keeps showing up matters however old the first case is."],
+  ]),
+  "ai-ledger-anki": iv("MistakeLedger.ts", "anki", "Exporting to flashcards", "Anki imports tab-separated text, one card per line.", [
+    ["replace(/[\\t\\r\\n]+/g, \" \")", "A stray tab or line break inside a field would split the row and scramble the card."],
+  ]),
+  "ai-log-bug": iv("LogTriage.ts", "bug", "Stage 1: the code you inherit", "A parser with a real bug. Read it before you scroll on.", [
+    ["line.split(\"|\")", "Splits on every separator, but the message itself may contain one."],
+    ["const [at, level, service, message]", "Takes four parts and silently drops the rest. No error appears, and the data is just wrong."],
+    ["Number(at)", "A bad timestamp becomes NaN, which sails through."],
+  ]),
+  "ai-log-fix": iv("LogTriage.ts", "fix", "Stage 1: the fix", "Fixed by hand. A bug this small is quicker to fix than to explain to an assistant.", [
+    ["parts.slice(3).join(\"|\")", "Puts the message back together, separators included."],
+    ["Number.isFinite(at)", "Rejects NaN and Infinity, so a bad line can't poison later sorting."],
+  ]),
+  "ai-log-draft": iv("LogTriage.ts", "draft", "Stage 2: the assistant's first draft", "It's short, clean and passes the obvious test. It also has two bugs. Our tests prove both.", [
+    ["const counts: Record<string, number> = {}", "A plain object inherits keys. A service named 'constructor' finds a function there, so the count becomes a string."],
+    ["counts[e.service] || 0", "This is where it happens: the inherited function is truthy, so it never falls back to 0."],
+    ["sort((a, b) => b[1] - a[1])", "Equal counts keep input order, so the same data in a different order gives a different answer."],
+  ]),
+  "ai-log-reviewed": iv("LogTriage.ts", "reviewed", "Stage 2: after your review", "A small change, and the kind interviewers want to see you catch.", [
+    ["new Map<string, number>()", "A Map starts empty, with no inherited keys."],
+    ["b[1] - a[1] || a[0].localeCompare(b[0])", "A tie-break makes the output repeatable, which also makes it testable."],
+    ["entries: Iterable<LogEntry>", "Accepts a list or a stream, which sets up stage 3."],
+  ]),
+  "ai-log-fast": iv("LogTriage.ts", "fast", "Stage 3: when the big file arrives", "With m services, sorting costs O(m log m). A heap of size k costs O(m log k), which matters when m is large and k is small.", [
+    ["lines: Iterable<string>", "Reads one line at a time, so a huge file never has to fit in memory. Only the counts do."],
+    ["ranksLater", "Puts the worst of the current top k at the root, ready to be replaced."],
+    ["ranksLater(heap[0], item)", "A new item enters only if it beats the worst one kept."],
+    ["heap.sort(byCountThenName)", "A heap isn't sorted, so the k winners get a final sort."],
+  ]),
+  "ai-cache-inherited": iv("TtlCache.ts", "inherited", "The file you're handed", "Meant to be an LRU cache with expiry. Find three bugs before reading the notes. Nothing crashes, which is what makes them hard.", [
+    ["item.expires <= this.now()", "Returns undefined, but leaves the dead item in the map, where it keeps taking space."],
+    ["return item.value", "Doesn't mark the key as recently used, so this is really first-in, first-out."],
+    ["this.items.size >= this.max", "Also runs when overwriting an existing key, evicting an innocent key though the size wouldn't grow."],
+  ]),
+  "ai-cache-fixed": iv("TtlCache.ts", "fixed", "The fixed version", "All three fixes come from one fact: a Map remembers insertion order.", [
+    ["this.items.delete(key)", "Delete then set moves a key to the newest position. It also handles expired items and overwrites."],
+    ["this.items.keys().next().value", "The first key in the Map is the least recently used one."],
+  ]),
+  "ai-fit": iv("TokenBudget.ts", "fit", "Fitting a prompt into the context", "Your prompt, the retrieved text and the model's reply all share one limit.", [
+    ["text.length / 4", "The usual English rule of thumb. Fine for planning, but use a real token counter before sending."],
+    ["contextLimit - replyTokens - estimateTokens(fixedText)", "Reserve the reply first. Forgetting this is a classic cause of cut-off answers."],
+    ["dropped.push(c.id)", "Records what got left out, so a bad answer can be traced back to it."],
+  ]),
+  "ai-cost": iv("TokenBudget.ts", "cost", "The cost of a request", "The sum every LLM screen expects you to do in your head.", [
+    ["inputTokens - cachedTokens", "Cached tokens are billed at their own lower rate, so split them out first."],
+    ["/ 1_000_000", "Prices are quoted per million tokens."],
+    ["costPerRequest * requestsPerDay * 30", "Monthly cost is what makes a design decision real."],
+  ]),
+  "ai-chunk": iv("Retrieval.ts", "chunk", "Splitting documents", "Search finds chunks rather than whole documents. Too big blurs the meaning, and too small loses the context.", [
+    ["i += size - overlap", "Each chunk starts a little before the last one ended."],
+    ["overlap >= size", "This would never move forward, so it's refused up front."],
+    ["i + size >= words.length", "Stops once the last word is covered, so no tiny leftover chunk appears."],
+  ]),
+  "ai-cosine": iv("Retrieval.ts", "cosine", "Cosine similarity", "The basic measure for comparing two embeddings.", [
+    ["dot / Math.sqrt(na * nb)", "Dividing by both lengths leaves only the angle between the vectors."],
+    ["na && nb", "An all-zero vector has no direction, so it returns 0 instead of NaN."],
+  ]),
+  "ai-rrf": iv("Retrieval.ts", "rrf", "Hybrid search with rank fusion", "Keyword search finds exact terms like error codes, and vectors find meaning. You usually want both.", [
+    ["1 / (k + rank + 1)", "Uses only position, so the two scoring scales never have to be compared."],
+    ["k = 60", "The constant commonly used for this method. It stops first place from dominating."],
+    ["a[0].localeCompare(b[0])", "Ties break by id, so the result is repeatable."],
+  ]),
+  "ai-metrics": iv("Retrieval.ts", "metrics", "Measuring retrieval", "Measure this before you look at answers. If the right text never arrives, no prompt can help.", [
+    ["r.retrieved.slice(0, k)", "Only what actually reaches the prompt counts."],
+    ["r.relevant.length", "Recall needs labelled answers, so you need a labelled set."],
+    ["1 / (at + 1)", "First place scores 1, second 0.5, and a miss 0."],
+  ]),
+  "ai-agent-loop": iv("AgentLoop.ts", "loop", "The agent loop", "Ask the model, run the tool it picks, add the result, repeat. The safety lives here, in plain code.", [
+    ["step < limits.maxSteps", "A hard stop. Without it, a confused agent loops and spends money all night."],
+    ["repeats > limits.maxRepeats", "Catches a common failure: the same call, with the same arguments, again and again."],
+    ["trace.push(call)", "Every action is recorded, because you can't debug or evaluate what you can't see."],
+  ]),
+  "ai-agent-tool": iv("AgentLoop.ts", "tool", "Calling a tool safely", "Everything between what the model wants and what actually happens.", [
+    ["tools.find((t) => t.name === name)", "An allow list. A model can ask for any tool, and only listed ones exist."],
+    ["tool.write && !(await limits.approve(name, args))", "Anything that changes the world needs approval from outside the model."],
+    ["const key = ", "The same call gets the same key, so a retry can't refund a customer twice. The tool must honour it."],
+    ["error: ${(e as Error).message}", "An error becomes text the model can read and react to, and the run carries on."],
+  ]),
+  "ai-eval-run": iv("EvalHarness.ts", "run", "Running an eval", "A loop over labelled cases, counting passes per slice.", [
+    ["report.byTag[c.tag]", "Results per slice are the point. One overall number hides too much."],
+    ["ok = false; // a crash", "One bad case shouldn't end the run. It counts as a failure and you move on."],
+    ["report.failures.push(c.id)", "Keep the ids. Reading failures is where the real learning happens."],
+  ]),
+  "ai-eval-gate": iv("EvalHarness.ts", "gate", "The release gate", "Decides whether a new version may ship, and it checks each slice.", [
+    ["rate(next) < rate(base) - maxDrop", "The overall check, with a little room for noise."],
+    ["for (const [tag, b] of Object.entries(base.byTag))", "A slice check. In our test, the average rises from 90% to 93% while billing falls from 90% to 50%, and this blocks it."],
+    ["cases missing", "Deleting the hard cases must not count as a pass."],
+  ]),
+  "ai-eval-wilson": iv("EvalHarness.ts", "wilson", "How sure can you be?", "A small eval set gives a wide range. This says how wide.", [
+    ["z = 1.96", "The value for a 95% interval."],
+    ["(z * z) / (2 * total)", "Pulls the estimate toward the middle, which keeps small samples honest."],
+  ]),
+  "ai-eval-kappa": iv("EvalHarness.ts", "kappa", "Checking an LLM judge", "Raw agreement flatters a judge when most answers are good. Kappa takes out the agreement you'd get by luck.", [
+    ["const chance", "How often two graders would agree just from how often each says yes."],
+    ["(agree - chance) / (1 - chance)", "0 means no better than luck, and 1 means perfect."],
+  ]),
+  "ai-trace-diagnose": iv("TraceTriage.ts", "diagnose", "From complaint to cause", "Walks the stages in order, and reports the first one that failed.", [
+    ["t.toolErrors.length > 0", "Check the plumbing first. A failed tool explains everything after it."],
+    ["!t.neededDocs.some", "The right text never arrived, so no prompt change will help."],
+    ["t.citedDocs.some", "It cites something it never retrieved, which means it made up the citation."],
+    ["!t.answerUsedNeededDoc", "The text was there and the model ignored it. Now the prompt is worth changing."],
+  ]),
+  "ai-trace-count": iv("TraceTriage.ts", "count", "From one complaint to a priority", "Run the same check across many traces to see what to fix first.", [
+    ["counts.set(f, (counts.get(f) ?? 0) + 1)", "One customer's story becomes a measurement across all of them."],
+  ]),
+  "ai-plan-split": iv("StudyPlan.ts", "split", "Sharing out your days", "Time goes where a round counts most and you're weakest.", [
+    ["g.weight * Math.max(6 - g.score, 1)", "Even a strong round gets some time, so it never drops to zero need."],
+    ["b.exact - b.whole", "Largest remainder: leftover days go to the rounds that lost the most to rounding."],
+  ]),
+  "ai-plan-plan": iv("StudyPlan.ts", "plan", "Building the schedule", "Baseline, training, a stretch with AI off, then rest.", [
+    ["Math.round(days * 0.25)", "The last quarter runs with AI off, to prove that the skill stuck."],
+    ["i % 4 === 3", "Every fourth training day is a full mock."],
+    ["queue.push(queue.splice", "Rotates rounds, so you don't do five days of one thing."],
+  ]),
+  "ai-gate": iv("MockGate.ts", "gate", "Are you ready?", "Scores with AI can flatter you. This compares them with your scores without it.", [
+    ["aiOff.length < 3", "One good day proves little. It needs three AI-off mocks."],
+    ["v < 3", "One very weak skill can sink a round even when the average looks fine."],
+    ["gap > 0.5", "If you score much higher with AI, the AI is doing the work."],
+  ]),
+  "ai-session-step": iv("CoachSession.ts", "step", "The interview as a state machine", "Your code decides where the interview is. The model only writes the words.", [
+    ["export function step(s: Session, e: CoachEvent): Session", "A pure function, so the tests can replay a full interview with no model at all."],
+    ["probes >= MAX_PROBES", "Ends the probing after three questions, rather than trusting the model to stop."],
+    ["secondsLeft === 0", "When time runs out, it moves to scoring, like a real interviewer."],
+    ["s.phase === \"solve\" ? { ...s, hints: s.hints + 1 } : s", "Hints only count while solving."],
+  ]),
+  "ai-prompt-system": iv("CoachPrompt.ts", "system", "The interviewer's rules", "Short rules, plus one task per phase.", [
+    ["Never give the solution", "Models want to help. Unless told otherwise, they'll hand over the answer."],
+    ["inside <candidate> tags", "The candidate's text is data. Saying so makes it harder for them to rewrite the rules."],
+    ["PHASE_TASK", "The phase comes from your state machine, not from the model's memory."],
+  ]),
+  "ai-prompt-build": iv("CoachPrompt.ts", "build", "Building the request", "Decides what the model can see, and leaves the answer key out.", [
+    ["replaceAll(\"<\", \"&lt;\")", "Stops a candidate closing the tag and posing as the system."],
+    ["question.prompt", "Only the question goes in. If the key were here, a clever candidate could talk the model into revealing it."],
+  ]),
+  "ai-score-parse": iv("Scorer.ts", "parse", "Checking the score", "Never trust a model's structured output until you've checked it.", [
+    ["JSON.parse(raw)", "The first check: is it JSON at all?"],
+    ["Number.isInteger(line.score)", "Keeps scores to whole numbers from 1 to 5."],
+    ["transcript.includes(line.evidence)", "The most useful line here. Evidence must be real words from the transcript, so a model can't invent a reason for a score."],
+  ]),
+  "ai-score-retry": iv("Scorer.ts", "retry", "One retry, then nothing", "Give the model one chance to fix it, and tell it what was wrong.", [
+    ["attempt < 2", "A strict limit. Endless retries cost money and rarely help."],
+    ["Your last reply was rejected", "Sending the reason back gives the retry something to fix."],
+    ["return null", "Showing no score is better than showing a made-up one."],
+  ]),
+  "ai-coach-agree": iv("CoachEval.ts", "agree", "Does it score like a person?", "Score some of your mocks by hand, then compare.", [
+    ["Math.abs(r.human - r.model) <= 1", "People don't agree exactly either, so one point apart is a fair test."],
+    ["bias", "The average difference, with its sign. Positive means it's too kind."],
+  ]),
+  "ai-coach-gate": iv("CoachEval.ts", "gate", "When to trust your coach", "The same idea as a release gate, for a project of your own.", [
+    ["rows.length < 20", "Too few labels can't tell you much."],
+    ["a.bias > 0.5", "A flattering coach sends you to the interview overconfident, so it gets its own limit."],
   ]),
 };
 

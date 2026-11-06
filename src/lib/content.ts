@@ -38,9 +38,11 @@ export const REELS: ReelCollection[] = [
 export const SITE = {
   name: "AI Engineer",
   author: "Rizvan",
-  tagline: "Mobile + AI systems · interview prep",
+  tagline: "AI engineering skills and interview prep",
+  /** what a search result should say: the words people actually search for */
+  seoTitle: "AI Engineer: learn AI skills and crack AI interviews",
   description:
-    "Mock interview rounds on mobile systems and AI. Draw the architecture, walk the flow, defend the trade-offs, then go one level deeper.",
+    "A free AI engineering blog and interview prep site. Learn LLMs, RAG, AI agents, evals and system design with tested code, then practise AI-enabled coding rounds, mock interviews and flashcards.",
 };
 
 /** Part 1 of the series is a hand-written article (HTML + interactive widgets). */
