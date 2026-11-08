@@ -454,6 +454,50 @@ export const CODE: Record<string, CodeDoc> = {
     ["4 + packetLength - padding", "Locates the payload inside the frame."],
     ["paddingFor", "Hides the exact message length, and keeps the packet aligned to the cipher's blocks."],
   ]),
+  /* ---------- React Native at scale ---------- */
+  "startup-model": mod("startup-model.ts", "What lazy module setup changes", "Eager setup runs every native module before the first screen. Lazy setup runs only what that screen needs. This counts the work, so you can see where it goes.", [
+    ["mode === \"eager\" || m.needsFirstScreen", "Eager setup blocks on everything. Lazy setup blocks only on modules the first screen cannot draw without."],
+    ["deferredMs: sum(modules) - blockingMs", "The rest isn't removed. It is paid later, by whoever first uses each module."],
+    ["firstUseCost", "A module used on the second screen moves its cost there. Know the number, since users feel it as a pause."],
+  ]),
+  "store-select": mod("store-select.ts", "Counting re-renders", "A small store with selector subscriptions. The tests use it to show how many components redraw for one change.", [
+    ["if (!equal(last, next))", "A subscriber is told only when what it selected changed. Selecting the whole store always changes, so every subscriber redraws."],
+    ["Object.is", "The default comparison is identity. A selector that returns a fresh array fails it on every update."],
+    ["shallowEqualArray", "Comparing contents fixes the new-array selector, and an unrelated change then redraws nothing."],
+  ]),
+  "boundary-check": mod("boundary-check.ts", "Keeping features independent", "A small version of the lint rule behind a modular codebase. It reads files and their imports, and reports the ones that break the rules.", [
+    ["isPublicEntry(to)", "Another feature may import only the index file. Anything deeper is private."],
+    ["shared-imports-feature", "Shared code must not depend on a feature, or the shared package could never be used by another app."],
+    ["removalImpact", "Lists the files outside a feature that import it. For a clean feature, this is just the registry in the app shell."],
+    ["featureCycles", "Two features importing each other can't be tested, removed or released alone."],
+  ]),
+  "leak-detector": mod("leak-detector.ts", "Finding a staircase, and a listener that never leaves", "Memory that rises with each visit to a screen is the mark of a leak. This turns samples into a slope, and shows the listener bug behind many of them.", [
+    ["samplesMb.slice(opts.warmup)", "Caches fill during the first visits. Skipping them stops normal warm-up looking like a leak."],
+    ["slope > opts.maxMbPerVisit", "A steady rise per visit is the signal. Your own limit, from your baseline, goes here."],
+    ["minVisits", "Too few visits can't separate a trend from noise, so the answer is 'not enough data'."],
+    ["if (withCleanup) subscription.remove()", "The leak in one line: without removal, each visit leaves a listener and everything its closure captures."],
+  ]),
+  "native-boundary": mod("native-boundary.ts", "Placing a feature", "Turns the question 'should this be native?' into rules, so every answer comes with reasons.", [
+    ["f.runsWhileAppClosed ? \"native-engine\"", "If the OS starts it with no screen, it can't rely on the UI runtime, so it gets its own native engine."],
+    ["f.longestBlockMs > LIMITS.blockMs", "Half a 16 ms frame is the most one call should hold the JS thread."],
+    ["f.holdsKeyMaterial", "Keys stay out of JavaScript, so the work that uses them runs in native code."],
+    ["const LIMITS", "Starting points, and not facts. Set your own from measurements."],
+  ]),
+  "budget-gate": mod("budget-gate.ts", "A budget gate for CI", "Fails a build when performance breaks a limit or slips against the last release, and judges the median so one noisy run can't decide.", [
+    ["samples.length < minRuns", "Too few runs can't be trusted, so the gate fails and asks for more."],
+    ["b.higherIsBetter ? value >= b.limit : value <= b.limit", "Frame rate needs a minimum, and startup needs a maximum."],
+    ["tolerancePct", "A build can stay inside the limit and still be worse than last time. The tolerance catches slow drift."],
+    ["export function median", "Sorting and taking the middle ignores one slow outlier."],
+  ]),
+  "mutation-queue": mod("mutation-queue.ts", "A mutation queue that survives the OS", "An offline queue with the rules that a quick version gets wrong: atomic enqueue, order, visible conflicts, backoff and crash recovery.", [
+    ["this.db.transaction((rows, queue) => {", "The local row and the queue row commit together. If the local write throws, the queue row isn't saved either."],
+    ["this.running ??= this.run()", "Single flight. Two triggers that fire at once share one drain, so no change is sent twice."],
+    ["No network. Stop here", "A failed send puts the entry back and stops, so a later change can't overtake it."],
+    ["status === 409", "A conflict stays on disk for the user to resolve. Deleting it would lose their work silently."],
+    ["2 ** (attempts - 1)", "The wait doubles after each failure, and the entry is marked FAILED after the last attempt."],
+    ["idempotencyKey: next.id", "The same key on every attempt lets the server ignore a repeat."],
+    ["recover()", "After a crash, an IN_FLIGHT entry may or may not have arrived. Back to pending, and the key makes the resend safe."],
+  ]),
   /* ---------- the AI interview paths ---------- */
   "ai-hint-climb": iv("HintLadder.ts", "climb", "The rule that keeps you honest", "This is the whole ladder as code. It answers one question: have you earned the next hint?", [
     ["tried.length < 40", "A rough test that you wrote something real. 'help' doesn't pass."],

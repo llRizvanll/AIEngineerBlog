@@ -133,6 +133,7 @@ COMMIT;`,
       { kind: "Read", href: "/series/sqlite", minutes: 25, focus: "Focus on WAL, short transactions and migrations. Full-text search can wait." },
       { kind: "Build", href: "/mobile-coding/outbox", minutes: 40, focus: "Write it yourself before reading the solution. Then ask of each line: what if the process dies here?" },
       { kind: "Recall", href: "/reels/c-data", minutes: 5, focus: "Persistence and UI reels." },
+      { kind: "Read", href: "/modules/rn-offline-queue", minutes: 20, focus: "The React Native side of today: persist the mutation, keep it atomic with the local write, and keep conflicts visible." },
     ],
     canDo: ["Write the schema for job and outbox from memory", "Explain why both rows share a transaction", "Say what op_id and base_version are for"],
     check: [
@@ -458,6 +459,7 @@ SELECT part_no FROM transfer_part
       { kind: "Build", href: "/mobile-coding/list-diff", minutes: 30, focus: "This is how 140 changes redraw without a flash." },
       { kind: "Build", href: "/mobile-coding/search-debounce", minutes: 25, focus: "Cancelling stale work is the same one-way flow with a user typing." },
       { kind: "Recall", href: "/reels/c-rn", minutes: 5, focus: "React Native reels." },
+      { kind: "Read", href: "/modules/rn-state-render-storms", minutes: 15, focus: "Why eleven green ticks should not redraw the whole list: where each kind of state lives, and how selectors cause storms." },
     ],
     canDo: ["List every UI state for a synced row", "Explain one-way data flow", "Split native and JS work in React Native"],
     check: [
@@ -612,6 +614,7 @@ Idempotency-Key: 0192e0c6-a04d
       { kind: "Build", href: "/mobile-coding/image-loader", minutes: 35, focus: "Coalesce duplicate requests, and cancel what scrolled off." },
       { kind: "Build", href: "/mobile-coding/feed-pagination", minutes: 30, focus: "Duplicate rows and races when loading pages." },
       { kind: "Read", href: "/modules/mobile-startup-performance", minutes: 15, focus: "Take this to your next team: a budget, and a CI gate." },
+      { kind: "Read", href: "/modules/rn-new-architecture", minutes: 15, focus: "What runs on which thread in React Native, and which startup and frame-rate claims to check yourself." },
     ],
     canDo: ["Keep a list smooth on a mid-range phone", "Build an image cache with cancellation", "Set and defend a startup budget"],
     check: [
@@ -651,6 +654,7 @@ Idempotency-Key: 0192e0c6-a04d
       { kind: "Read", href: "/modules/mobile-observability-rollouts", minutes: 15, focus: "Which signals to choose, and how to gate on them." },
       { kind: "Read", href: "/modules/experimentation-sdk-mobile", minutes: 15, focus: "Why a stable hash matters, and when an experiment's data can't be trusted." },
       { kind: "Recall", href: "/reels/c-rel", minutes: 5, focus: "Security, metrics and testing reels." },
+      { kind: "Read", href: "/modules/rn-native-boundary-budgets", minutes: 15, focus: "Where React Native ends, and how to fail a build when performance slips." },
     ],
     canDo: ["Design a staged rollout with gates", "Choose release signals, including domain health", "Describe how you'd lead change across teams"],
     check: [

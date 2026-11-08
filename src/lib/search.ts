@@ -8,6 +8,8 @@ import { MOBILE_PROBLEMS } from "@/content/mobile-coding";
 import { FLASHCARDS, MODULES } from "@/content/modules";
 import { AI_PATHS, BASICS, allLessons } from "@/content/ai-interviews";
 import { basicKey } from "@/content/ai-interviews/basics";
+import { RN_CARDS } from "@/content/rn-cards";
+import { rnCardKey } from "@/lib/rn-cards";
 
 export interface SearchItem {
   href: string;
@@ -25,6 +27,7 @@ export function buildSearchIndex(): SearchItem[] {
     { href: "/paths/mobile-principal", title: "Mobile principal in two weeks", kind: "Page", summary: "A 14-day programme that follows one offline edit end to end.", keywords: "path plan programme schedule priya offline" },
     ...DAYS.map((d) => ({ href: `/paths/mobile-principal/day/${d.n}`, title: `Day ${d.n}: ${d.title}`, kind: "Page" as const, summary: d.question, keywords: `programme ${d.stop}` })),
     { href: "/paths/ai-interviews", title: "Crack AI interviews", kind: "Page", summary: "AI interview hacks, every round, a plan, and a mock interviewer to build.", keywords: "ai interview prep hacks rounds meta canva google coding rag agents evals mock" },
+    { href: "/paths/react-native", title: "React Native in one place", kind: "Page", summary: "Every React Native page in reading order.", keywords: "react native jsi fabric turbomodules hermes flashlist offline sync memory leaks modular white-label performance budgets" },
     { href: "/paths/ai-interviews/basics", title: "Critical basics for AI interviews", kind: "Page", summary: "Read, memorise and practise the essentials.", keywords: "basics flashcards memorise drills fundamentals llm rag agents evals prompting" },
     ...AI_PATHS.map((p) => ({ href: `/paths/ai-interviews/${p.id}`, title: p.title, kind: "Page" as const, summary: p.blurb, keywords: "ai interview path" })),
     ...allLessons().map(({ path, lesson }) => ({ href: `/paths/ai-interviews/${path.id}/${lesson.slug}`, title: lesson.title, kind: "Page" as const, summary: lesson.question, keywords: `${path.short} ${lesson.stop} ai interview ${lesson.words.map(([w]) => w).join(" ")}` })),
@@ -81,6 +84,7 @@ export function buildSearchIndex(): SearchItem[] {
     items.push({ href: `/modules/${m.assetId}`, title: m.title, kind: "Module", summary: m.commentary, keywords: `${m.domain} ${m.format} ${m.topics.join(" ")} ${m.concepts.map(([c]) => c).join(" ")}` })
   );
   FLASHCARDS.forEach((f) => items.push({ href: `/revise?card=${f.assetId}`, title: f.title, kind: "Flashcard", summary: f.commentary, keywords: f.topics.join(" ") }));
+  RN_CARDS.forEach(([q, a], i) => items.push({ href: `/revise?card=${rnCardKey(i)}`, title: q, kind: "Flashcard", summary: a, keywords: "react native mobile" }));
   GLOSSARY.forEach(([t, d]) => items.push({ href: "/aiengine#glossary", title: t, kind: "Term", summary: d, keywords: "" }));
   return items;
 }

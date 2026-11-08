@@ -13,6 +13,9 @@ import { Chapters, ConceptGrid, type ChapterPart, type ChapterSection } from "@/
 import { ArchSvg, Figure } from "@/components/Diagrams";
 import { ModuleCard } from "@/components/ModuleShelf";
 import { Reading } from "@/components/Reading";
+import { Staircase, StateLayers, ThreadModel, ThreeHeaps } from "@/components/RnDiagrams";
+import { RN_SLIDES } from "@/content/rn-slides";
+import { SlideDeck } from "@/components/SlideDeck";
 import { Code, Faq, Footer, Table } from "@/components/ui";
 import { assetByHref } from "@/lib/catalog";
 import { moduleCode } from "@/lib/module-source";
@@ -34,6 +37,17 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
   const related = same.filter((x) => x.assetId !== m.assetId && x.curriculum === m.curriculum).slice(0, 3);
 
   const detail: ChapterSection[] = [];
+  const drawn: Record<string, React.ReactNode> = {
+    "rn-new-architecture": <ThreadModel />,
+    "rn-state-render-storms": <StateLayers />,
+    "rn-memory-leaks": (
+      <>
+        <ThreeHeaps />
+        <Staircase />
+      </>
+    ),
+  };
+  if (drawn[m.assetId]) detail.push({ id: "picture", title: "The picture", intro: "Drawn for this page, at a size that reads on a phone.", body: drawn[m.assetId] });
   if (m.arch)
     detail.push({
       id: "arch",
@@ -88,6 +102,7 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
       ),
     });
 
+  const slides = RN_SLIDES[m.assetId];
   const extra = PAGE_CODE[`/modules/${m.assetId}`];
   if (extra)
     detail.push({
@@ -95,6 +110,16 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
       title: m.code ? "More tested code" : "Code",
       intro: "A working implementation, then what each part does and why.",
       body: <CodeWalks ids={extra} />,
+    });
+
+  if (slides)
+    detail.push({
+      id: "slides",
+      title: "Slides",
+      intro: "From the source decks this page draws on. Swipe, use the arrows, or press the left and right keys. Notes flag where a slide's numbers or flow differ from this page.",
+      body: (
+        <SlideDeck slides={slides.map((sl) => ({ src: `/slides/rn/${sl.file}.jpg`, alt: sl.alt, caption: sl.caption, flag: sl.flag }))} />
+      ),
     });
 
   const parts: ChapterPart[] = [

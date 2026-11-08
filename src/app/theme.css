@@ -2090,3 +2090,45 @@ body:has(.ls) .tabbar { display: none; }
   .sa-tool { padding: 0 10px; }
   .sa-other .sa-tool > span { display: inline; }
 }
+
+/* ---------- React Native diagrams and slides ---------- */
+.rd { margin: 14px 0 18px; padding: 12px 12px 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.rd svg { display: block; width: 100%; max-width: 520px; height: auto; margin: 0 auto; }
+.rd figcaption { margin-top: 6px; font: 12px/1.45 var(--font-mono); color: var(--muted); }
+.rd-bar { stroke: none; }
+.rd-ui { fill: #d9732f; } .rd-js { fill: #3b6fd8; } .rd-nat { fill: #1f3a6b; } .rd-lay { fill: #6b7280; }
+.rd-bt { fill: #fff; font: 600 10.5px var(--font-display); }
+.rd-lane, .rd-h { fill: var(--ink); font: 650 12.5px var(--font-display); }
+.rd-s, .rd-tt { fill: var(--muted); font: 11px var(--font-mono); }
+.rd-grid { stroke: var(--line); stroke-width: 1; }
+.rd-tick { stroke: var(--muted); stroke-width: 1; }
+.rd-card { fill: var(--surface-2); stroke: var(--line); stroke-width: 1; }
+.rd-keep { stroke: var(--accent); stroke-width: 2; fill: var(--accent-soft); }
+.rd-warn { fill: none; stroke: var(--bad); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.rd-wt { fill: var(--bad); font: 650 12.5px var(--font-display); }
+.rd-pill { fill: var(--bad); opacity: 0.9; } .rd-pt { fill: #fff; font: 600 10px var(--font-mono); }
+.rd-chain { stroke: var(--bad); stroke-width: 2; stroke-dasharray: 4 3; } .rd-head { fill: none; stroke: var(--bad); stroke-width: 2; }
+.rd-line { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.rd-good { stroke: var(--good); } .rd-badline { stroke: var(--bad); }
+.rd-bad { fill: var(--bad); font: 600 11px var(--font-mono); } .rd-ok { fill: var(--good); font: 600 11px var(--font-mono); }
+.rd-warm { fill: var(--surface-2); }
+.sd { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); overflow: hidden; outline-offset: 2px; }
+.sd:fullscreen { display: flex; flex-direction: column; justify-content: center; border: 0; border-radius: 0; background: #0b0b14; color: #eee; }
+.sd:fullscreen .sd-stage img { max-height: 72vh; width: auto; margin: 0 auto; }
+.sd-stage { position: relative; touch-action: pan-y; background: var(--surface-2); line-height: 0; user-select: none; }
+.sd-stage img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: contain; animation: sd-in 0.25s ease; }
+@keyframes sd-in { from { opacity: 0.2; } to { opacity: 1; } }
+.sd-nav { position: absolute; top: 50%; width: 44px; height: 44px; margin-top: -22px; border: 0; border-radius: 50%; background: rgba(10, 10, 20, 0.62); color: #fff; font: 400 30px/1 var(--font-display); cursor: pointer; }
+.sd-nav:disabled { opacity: 0.25; cursor: default; }
+.sd-prev { left: 8px; } .sd-next { right: 8px; }
+.sd-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px 0; }
+.sd-count { font: 600 12.5px var(--font-mono); color: var(--muted); }
+.sd-tools { display: flex; gap: 14px; }
+.sd-tools a, .sd-tools button { min-height: 36px; padding: 0; border: 0; background: none; color: var(--accent); font: 600 13.5px var(--font-display); cursor: pointer; text-decoration: none; }
+.sd-cap { margin: 2px 0 0; padding: 4px 12px 10px; font-size: 14.5px; line-height: 1.45; color: var(--ink); }
+.sd-thumbs { display: flex; gap: 6px; padding: 8px 10px 10px; overflow-x: auto; border-top: 1px solid var(--line); scrollbar-width: thin; }
+.sd-thumb { flex: none; width: 76px; padding: 0; border: 2px solid transparent; border-radius: 8px; background: none; cursor: pointer; opacity: 0.6; line-height: 0; overflow: hidden; }
+.sd-thumb[aria-current="true"] { border-color: var(--accent); opacity: 1; }
+.sd-thumb img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
+.rs-flag { display: block; margin-top: 6px; padding: 6px 8px; border-left: 3px solid var(--warn); border-radius: 4px; background: var(--surface-2); font-size: 12.5px; color: var(--muted); }
+.rh-list a { grid-template-columns: minmax(0, 1fr); }

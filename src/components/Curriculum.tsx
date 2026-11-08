@@ -80,6 +80,9 @@ export function Curriculum({ phases, paths, programme, glossary, caseIds, totalC
         <div className="aie-feature">
           <h3>Crack AI interviews</h3>
           <p>Four connected paths: AI interview hacks, every new round, a study plan with a final stretch with AI off, and a mock interviewer you build yourself. Plus critical basics to memorise.</p>
+          <p>
+            React Native too: <Link href="/paths/react-native">every React Native page in one place</Link>.
+          </p>
           <div className="btns">
             <Link className="btn" href={AI_PATHS_HREF}>
               Open the paths →
