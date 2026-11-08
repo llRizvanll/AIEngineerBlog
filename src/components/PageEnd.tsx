@@ -53,7 +53,7 @@ function List({ heading, items }: { heading: string; items: Source[] }) {
 /** What comes after a page: talks to watch, public docs to read, and the next page to open. */
 export function PageEnd({ href }: { href: string }) {
   const a = assetByHref(href);
-  const { watch, read } = sourcesFor(href, `${a?.title ?? ""} ${a?.curationMetadata.contextualCommentary ?? ""}`);
+  const { watch, read } = sourcesFor(href, `${a?.title ?? ""} ${a?.curationMetadata.contextualCommentary ?? ""}`, a?.domain);
   // Pages that already end with their own next control keep it; the rest get this card.
   const next = /^\/(interview|series)\//.test(href) ? nextOf(href) : null;
   const tone = TONES[(href.length + (a?.title.length ?? 0)) % TONES.length];

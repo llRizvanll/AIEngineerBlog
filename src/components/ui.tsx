@@ -57,12 +57,19 @@ function Editor({ sample, startLine = 1, name }: { sample: CodeSample; startLine
 }
 
 /** A code sample. With `alt`, the same code is offered in Kotlin and Java too, and the reader's choice is remembered. */
-export function Code({ sample, startLine = 1, fileName: name, hideTitle, alt }: { sample: CodeSample; startLine?: number; fileName?: string; hideTitle?: boolean; alt?: { kotlin: string; java: string } }) {
+export function Code({ sample, startLine = 1, fileName: name, hideTitle, alt, variants }: { sample: CodeSample; startLine?: number; fileName?: string; hideTitle?: boolean; alt?: { kotlin: string; java: string }; variants?: { id: "ts" | "kotlin" | "java"; lang: string; src: string; fileName: string }[] }) {
   const [title, lang] = sample;
   return (
     <>
       {!hideTitle && <h3>{title}</h3>}
-      {alt ? (
+      {variants ? (
+        <LangGroup
+          panels={[
+            { id: lang === "kotlin" ? "kotlin" : "ts", label: langName(lang), node: <Editor sample={sample} startLine={startLine} name={name} /> },
+            ...variants.map((v) => ({ id: v.id, label: langName(v.lang), node: <Editor sample={[title, v.lang, v.src]} name={v.fileName} /> })),
+          ]}
+        />
+      ) : alt ? (
         <LangGroup
           panels={[
             { id: "ts", label: "TypeScript", node: <Editor sample={sample} startLine={startLine} name={name} /> },

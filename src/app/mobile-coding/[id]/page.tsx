@@ -15,7 +15,7 @@ import { MOBILE_CONCEPTS } from "@/content/basics";
 import { Icon } from "@/components/Icons";
 import { AssetMeta } from "@/components/AssetMeta";
 import { PathLink } from "@/components/programme/PathLink";
-import { kotlinLines, kotlinSource } from "@/lib/mobile-source";
+import { altSource, kotlinLines, kotlinSource } from "@/lib/mobile-source";
 
 export const dynamicParams = false;
 export const generateStaticParams = () => MOBILE_PROBLEMS.map((p) => ({ id: p.id }));
@@ -34,6 +34,10 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
   const next = MOBILE_PROBLEMS[(i + 1) % MOBILE_PROBLEMS.length];
   const source = kotlinSource(p.file);
   const lines = kotlinLines(p.file);
+  const variants = [
+    { id: "java" as const, lang: "java", src: altSource(p.file, "java"), fileName: `${p.file}.java` },
+    { id: "ts" as const, lang: "ts", src: altSource(p.file, "ts"), fileName: `${p.file}.ts` },
+  ];
   const style = { "--c1": p.color[0], "--c2": p.color[1] } as CSSProperties;
   const related = p.related.map((r) => MOBILE_PROBLEMS.find((x) => x.id === r)).filter((x): x is (typeof MOBILE_PROBLEMS)[number] => !!x);
 
@@ -93,13 +97,13 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
         {
           id: "code",
           title: "Solution",
-          intro: "Complete, compiling Kotlin with coroutines, built with warnings as errors and covered by tests/mobile/MobileTests.kt.",
-          body: <Code sample={[p.title, "kotlin", source]} fileName={`${p.file}.kt`} hideTitle />,
+          intro: "Complete, compiling Kotlin with coroutines, built with warnings as errors and covered by tests/mobile/MobileTests.kt. The Java and TypeScript tabs do the same job with each language's own tools: Java compiled and run in our tests, TypeScript run in our tests.",
+          body: <Code sample={[p.title, "kotlin", source]} fileName={`${p.file}.kt`} hideTitle variants={variants} />,
         },
         {
           id: "walk",
           title: "Line-by-line walkthrough",
-          intro: "The same code in the order you would explain it in the room.",
+          intro: "The same code in the order you would explain it in the room. The line numbers follow the Kotlin file; the Java and TypeScript tabs above have the same steps in the same order.",
           body: (
             <>
               {p.steps.map((s, k) => (

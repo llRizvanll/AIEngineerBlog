@@ -861,3 +861,10 @@ body:has(.navrail) .ls-body, body:has(.navrail) .bs-read { max-width: none; }
 /* the Read / Memorise / Practise tabs stay put while scrolling and cover the text beneath them */
 .bs-modes { position: sticky; top: 0; z-index: 30; background: var(--surface) !important; margin: 0 calc(-1 * clamp(22px, 4vw, 52px)) 20px; padding: 0 clamp(22px, 4vw, 52px); }
 @media (max-width: 860px) { body:has(.navrail) main.ls, body:has(.navrail) main.pg { margin: 8px 8px 24px; } }
+
+/* the end of a page: a sheet behind the lists, the pastel Next lesson card beneath it */
+.page-end { margin-top: 28px; }
+.end-card { background: var(--surface) !important; border: 1px solid var(--line) !important; border-radius: 32px !important; box-shadow: var(--shadow-sm) !important; padding: clamp(22px, 3.6vw, 48px) !important; }
+.end-list h2 { font: 400 clamp(26px, 3vw, 34px) var(--font-serif); color: var(--ink); letter-spacing: -0.035em; }
+.end-list h2::after { content: ""; display: block; width: 40px; height: 3px; margin-top: 8px; border-radius: 2px; background: var(--accent-2); }
+.end-list ul { border-top: 0; margin-top: 10px; }

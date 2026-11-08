@@ -64,12 +64,12 @@ interface Topic {
 const TOPICS: Topic[] = [
   { test: /\b(sync|offline|workmanager|background|outbox|queue|upload|retry|retries)\b/, watch: [], read: [S.workManager, S.offlineFirst, S.wal, S.atomic, S.bgTasks, S.optimistic] },
   { test: /(react native|\brn\b|rn-|hermes|jsi|fabric|turbomodule|reanimated)/, watch: [], read: [S.rnArch, S.rnPerf] },
-  { test: /\b(agent|agents|mcp|tool use|function call)/, watch: [S.introLlm], read: [S.agents, S.react, S.toolUse, S.fnCalling] },
+  { test: /\b(ai agents?|agents? loop|mcp|tool use|function call)/, watch: [S.introLlm], read: [S.agents, S.react, S.toolUse, S.fnCalling] },
   { test: /(\brag\b|retriev|embedding|vector|chunk)/, watch: [S.transformers], read: [S.ragPaper, S.contextual, S.lostMiddle] },
   { test: /(\beval|guardrail|judge)/, watch: [], read: [S.evals] },
   { test: /(fine-tun|lora|adapt)/, watch: [S.deepDive], read: [S.lora] },
-  { test: /(serving|inference|kv cache|latency|throughput|vllm|quantiz|speculative)/, watch: [S.deepDive], read: [S.pagedAttention, S.vllm, S.caching] },
-  { test: /(token|transformer|attention|llm|language model|prompt|context window)/, watch: [S.introLlm, S.tokenizer, S.transformers, S.attention, S.buildGpt], read: [S.attnPaper, S.chatTemplates] },
+  { test: /(model serving|llm serving|inference|kv cache|vllm|quantiz|speculative decoding)/, watch: [S.deepDive], read: [S.pagedAttention, S.vllm, S.caching] },
+  { test: /(\bllms?\b|language model|transformer|tokeniz|self-attention|attention is all|prompt engineering|system prompt|context window)/, watch: [S.introLlm, S.tokenizer, S.transformers, S.attention, S.buildGpt], read: [S.attnPaper, S.chatTemplates] },
 ];
 
 const PROTOCOL: [RegExp, Source][] = [
@@ -78,8 +78,10 @@ const PROTOCOL: [RegExp, Source][] = [
   [/http|rest|api/, S.http],
 ];
 
-export function sourcesFor(href: string, text: string): { watch: Source[]; read: Source[] } {
+export function sourcesFor(href: string, text: string, domain?: string): { watch: Source[]; read: Source[] } {
   const hay = `${href} ${text}`.toLowerCase();
+  // Mobile-systems pages only ever get mobile sources, so a word like "token" cannot pull in LLM talks.
+  const mobile = domain === "mobile-systems" || href.startsWith("/series/") || href.startsWith("/mobile-coding");
   const watch: Source[] = [];
   const read: Source[] = [];
   const add = (into: Source[], list: Source[]) => list.forEach((s) => into.every((x) => x.url !== s.url) && into.push(s));
@@ -90,11 +92,12 @@ export function sourcesFor(href: string, text: string): { watch: Source[]; read:
   } else if (href.startsWith("/coding/") || href.startsWith("/mobile-coding/")) {
     add(read, [S.neetcode]);
   }
-  TOPICS.filter((t) => t.test.test(hay))
+  (mobile ? TOPICS.slice(0, 2) : TOPICS).filter((t) => t.test.test(hay))
     .slice(0, 2)
     .forEach((t) => {
       add(watch, t.watch);
       add(read, t.read);
     });
+  if (mobile && !read.length) add(read, [S.offlineFirst, S.workManager, S.rnArch]);
   return { watch: watch.slice(0, 3), read: read.slice(0, 4) };
 }
