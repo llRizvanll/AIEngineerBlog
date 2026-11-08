@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import { MOBILE_PROBLEMS } from "@/content/mobile-coding";
 import { Footer } from "@/components/ui";
-import { Icon } from "@/components/Icons";
+import { Book, Title } from "@/components/HubCards";
 
 export const metadata: Metadata = {
   title: "Mobile machine coding",
@@ -14,27 +14,19 @@ export const metadata: Metadata = {
 export default function MobileCodingPage() {
   const tags = Array.from(new Set(MOBILE_PROBLEMS.flatMap((p) => p.tags)));
   return (
-    <main className="prep-page">
-      <div className="wrap">
-        <section className="iv-hero">
-          <div className="kicker">
-            <Link href="/coding">Coding round</Link> · Mobile machine coding · {MOBILE_PROBLEMS.length} problems
+    <main className="app-page">
+      <div>
+        <div className="ap-head">
+          <div>
+            <h1>
+              Build it <em>yourself</em>
+            </h1>
+            <p>Machine coding for mobile and AI engineers: caches, loaders, sync, retries and guards, with every solution explained line by line.</p>
           </div>
-          <h1>
-            Build the components <span className="serif grad-text">apps run on.</span>
-          </h1>
-          <p>
-            Machine coding for mobile and AI engineers: caches, image loaders, offline sync, retries, uploads, kernels and guards. Walkthroughs explain each solution line by line.
-          </p>
-          <div className="btns">
-            <Link className="btn" href="/reels/c-mobile">
-              <Icon name="play" size={16} /> Watch as reels
-            </Link>
-            <Link className="btn ghost" href={`/mobile-coding/${MOBILE_PROBLEMS[0].id}`}>
-              Start with the LRU cache
-            </Link>
-          </div>
-        </section>
+          <Link className="btn" href={`/mobile-coding/${MOBILE_PROBLEMS[0].id}`}>
+            Start with the LRU cache
+          </Link>
+        </div>
 
         <div className="mc-proof">
           <div>
@@ -85,23 +77,19 @@ export default function MobileCodingPage() {
           </div>
           <span>{tags.length} topics</span>
         </div>
-        <div className="mc-grid stagger">
+        <div className="cb-grid">
           {MOBILE_PROBLEMS.map((p, i) => (
-            <Link key={p.id} href={`/mobile-coding/${p.id}`} className="pattern-card mc-card" style={{ "--c1": p.color[0], "--c2": p.color[1] } as CSSProperties}>
-              <div className="mc-top">
-                <span className="pc-idx">{String(i + 1).padStart(2, "0")}</span>
-                <span className={"pr-lv lv-" + p.level.toLowerCase()}>{p.level}</span>
-                <span className="mc-min">{p.minutes} min</span>
-              </div>
-              <h3>{p.title}</h3>
-              <p>{p.tagline}</p>
-              <div className="pc-sig">
-                {p.tags.map((t) => (
-                  <span key={t}>{t}</span>
-                ))}
-              </div>
-              <span className="pc-foot">
-                {p.file}.kt <Icon name="arrow" size={14} />
+            <Link key={p.id} href={`/mobile-coding/${p.id}`} className={`cb pc-${i % 8}`}>
+              <Book icon="code" label={p.tags[0]?.toUpperCase().slice(0, 11) ?? "CODE"} />
+              <span className="cb-tx">
+                <small>
+                  {String(i + 1).padStart(2, "0")} · {p.level} · {p.minutes} min
+                </small>
+                <b>
+                  <Title text={p.title} />
+                </b>
+                <span>{p.tagline}</span>
+                <i>{p.file}.kt</i>
               </span>
             </Link>
           ))}

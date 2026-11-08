@@ -1,20 +1,27 @@
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import { siteMap, siteStats } from "@/lib/sections";
 import { KeepReading } from "@/components/KeepReading";
 import { Icon } from "@/components/Icons";
-import { HeroSearch } from "@/components/HomeActions";
+import { Title } from "@/components/HubCards";
+import { ArtAIBig, ArtBuild, ArtInterview, ArtMobileBig, ArtPractice, HeroLeft, HeroRight } from "@/components/HeroArt";
 import { JsonLd } from "@/components/JsonLd";
+import { Reveal } from "@/components/Reveal";
 import { SITE } from "@/lib/content";
 import { absoluteUrl } from "@/lib/site";
 
-const cvars = (c: [string, string]) => ({ "--c1": c[0], "--c2": c[1] }) as CSSProperties;
+const FAQ: [string, string][] = [
+  ["Is it free?", "Yes. Every lesson, problem, flashcard and code sample is free to read. There is no account and no paywall."],
+  ["Where do I start?", "If you are new to AI, start with the AI curriculum. If you build apps, start with React Native in one place. If you have an interview coming, start with the AI interview paths."],
+  ["Does it cover coding interviews with an AI assistant?", "Yes. There are four paths: the hacks people share online, the rounds companies run now, how to use AI well in a round, and a path you build yourself. Each ends with practice."],
+  ["Is the code tested?", "The code samples are compiled and run, including the buggy versions, and each one has notes that explain it line by line."],
+  ["Can I study a page with Claude, ChatGPT or Gemini?", "Every lesson has Study with AI buttons. They copy the page as Markdown, or open the tool with the page ready to paste."],
+  ["Where is my progress saved?", "In your own browser. Nothing is sent to a server, so clearing site data resets it."],
+];
 
-const WHY: [string, string][] = [
-  ["Basics first", "Every lesson starts from plain words, then adds detail, so you can follow it without other tabs open."],
-  ["Code that has been run", "The code samples are compiled and tested, including the buggy versions, so what you read is what works."],
-  ["Sources named", "Where a claim comes from a company, a vendor or a single blog post, the page says so. Unverified numbers are labelled."],
-  ["No account needed", "Your progress, notes and saves stay in your own browser, so you can start reading straight away."],
+const MORE: [string, string, string, string, string, React.ReactNode][] = [
+  ["Daily practice", "A few questions a day, so what you read stays with you.", "/practice", "Start practising", "pc-5", <ArtPractice key="p" />],
+  ["Build it yourself", "Tested components you build and run on your own machine.", "/mobile-coding", "See the projects", "pc-6", <ArtBuild key="b" />],
+  ["Interview prep", "Know every round, in order, before you walk in.", "/interviews", "Pick your round", "pc-4", <ArtInterview key="i" />],
 ];
 
 export default function Home() {
@@ -22,100 +29,191 @@ export default function Home() {
   const stats = siteStats();
 
   return (
-    <main className="landing lp">
+    <main className="landing io">
       <JsonLd data={{ "@context": "https://schema.org", "@type": "WebSite", name: SITE.name, url: absoluteUrl("/"), description: SITE.description, inLanguage: "en", publisher: { "@type": "Organization", name: SITE.name, url: absoluteUrl("/") } }} />
-      <div className="wrap">
-        <section className="lp-hero">
-          <p className="lp-eyebrow">Free to read. No sign-up.</p>
+      <JsonLd data={{ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: FAQ.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) }} />
+
+      <section className="io-hero">
+        <div className="io-art-l" aria-hidden>
+          <HeroLeft />
+        </div>
+        <div className="io-art-r" aria-hidden>
+          <HeroRight />
+        </div>
+        <div className="io-hero-in">
           <h1>
-            Learn AI and mobile engineering. <span className="serif grad-text">Then pass the interview.</span>
+            Know
+            <br />
+            inside out.
           </h1>
-          <p className="lp-lede">
-            Clear lessons that start from the basics, code that has been run, and practice for the rounds companies use now, including coding with an AI assistant.
-          </p>
+          <p className="io-lede">For engineers who want to know how AI and mobile systems work underneath.</p>
           <div className="btns">
-            <Link className="btn" href="/aiengine">
-              Learn AI engineering <Icon name="arrow" size={16} />
+            <Link className="btn" href="/learn">
+              Your dashboard
             </Link>
-            <Link className="btn ghost" href="/paths/ai-interviews">
-              Prepare for interviews
+            <a className="io-link" href="#inside">
+              See a lesson
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <KeepReading />
+
+      <section className="io-sec" aria-labelledby="start">
+        <Reveal>
+          <h2 id="start">
+            Choose where to <em>start.</em>
+          </h2>
+          <p className="io-sub">Two subjects, and what is inside each.</p>
+        </Reveal>
+        <div className="io-start">
+          {[
+            { id: "ai", tone: "pc-1", name: "AI engineering", blurb: "Learn how models work, then build on them.", href: "/aiengine", art: <ArtAIBig /> },
+            { id: "mobile", tone: "pc-3", name: "Mobile engineering", blurb: "Learn the systems behind fast, reliable apps.", href: "/paths/react-native", art: <ArtMobileBig /> },
+          ].map((c, i) => (
+            <Reveal key={c.id} delay={i * 90}>
+              <article className={`io-big ${c.tone}`}>
+                <div className="io-art" aria-hidden>
+                  {c.art}
+                </div>
+                <div className="io-big-foot">
+                  <div>
+                    <h3>
+                      <Title text={c.name} />
+                    </h3>
+                    <p>{c.blurb}</p>
+                  </div>
+                  <Link className="btn" href={c.href}>
+                    Start with lesson 1 <Icon name="arrow" size={16} />
+                  </Link>
+                </div>
+              </article>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      <section className="io-sec" aria-labelledby="inside">
+        <Reveal>
+          <h2 id="inside">See a lesson from the inside.</h2>
+          <p className="io-sub">Why an edit can vanish when the app is killed, one step at a time.</p>
+        </Reveal>
+        <Reveal>
+          <div className="io-lesson">
+            <div className="io-lesson-top">
+              <span>Offline sync</span>
+              <span>Example 1.1</span>
+            </div>
+            <h3>The edit that disappeared</h3>
+            <p className="io-lesson-q">A user types a note offline, then the OS kills the app. Where was the note, and what survives?</p>
+            <ol>
+              <li>
+                <i>1</i>
+                <div>
+                  <b>Write to memory only</b>
+                  <code>store.notes.push(note)</code>
+                  <span>Fast, and gone the moment the process dies.</span>
+                </div>
+              </li>
+              <li>
+                <i>2</i>
+                <div>
+                  <b>The OS ends the app</b>
+                  <code>SIGKILL</code>
+                  <span>There is no warning and no cleanup callback to rely on.</span>
+                </div>
+              </li>
+              <li>
+                <i>3</i>
+                <div>
+                  <b>Write to a queue on disk first</b>
+                  <code>INSERT INTO queue (id, payload)</code>
+                  <span>The row is still there on the next launch, ready to send.</span>
+                </div>
+              </li>
+            </ol>
+            <div className="io-answer">
+              <b>Answer</b> Persist the mutation before showing success. Memory is for speed, the queue is for truth.
+            </div>
+            <Link className="io-go" href="/series/background-sync">
+              Read the whole lesson <Icon name="arrow" size={15} />
             </Link>
           </div>
-          <HeroSearch />
-          <p className="lp-facts">
-            {stats.pages} lessons, problems and cards · {stats.code} explained code samples · {stats.cards} flashcards
-          </p>
-        </section>
+        </Reveal>
+      </section>
 
-        <KeepReading />
-
-        <section aria-labelledby="skills">
-          <h2 id="skills" className="lp-h">
-            Choose a skill
+      <section className="io-sec" aria-labelledby="more">
+        <Reveal>
+          <h2 id="more">
+            More than <em>lessons.</em>
           </h2>
-          <div className="lp-skills">
-            {groups.map((g) => (
-              <article key={g.id} className="lp-skill" style={cvars(g.items[0].color)}>
-                <h3>{g.label}</h3>
-                <p>{g.blurb}</p>
-                <ul>
-                  {g.items.map((it) => (
-                    <li key={it.href}>
-                      <Link href={it.href}>
-                        <span>{it.title}</span>
-                        {it.count && <small>{it.count}</small>}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+          <p className="io-sub">Put what you read to work.</p>
+        </Reveal>
+        <div className="io-more">
+          {MORE.map(([t, d, href, cta, tone, art], i) => (
+            <Reveal key={t} delay={i * 80}>
+              <article className="io-card">
+                <div className={`io-card-art ${tone}`} aria-hidden>
+                  {art}
+                </div>
+                <div className="io-card-body">
+                  <h3>
+                    <Title text={t} />
+                  </h3>
+                  <p>{d}</p>
+                  <Link className="btn" href={href}>
+                    {cta} <Icon name="arrow" size={16} />
+                  </Link>
+                </div>
               </article>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      <section className="io-sec io-faq" aria-labelledby="faq">
+        <Reveal>
+          <h2 id="faq">Questions, answered.</h2>
+        </Reveal>
+        <Reveal>
+          <div className="io-faq-list">
+            {FAQ.map(([q, a]) => (
+              <details key={q}>
+                <summary>{q}</summary>
+                <p>{a}</p>
+              </details>
             ))}
           </div>
-        </section>
+        </Reveal>
+      </section>
 
-        <section aria-labelledby="why">
-          <h2 id="why" className="lp-h">
-            How this site works
-          </h2>
-          <div className="lp-why">
-            {WHY.map(([h, p]) => (
-              <div key={h}>
-                <h3>{h}</h3>
-                <p>{p}</p>
+      <footer className="io-foot">
+        <div className="io-foot-top">
+          <div>
+            <span className="lp-brand">
+              <span className="logo-mark sm">AI</span> {SITE.name}
+            </span>
+            <p>
+              {SITE.tagline}. Written by {SITE.author}.
+            </p>
+          </div>
+          <nav aria-label="Footer" className="lp-foot-cols">
+            {groups.map((g) => (
+              <div key={g.id}>
+                <h4>{g.label}</h4>
+                {g.items.map((it) => (
+                  <Link key={it.href} href={it.href}>
+                    {it.title}
+                  </Link>
+                ))}
               </div>
             ))}
-          </div>
-        </section>
-      </div>
-
-      <footer className="lp-foot">
-        <div className="wrap">
-          <div className="lp-foot-top">
-            <div>
-              <span className="lp-brand">
-                <span className="logo-mark sm">AI</span> {SITE.name}
-              </span>
-              <p>
-                {SITE.tagline}. Written by {SITE.author}.
-              </p>
-            </div>
-            <nav aria-label="Footer" className="lp-foot-cols">
-              {groups.map((g) => (
-                <div key={g.id}>
-                  <h4>{g.label}</h4>
-                  {g.items.map((it) => (
-                    <Link key={it.href} href={it.href}>
-                      {it.title}
-                    </Link>
-                  ))}
-                </div>
-              ))}
-            </nav>
-          </div>
-          <p className="lp-foot-end">
-            Your progress and notes stay in this browser. <Link href="/explore">Browse every page</Link>
-          </p>
+          </nav>
         </div>
+        <p className="lp-foot-end">
+          Your progress and notes stay in this browser. <Link href="/explore">Browse every page</Link>
+        </p>
       </footer>
     </main>
   );

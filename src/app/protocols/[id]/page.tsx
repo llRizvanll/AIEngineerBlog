@@ -1,4 +1,5 @@
 import { PageTrail } from "@/components/PageTrail";
+import { PageEnd } from "@/components/PageEnd";
 import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
@@ -131,6 +132,7 @@ export default async function ProtocolPage({ params }: { params: Promise<{ id: s
           </div>
         </article>
       </div>
+      <PageEnd href={`/protocols/${d.id}`} />
       <footer className="pe-foot">AI Engineer · Protocol Explorer</footer>
     </main>
   );

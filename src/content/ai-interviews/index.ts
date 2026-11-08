@@ -7,9 +7,9 @@ import type { InterviewPath, Lesson } from "./types";
 
 export const AI_PATHS: InterviewPath[] = [
   { id: "hacks", title: "AI interview hacks", short: "Hacks", blurb: "The most useful ideas people share, tested and turned into drills: hint ladders, planted bugs, recorded mocks, and more. Plus where the line sits.", color: ["#f43f5e", "#f59e0b"], lessons: HACKS },
-  { id: "rounds", title: "AI interview rounds", short: "Rounds", blurb: "Every round you may meet now, from coding beside an assistant to RAG, agents, evals and a customer role-play. What each tests, with code you can run.", color: ["#6c47ff", "#0ea5e9"], lessons: ROUNDS },
+  { id: "rounds", title: "AI interview rounds", short: "Rounds", blurb: "Every round you may meet now, from coding beside an assistant to RAG, agents, evals and a customer role-play. What each tests, with code you can run.", color: ["#ff5a1f", "#0ea5e9"], lessons: ROUNDS },
   { id: "playbook", title: "Crack it with AI, the best way", short: "Playbook", blurb: "A plan that works from any starting point: an honest baseline, a daily loop, and a final stretch with AI off to prove the skill is yours.", color: ["#10b981", "#0ea5e9"], lessons: PLAYBOOK },
-  { id: "build", title: "Build your own AI interviewer", short: "Build", blurb: "Our pick. Build a mock interviewer that you'll really use, and walk away with a true project story, with real measurements behind it.", color: ["#a855f7", "#ec4899"], lessons: BUILD },
+  { id: "build", title: "Build your own AI interviewer", short: "Build", blurb: "Our pick. Build a mock interviewer that you'll really use, and walk away with a true project story, with real measurements behind it.", color: ["#a855f7", "#c2410c"], lessons: BUILD },
 ];
 
 export const getPath = (id: string) => AI_PATHS.find((p) => p.id === id);

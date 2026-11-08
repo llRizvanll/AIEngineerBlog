@@ -15,10 +15,10 @@ export interface Theme {
 }
 
 export const THEMES: Theme[] = [
-  { id: "analysis", title: "Analysis and root cause", blurb: "Find the real problem, then fix it with evidence.", color: ["#6c47ff", "#0ea5e9"] },
+  { id: "analysis", title: "Analysis and root cause", blurb: "Find the real problem, then fix it with evidence.", color: ["#ff5a1f", "#0ea5e9"] },
   { id: "uncertainty", title: "Decisions under pressure", blurb: "Little data, little time, real consequences.", color: ["#f43f5e", "#f59e0b"] },
   { id: "people", title: "Collaboration and conflict", blurb: "Problems that are really about people and alignment.", color: ["#10b981", "#0ea5e9"] },
-  { id: "prevention", title: "Prevention and durability", blurb: "Spot it early, fix it so it stays fixed.", color: ["#8b5cf6", "#ec4899"] },
+  { id: "prevention", title: "Prevention and durability", blurb: "Spot it early, fix it so it stays fixed.", color: ["#8b5cf6", "#c2410c"] },
   { id: "leadership", title: "Leading through problems", blurb: "Crises, complexity and teams that own their fixes.", color: ["#f97316", "#e11d48"] },
   { id: "growth", title: "Innovation and learning", blurb: "New ideas, better habits, and how you keep sharp.", color: ["#14b8a6", "#6366f1"] },
 ];

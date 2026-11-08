@@ -27,7 +27,7 @@ for (const f of files) {
 // The menu: the skill groups on the home page, which list the same items as the menu.
 const home = fs.readFileSync(path.join(OUT, "index.html"), "utf8");
 const menu = new Set([...(home.match(/<header class="mast[\s\S]*?<\/header>/)?.[0] ?? "").matchAll(/href="(\/[^"#?]*)"/g)].map((m) => norm(m[1])));
-const skills = home.match(/class="lp-skills"[\s\S]*?<\/section>/)?.[0] ?? "";
+const skills = home;
 const sheetish = [...skills.matchAll(/href="(\/[^"#?]*)/g)].map((m) => norm(m[1]));
 sheetish.forEach((h) => menu.add(h));
 menu.delete("/");

@@ -5,7 +5,9 @@ import {
   Geist_Mono,
   IBM_Plex_Mono,
   IBM_Plex_Sans,
+  Figtree,
   Fira_Code,
+  Fraunces,
   Instrument_Serif,
   Inter,
   JetBrains_Mono,
@@ -19,7 +21,8 @@ import {
 import "./globals.css";
 import "./portal.css";
 import "./theme.css";
-import { Masthead } from "@/components/Masthead";
+import "./insideout.css";
+import { Chrome } from "@/components/AppShell";
 import { SearchPalette } from "@/components/SearchPalette";
 import { TabBar } from "@/components/TabBar";
 import { HashRedirect } from "@/components/HashRedirect";
@@ -45,7 +48,9 @@ const literata = Literata({ subsets: ["latin"], display: "swap", preload: false,
 const jetbrains = JetBrains_Mono({ subsets: ["latin"], display: "swap", preload: false, variable: "--ff-jetbrains" });
 const fira = Fira_Code({ subsets: ["latin"], display: "swap", preload: false, variable: "--ff-fira" });
 const plexMono = IBM_Plex_Mono({ subsets: ["latin"], display: "swap", preload: false, weight: ["400", "500", "600"], variable: "--ff-plexmono" });
-const fontVars = [geist, serif, sourceSerif, geistMono, inter, jakarta, grotesk, manrope, plex, lora, literata, jetbrains, fira, plexMono]
+const figtree = Figtree({ subsets: ["latin"], display: "swap", variable: "--ff-figtree" });
+const fraunces = Fraunces({ subsets: ["latin"], axes: ["opsz"], style: ["normal", "italic"], display: "swap", variable: "--ff-fraunces" });
+const fontVars = [figtree, fraunces, geist, serif, sourceSerif, geistMono, inter, jakarta, grotesk, manrope, plex, lora, literata, jetbrains, fira, plexMono]
   .map((f) => f.variable)
   .join(" ");
 
@@ -66,8 +71,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f6fb" },
-    { media: "(prefers-color-scheme: dark)", color: "#07070f" },
+    { media: "(prefers-color-scheme: light)", color: "#f1efea" },
+    { media: "(prefers-color-scheme: dark)", color: "#121110" },
   ],
 };
 
@@ -82,7 +87,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a className="skip" href="#main">
           Skip to content
         </a>
-        <Masthead groups={siteMap()} />
+        <Chrome groups={siteMap()} />
         <div id="main">{children}</div>
         <TabBar />
         <SearchPalette />

@@ -1,7 +1,7 @@
 /* Appearance options shared by the settings panel and the no-flash boot script. */
 
 export const PALETTES = [
-  { id: "aurora", name: "Aurora", a: "#6c47ff", b: "#ec4899" },
+  { id: "aurora", name: "Inside-out", a: "#ff5a1f", b: "#c2410c" },
   { id: "ocean", name: "Ocean", a: "#2563eb", b: "#06b6d4" },
   { id: "sunset", name: "Sunset", a: "#ea580c", b: "#e11d48" },
   { id: "forest", name: "Forest", a: "#047857", b: "#65a30d" },
@@ -11,6 +11,7 @@ export const PALETTES = [
 ] as const;
 
 export const UI_FONTS = [
+  { id: "figtree", name: "Figtree", v: "--ff-figtree" },
   { id: "geist", name: "Geist", v: "--ff-geist" },
   { id: "inter", name: "Inter", v: "--ff-inter" },
   { id: "jakarta", name: "Plus Jakarta", v: "--ff-jakarta" },
@@ -27,8 +28,8 @@ export const READ_FONTS = [
 ] as const;
 
 export const CODE_FONTS = [
-  { id: "geistmono", name: "Geist Mono", v: "--ff-geistmono" },
   { id: "jetbrains", name: "JetBrains Mono", v: "--ff-jetbrains" },
+  { id: "geistmono", name: "Geist Mono", v: "--ff-geistmono" },
   { id: "fira", name: "Fira Code", v: "--ff-fira" },
   { id: "plexmono", name: "IBM Plex Mono", v: "--ff-plexmono" },
 ] as const;

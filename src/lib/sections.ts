@@ -33,7 +33,7 @@ export function siteMap(): NavGroup[] {
       short: "AI",
       blurb: "LLMs, retrieval, agents, evals and serving: learn the stack, then the parts.",
       items: [
-        { href: "/aiengine", title: "Curriculum", desc: "A guided path through every phase.", icon: "compass", color: ["#6c47ff", "#ec4899"], count: plural(PHASES.length, "phase") },
+        { href: "/aiengine", title: "Curriculum", desc: "A guided path through every phase.", icon: "compass", color: ["#ff5a1f", "#c2410c"], count: plural(PHASES.length, "phase") },
         { href: "/modules", title: "Modules", desc: "Serving, retrieval, fine-tuning, evals, infrastructure and mobile topics.", icon: "layers", color: ["#8b5cf6", "#d946ef"], count: plural(MODULES.length, "module") },
       ],
     },
@@ -43,8 +43,8 @@ export function siteMap(): NavGroup[] {
       short: "Mobile",
       blurb: "React Native and native: sync, state, memory, performance, and a two-week path.",
       items: [
-        { href: "/paths/react-native", title: "React Native in one place", desc: "Architecture, state, memory, offline and budgets, in reading order.", icon: "phone", color: ["#0ea5e9", "#6c47ff"], count: `${rnPages} pages` },
-        { href: "/paths/mobile-principal", title: "Two weeks to mobile principal", desc: "One edit, followed end to end, then reused.", icon: "target", color: ["#f43f5e", "#6c47ff"], count: "14 days" },
+        { href: "/paths/react-native", title: "React Native in one place", desc: "Architecture, state, memory, offline and budgets, in reading order.", icon: "phone", color: ["#0ea5e9", "#ff5a1f"], count: `${rnPages} pages` },
+        { href: "/paths/mobile-principal", title: "Two weeks to mobile principal", desc: "One edit, followed end to end, then reused.", icon: "target", color: ["#f43f5e", "#ff5a1f"], count: "14 days" },
         { href: MOBILE_HREF, title: "All mobile pages", desc: "Every mobile module, round and exercise, filterable.", icon: "grid", color: ["#06b6d4", "#10b981"], count: plural(buildCatalog().filter((a) => a.domain === "mobile-systems").length, "page") },
         { href: "/mobile-coding", title: "Machine coding", desc: "Tested components, built and explained.", icon: "code", color: ["#14b8a6", "#6366f1"], count: plural(MOBILE_PROBLEMS.length + n("machine-coding"), "component") },
       ],
@@ -55,7 +55,7 @@ export function siteMap(): NavGroup[] {
       short: "Design",
       blurb: "Draw the system, then go inside a component, then down to the wire.",
       items: [
-        { href: "/interview", title: "Design rounds", desc: "Timed mock rounds with a whiteboard.", icon: "board", color: ["#0ea5e9", "#6c47ff"], count: plural(CASES.length + n("system-design"), "round") },
+        { href: "/interview", title: "Design rounds", desc: "Timed mock rounds with a whiteboard.", icon: "board", color: ["#0ea5e9", "#ff5a1f"], count: plural(CASES.length + n("system-design"), "round") },
         { href: "/deep", title: "Deep dives", desc: "Component internals and state machines.", icon: "book", color: ["#8b5cf6", "#d946ef"], count: plural(DEEP.length + n("deep-dive"), "page") },
         { href: "/protocols", title: "Protocols", desc: "Wire-level packets and low-level mechanics.", icon: "network", color: ["#06b6d4", "#10b981"], count: plural(PROTOCOLS.length + n("protocol"), "lesson") },
       ],
@@ -66,9 +66,9 @@ export function siteMap(): NavGroup[] {
       short: "Interviews",
       blurb: "Prepare for AI-era rounds, then coding and behavioral questions.",
       items: [
-        { href: "/paths/ai-interviews", title: "Crack AI interviews", desc: "Hacks, every new round, a plan and a project.", icon: "bolt", color: ["#f59e0b", "#ec4899"], count: `${AI_PATHS.length} paths · ${LESSON_COUNT} lessons` },
+        { href: "/paths/ai-interviews", title: "Crack AI interviews", desc: "Hacks, every new round, a plan and a project.", icon: "bolt", color: ["#f59e0b", "#c2410c"], count: `${AI_PATHS.length} paths · ${LESSON_COUNT} lessons` },
         { href: "/coding", title: "Coding patterns", desc: "Algorithm templates and worked problems.", icon: "spark", color: ["#10b981", "#0ea5e9"], count: plural(problems, "problem") },
-        { href: "/problem-solving", title: "Behavioral", desc: "STAR answers, probes and red flags.", icon: "chat", color: ["#f59e0b", "#ec4899"], count: plural(ALL_BEHAVIORAL.length, "question") },
+        { href: "/problem-solving", title: "Behavioral", desc: "STAR answers, probes and red flags.", icon: "chat", color: ["#f59e0b", "#c2410c"], count: plural(ALL_BEHAVIORAL.length, "question") },
       ],
     },
     {

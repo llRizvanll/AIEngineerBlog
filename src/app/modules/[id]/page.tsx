@@ -1,4 +1,5 @@
 import { PageTrail } from "@/components/PageTrail";
+import { PageEnd } from "@/components/PageEnd";
 import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
@@ -228,6 +229,7 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
           </div>
         </div>
       </Reading>
+      <PageEnd href={`/modules/${m.assetId}`} />
       <Footer>AI Engineer · {m.title}</Footer>
     </main>
   );

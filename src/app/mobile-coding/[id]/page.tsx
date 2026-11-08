@@ -1,4 +1,5 @@
 import { PageTrail } from "@/components/PageTrail";
+import { PageEnd } from "@/components/PageEnd";
 import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
@@ -204,6 +205,7 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
           </div>
         </div>
       </Reading>
+      <PageEnd href={`/mobile-coding/${p.id}`} />
       <Footer>AI Engineer · {p.title}</Footer>
     </main>
   );

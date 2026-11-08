@@ -1,4 +1,5 @@
 import { PageTrail } from "@/components/PageTrail";
+import { PageEnd } from "@/components/PageEnd";
 import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
@@ -385,6 +386,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
         <StudyWithAI />
       </div>
       <CaseRound id={c.id} title={c.title} minutes={c.minutes} parts={parts(c)} next={{ id: next.id, title: next.title }} />
+      <PageEnd href={`/interview/${c.id}`} />
       <Footer>AI Engineer · interview room</Footer>
     </main>
   );

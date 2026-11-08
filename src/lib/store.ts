@@ -148,7 +148,7 @@ export const defaultPrefs: Prefs = {
   size: 19,
   leading: 1.65,
   palette: "aurora",
-  uiFont: "geist",
+  uiFont: "figtree",
   readFont: "sourceserif",
-  codeFont: "geistmono",
+  codeFont: "jetbrains",
 };

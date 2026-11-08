@@ -84,7 +84,7 @@ export default function CodingPage() {
           ))}
         </div>
 
-        <Link href="/mobile-coding" className="prep-card mc-band" style={{ "--c1": "#0ea5e9", "--c2": "#ec4899" } as CSSProperties}>
+        <Link href="/mobile-coding" className="prep-card mc-band" style={{ "--c1": "#0ea5e9", "--c2": "#c2410c" } as CSSProperties}>
           <span className="eyebrow">Mobile machine coding · Kotlin · tested</span>
           <h3>Build the components apps run on</h3>
           <p>

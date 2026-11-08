@@ -1,4 +1,5 @@
 import { PageTrail } from "@/components/PageTrail";
+import { PageEnd } from "@/components/PageEnd";
 import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
@@ -11,6 +12,7 @@ import { PATTERN_BASICS } from "@/content/basics";
 import { MORE_PROBLEMS } from "@/content/coding-more";
 import { Reading } from "@/components/Reading";
 import { Code, Faq, Footer } from "@/components/ui";
+import { TEMPLATE_ALT } from "@/content/coding-alt";
 import { Chapters, type ChapterPart } from "@/components/Chapters";
 import { Icon } from "@/components/Icons";
 import { AssetMeta } from "@/components/AssetMeta";
@@ -109,7 +111,7 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
           intro: "Memorise this shape. Most problems in this family are this code plus one twist.",
           body: (
             <>
-              <Code sample={[p.template.title, "ts", p.template.code]} />
+              <Code sample={[p.template.title, "ts", p.template.code]} alt={TEMPLATE_ALT[p.id]} />
               <ol className="flow-notes">
                 {p.template.beats.map((b) => (
                   <li key={b.note}>{b.note}</li>
@@ -262,6 +264,7 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
       </Reading>
+      <PageEnd href={`/coding/${p.id}`} />
       <Footer>AI Engineer · {p.name}</Footer>
     </main>
   );

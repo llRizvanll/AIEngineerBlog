@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { CodeSample, Pair } from "@/content/types";
 import { CopyCode } from "./CopyCode";
+import { LangGroup } from "./LangGroup";
 import { editorBodyHtml, fileName, langName } from "@/lib/highlight";
 
 export function Table({ head, rows }: { head: string[]; rows: string[][] }) {
@@ -30,30 +31,49 @@ export function Table({ head, rows }: { head: string[]; rows: string[][] }) {
   );
 }
 
-export function Code({ sample, startLine = 1, fileName: name, hideTitle }: { sample: CodeSample; startLine?: number; fileName?: string; hideTitle?: boolean }) {
+function Editor({ sample, startLine = 1, name }: { sample: CodeSample; startLine?: number; name?: string }) {
   const [title, lang, src] = sample;
   const lines = src.replace(/\n+$/, "").split("\n").length;
   return (
+    <div className="editor" data-lang={lang}>
+      <div className="ed-bar">
+        <span className="ed-dots">
+          <i />
+          <i />
+          <i />
+        </span>
+        <span className="ed-tab">{name ?? fileName(title, lang)}</span>
+        <span className="ed-lang">{langName(lang)}</span>
+        <CopyCode text={src} />
+      </div>
+      <div dangerouslySetInnerHTML={{ __html: editorBodyHtml(src, lang, startLine) }} />
+      <div className="ed-status">
+        <span>{startLine > 1 ? `lines ${startLine}–${startLine + lines - 1}` : `${lines} lines`}</span>
+        <span>UTF-8</span>
+        <span>{langName(lang)}</span>
+      </div>
+    </div>
+  );
+}
+
+/** A code sample. With `alt`, the same code is offered in Kotlin and Java too, and the reader's choice is remembered. */
+export function Code({ sample, startLine = 1, fileName: name, hideTitle, alt }: { sample: CodeSample; startLine?: number; fileName?: string; hideTitle?: boolean; alt?: { kotlin: string; java: string } }) {
+  const [title, lang] = sample;
+  return (
     <>
       {!hideTitle && <h3>{title}</h3>}
-      <div className="editor" data-lang={lang}>
-        <div className="ed-bar">
-          <span className="ed-dots">
-            <i />
-            <i />
-            <i />
-          </span>
-          <span className="ed-tab">{name ?? fileName(title, lang)}</span>
-          <span className="ed-lang">{langName(lang)}</span>
-          <CopyCode text={src} />
-        </div>
-        <div dangerouslySetInnerHTML={{ __html: editorBodyHtml(src, lang, startLine) }} />
-        <div className="ed-status">
-          <span>{startLine > 1 ? `lines ${startLine}–${startLine + lines - 1}` : `${lines} lines`}</span>
-          <span>UTF-8</span>
-          <span>{langName(lang)}</span>
-        </div>
-      </div>
+      {alt ? (
+        <LangGroup
+          panels={[
+            { id: "ts", label: "TypeScript", node: <Editor sample={sample} startLine={startLine} name={name} /> },
+            { id: "kotlin", label: "Kotlin", node: <Editor sample={[title, "kotlin", alt.kotlin]} name={fileName(title, "kotlin")} /> },
+            { id: "java", label: "Java", node: <Editor sample={[title, "java", alt.java]} name={fileName(title, "java")} /> },
+          ]}
+        />
+      ) : (
+        <Editor sample={sample} startLine={startLine} name={name} />
+      )}
+      {lang === "x" && null}
     </>
   );
 }

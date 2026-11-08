@@ -6,7 +6,7 @@ import { absoluteUrl } from "@/lib/site";
 export const dynamic = "force-static";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const paths = new Set(["/", "/explore", "/series"]);
+  const paths = new Set(["/", "/explore", "/series", "/learn", "/tracks", "/interviews", "/practice"]);
   for (const { href } of buildSearchIndex()) {
     if (!/[?#]/.test(href) && href !== "/library") paths.add(href);
   }

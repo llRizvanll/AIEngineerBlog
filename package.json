@@ -10,7 +10,7 @@
     "preview": "next build && next start",
     "build:static": "STATIC_EXPORT=1 next build",
     "test:mobile": "sh scripts/test-mobile.sh",
-    "test:modules": "node --experimental-strip-types --no-warnings tests/modules/modules.test.mts && node --experimental-strip-types --no-warnings tests/modules/protocols.test.mts && node --experimental-strip-types --no-warnings tests/modules/code-docs.test.mts && node --experimental-strip-types --no-warnings tests/modules/ai-interviews.test.mts && node --experimental-strip-types --no-warnings tests/modules/rn-scale.test.mts",
+    "test:modules": "node --experimental-strip-types --no-warnings tests/modules/modules.test.mts && node --experimental-strip-types --no-warnings tests/modules/protocols.test.mts && node --experimental-strip-types --no-warnings tests/modules/code-docs.test.mts && node --experimental-strip-types --no-warnings tests/modules/ai-interviews.test.mts && node --experimental-strip-types --no-warnings tests/modules/rn-scale.test.mts && node --experimental-strip-types tests/modules/practice.test.mts && node --experimental-strip-types --no-warnings tests/modules/coding-alt.test.mts",
     "check:reach": "node scripts/check-reach.mjs",
     "check:seo": "node scripts/check-seo.mjs",
     "lint:copy": "node --experimental-strip-types --no-warnings scripts/lint-copy.mts"

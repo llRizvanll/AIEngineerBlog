@@ -1,23 +1,28 @@
 import type { Metadata } from "next";
 import { Footer } from "@/components/ui";
+import { KeepReading } from "@/components/KeepReading";
 import { Library } from "@/components/Library";
 
-export const metadata: Metadata = { title: "My library", description: "Your saved pages and reading progress.", robots: { index: false, follow: true } };
+export const metadata: Metadata = { title: "Your progress", description: "Your saved pages, notes and reading progress, kept in this browser.", robots: { index: false, follow: true } };
 
 export default function LibraryPage() {
   return (
-    <main>
-      <div className="wrap">
-        <section className="iv-hero">
-          <div className="kicker">My library</div>
-          <h1>
-            Your reading, <span className="serif grad-text">kept.</span>
-          </h1>
-          <p>Saved pages, your notes and reading progress. This browser keeps them, and nothing leaves it.</p>
+    <main className="app-page">
+      <div>
+        <div className="ap-head">
+          <div>
+            <h1>
+              Your <em>progress</em>
+            </h1>
+            <p>Saved pages, your notes and where you left off. This browser keeps them, and nothing leaves it.</p>
+          </div>
+        </div>
+        <KeepReading />
+        <section className="ap-card">
+          <Library />
         </section>
-        <Library />
       </div>
-      <Footer>AI Engineer · library</Footer>
+      <Footer>AI Engineer · progress</Footer>
     </main>
   );
 }

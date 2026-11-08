@@ -13,7 +13,7 @@ const KW = new Set(
     "match mut new nil none null object open operator override package private protected pub public raise readonly return sealed self " +
     "set some static struct super suspend switch this throw throws true try type typealias typeof undefined use val var void when where " +
     "while with yield keyof satisfies infer any never unknown string number boolean lateinit companion reified crossinline noinline vararg " +
-    "elif except pass lambda nonlocal global assert True False None and or not " +
+    "elif except pass lambda nonlocal global assert True False None and or not int long char double float short byte " +
     "protocol defer weak unowned mutating fileprivate nonisolated inout rethrows associatedtype precondition repeat"
   ).split(" ")
 );
@@ -28,11 +28,11 @@ const SQL_KW = new Set(
 );
 
 const EXT: Record<string, string> = {
-  kotlin: "kt", swift: "swift", ts: "ts", tsx: "tsx", js: "js", sql: "sql", python: "py", json: "json", yaml: "yaml",
+  kotlin: "kt", java: "java", swift: "swift", ts: "ts", tsx: "tsx", js: "js", sql: "sql", python: "py", json: "json", yaml: "yaml",
   http: "http", bash: "sh", markdown: "md", text: "txt",
 };
 const NAME: Record<string, string> = {
-  kotlin: "Kotlin", swift: "Swift", ts: "TypeScript", tsx: "TypeScript JSX", js: "JavaScript", sql: "SQL", python: "Python",
+  kotlin: "Kotlin", java: "Java", swift: "Swift", ts: "TypeScript", tsx: "TypeScript JSX", js: "JavaScript", sql: "SQL", python: "Python",
   json: "JSON", yaml: "YAML", http: "HTTP", bash: "Shell", markdown: "Markdown", text: "Plain text",
 };
 

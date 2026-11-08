@@ -1,6 +1,7 @@
 import { SlideDeck } from "@/components/SlideDeck";
 import { SYNC_SLIDES } from "@/content/sync-slides";
 import { PageTrail } from "@/components/PageTrail";
+import { PageEnd } from "@/components/PageEnd";
 import { StudyWithAI } from "@/components/StudyWithAI";
 import fs from "node:fs";
 import path from "node:path";
@@ -111,7 +112,8 @@ export default async function SeriesPage({ params }: { params: Promise<{ slug: s
           <CodeWalks ids={PAGE_CODE[`/series/${PART_ONE.id}`]} />
         </div>
         <PostEnd m={PART_ONE} />
-        <Footer>AI Engineer · written by {SITE.author} · part 1 of 7</Footer>
+        <PageEnd href={`/series/${PART_ONE.id}`} />
+      <Footer>AI Engineer · written by {SITE.author} · part 1 of 7</Footer>
       </main>
     );
   }
@@ -161,6 +163,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ slug: s
         </Section>
       </Reading>
       <PostEnd m={{ ...p, date: "Nov 4, 2026" }} />
+      <PageEnd href={`/series/${p.id}`} />
       <Footer>AI Engineer · written by {SITE.author} · part {Number(p.num)} of 7</Footer>
     </main>
   );

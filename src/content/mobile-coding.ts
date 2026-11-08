@@ -42,7 +42,7 @@ export const MOBILE_PROBLEMS: MobileProblem[] = [
     tagline: "O(1) get and put, evicting the least recently used item when bytes exceed a limit.",
     level: "Medium",
     minutes: 30,
-    color: ["#6c47ff", "#0ea5e9"],
+    color: ["#ff5a1f", "#0ea5e9"],
     tags: ["caching", "data structures", "memory"],
     prompt:
       "Our feed shows thousands of thumbnails. Build the in-memory cache: get and put in O(1), and when the total size passes a budget, evict whatever was used least recently.",
@@ -136,7 +136,7 @@ export const MOBILE_PROBLEMS: MobileProblem[] = [
     tagline: "Writes persist first, sync later, survive kills, and are never applied twice.",
     level: "Hard",
     minutes: 45,
-    color: ["#8b5cf6", "#ec4899"],
+    color: ["#8b5cf6", "#c2410c"],
     tags: ["offline-first", "sync", "reliability"],
     prompt:
       "Field technicians edit jobs with no signal. Implement the client side of the outbox: changes must never be lost, must reach the server in order, and must not be applied twice when we retry.",
@@ -272,7 +272,7 @@ export const MOBILE_PROBLEMS: MobileProblem[] = [
     tagline: "Prefetch before the bottom, one request at a time, no duplicates, no stale pages.",
     level: "Medium",
     minutes: 35,
-    color: ["#f97316", "#ec4899"],
+    color: ["#f97316", "#c2410c"],
     tags: ["pagination", "UI state", "networking"],
     prompt:
       "Implement the paging logic for a social feed. Users scroll fast, new posts arrive at the top while they read, and pull-to-refresh can happen mid-load.",
