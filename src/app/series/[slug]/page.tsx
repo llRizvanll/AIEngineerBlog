@@ -1,3 +1,4 @@
+import { StudyWithAI } from "@/components/StudyWithAI";
 import fs from "node:fs";
 import path from "node:path";
 import Link from "next/link";
@@ -93,6 +94,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ slug: s
         <PostHeader m={PART_ONE} />
         <div className="m-meta">
           <PathLink href={`/series/${PART_ONE.id}`} />
+          <StudyWithAI />
         </div>
         <BgSyncInteractive html={html} title={PART_ONE.title} />
         <div className="m-walk">
@@ -113,6 +115,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ slug: s
       <PostHeader m={{ ...p, date: "Nov 4, 2026" }} />
       <div className="m-meta">
         <PathLink href={`/series/${p.id}`} />
+        <StudyWithAI />
       </div>
       <Reading title={p.title} kind="Post" articleId="blog-article" railTitle="In this post">
         <div className="tldr">

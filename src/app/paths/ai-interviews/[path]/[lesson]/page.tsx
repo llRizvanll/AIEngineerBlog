@@ -1,3 +1,4 @@
+import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -63,6 +64,7 @@ export default async function LessonPage({ params }: { params: Promise<{ path: s
           <Link href={aiPathHref(path.id)}>{path.title}</Link> · Lesson {at + 1} of {path.lessons.length} · {l.minutes} min
         </p>
         <h1>{l.title}</h1>
+        <StudyWithAI root=".ls-body" />
 
         <Part n={1} title="Basics">
           {l.plain.map((p) => (

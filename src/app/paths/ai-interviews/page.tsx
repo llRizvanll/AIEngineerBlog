@@ -1,3 +1,4 @@
+import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
@@ -33,6 +34,7 @@ export default function AiInterviewsPage() {
             Crack AI interviews, <span className="serif grad-text">the honest way.</span>
           </h1>
           <p>Interviews have changed. Some companies now put an AI assistant in the room and score how you use it, while AI teams have added rounds on retrieval, agents and evals. These four paths cover what to do about it, starting from the basics.</p>
+          <StudyWithAI title="Crack AI interviews" />
           <PathContinue lessons={all} />
         </section>
 

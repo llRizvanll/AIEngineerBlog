@@ -1,3 +1,4 @@
+import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
 import { articleLd } from "@/lib/site";
@@ -232,6 +233,7 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
         <h1>{p.name}</h1>
         <p className="dek">{p.tagline}</p>
         <AssetMeta href={`/coding/${p.id}`} />
+        <StudyWithAI />
         <div className="pat-meta">
           <span>
             <Icon name="clock" size={14} /> {p.complexity}

@@ -1,3 +1,4 @@
+import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
 import { articleLd } from "@/lib/site";
@@ -184,6 +185,7 @@ export default async function DeepPage({ params }: { params: Promise<{ id: strin
         <h1>{d.title}</h1>
         <AssetMeta href={`/deep/${d.id}`} />
         <PathLink href={`/deep/${d.id}`} />
+        <StudyWithAI />
       </div>
       <Reading title={d.title} kind="Deep dive" articleId="deep-article">
         <Chapters parts={parts} prefix="dd" />

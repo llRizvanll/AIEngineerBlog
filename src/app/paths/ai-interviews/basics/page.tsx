@@ -1,3 +1,4 @@
+import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Footer } from "@/components/ui";
@@ -12,6 +13,10 @@ const TITLE = "Critical basics for AI interviews";
 const DESCRIPTION = "The essentials of prompting, code review, debugging, LLMs, RAG, agents and evals. Read them, memorise the cards with spaced repetition, and practise with short drills.";
 
 export const metadata: Metadata = { title: TITLE, description: DESCRIPTION };
+
+function basicsMarkdown(): string {
+  return BASICS.map((b) => [`## ${b.title}`, b.why, ...b.read, "### Remember", ...b.memorise.map((c) => `- **${c.q}** ${c.a}`), `### Drill: ${b.drill.title} (${b.drill.minutes} min)`, ...b.drill.steps.map((x, i) => `${i + 1}. ${x}`)].join("\n\n")).join("\n\n");
+}
 
 export default function BasicsPage() {
   return (
@@ -29,6 +34,7 @@ export default function BasicsPage() {
           <p>
             {BASICS.length} skills that AI interviews lean on. Read each one once, memorise its cards, then keep it sharp with a short drill whenever you have a few minutes.
           </p>
+          <StudyWithAI title={TITLE} markdown={basicsMarkdown()} />
         </section>
         <BasicsStudy skills={BASICS} cards={basicCards(true)} />
       </div>

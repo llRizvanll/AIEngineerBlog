@@ -1,3 +1,4 @@
+import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
 import { articleLd } from "@/lib/site";
@@ -53,6 +54,7 @@ export default async function DayPage({ params }: { params: Promise<{ n: string 
           <Link href={PROGRAMME_HREF}>Two-week programme</Link> · Day {d.n} of {DAYS.length}
         </p>
         <h1>{d.title}</h1>
+        <StudyWithAI root=".ls-body" />
 
         <Part n={1} title="Basics">
           {lesson.plain.map((p) => (

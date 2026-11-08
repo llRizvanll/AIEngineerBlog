@@ -1,3 +1,4 @@
+import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
 import { articleLd } from "@/lib/site";
@@ -379,6 +380,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
         <h1>{c.title}</h1>
         <AssetMeta href={`/interview/${c.id}`} />
         <PathLink href={`/interview/${c.id}`} />
+        <StudyWithAI />
       </div>
       <CaseRound id={c.id} title={c.title} minutes={c.minutes} parts={parts(c)} next={{ id: next.id, title: next.title }} />
       <Footer>AI Engineer · interview room</Footer>

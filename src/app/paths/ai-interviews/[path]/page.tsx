@@ -1,3 +1,4 @@
+import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -33,6 +34,7 @@ export default async function PathPage({ params }: { params: Promise<{ path: str
           </div>
           <h1>{p.title}</h1>
           <p>{p.blurb}</p>
+          <StudyWithAI />
           <PathContinue lessons={rows} />
         </section>
         <div className="section-h">

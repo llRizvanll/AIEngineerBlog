@@ -1,3 +1,4 @@
+import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Footer } from "@/components/ui";
@@ -32,6 +33,7 @@ export default function ProgrammePage() {
           <p>
             One edit, made in a basement with no signal, followed all the way to a supervisor&rsquo;s tablet. Then the same parts rebuilt as chat, checkout, a feed and a release platform. Each day is one complete lesson, from the basics up, and picks up where the last one stopped. You can read it with nothing else open.
           </p>
+          <StudyWithAI title="Mobile principal in two weeks" />
           <ProgrammeContinue days={rows} />
         </section>
 

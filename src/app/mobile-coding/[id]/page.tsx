@@ -1,3 +1,4 @@
+import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
 import { articleLd } from "@/lib/site";
@@ -173,6 +174,7 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
         <p className="dek">{p.tagline}</p>
         <AssetMeta href={`/mobile-coding/${p.id}`} />
         <PathLink href={`/mobile-coding/${p.id}`} />
+        <StudyWithAI />
         <div className="pat-meta">
           <span>
             <Icon name="clock" size={14} /> {p.minutes}-minute round · {p.level}

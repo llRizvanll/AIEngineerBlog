@@ -1,3 +1,4 @@
+import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
 import { articleLd } from "@/lib/site";
@@ -63,6 +64,7 @@ export default async function ProtocolPage({ params }: { params: Promise<{ id: s
             <p className="full">{d.full}</p>
             <p className="tag">{d.tag}</p>
             <AssetMeta href={`/protocols/${d.id}`} />
+            <StudyWithAI root="main article" title={`${d.name}: ${d.full}`} />
           </div>
           <Roadmap parts={parts.map((x) => ({ key: x.key, sections: x.sections.map((t) => ({ title: t })) }))} />
           <PartHead part="basics" n={1} total={5} lead="What the protocol is for, and the ideas it is built on." />

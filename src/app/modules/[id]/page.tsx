@@ -1,3 +1,4 @@
+import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
 import { articleLd } from "@/lib/site";
@@ -181,6 +182,7 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
         <h1>{m.title}</h1>
         <AssetMeta asset={asset} outcome={m.outcome} />
         <PathLink href={`/modules/${m.assetId}`} />
+        <StudyWithAI />
       </div>
       <Reading title={m.title} kind="Module" articleId="deep-article">
         <Chapters parts={parts} prefix="md" />
