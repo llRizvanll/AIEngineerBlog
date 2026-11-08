@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { Phase } from "@/lib/curriculum";
+import { Book, Title } from "./HubCards";
 import { AI_BASICS_HREF, AI_PATHS_HREF, dayHref, PROGRAMME_HREF } from "@/lib/routes";
 import { emptyInterview, emptyLibrary, emptyProgramme, INTERVIEW_KEY, LIBRARY_KEY, PROGRAMME_KEY, useLocal, type InterviewState, type LibraryState, type ProgrammeState } from "@/lib/store";
 
@@ -14,6 +15,8 @@ interface Props {
   caseIds: string[];
   totalCrit: number;
 }
+
+const ICONS = ["layers", "book", "network", "bolt", "spark", "chat", "code", "board", "cards", "target", "compass", "play", "grid"];
 
 export function Curriculum({ phases, paths, programme, glossary, caseIds, totalCrit }: Props) {
   const [q, setQ] = useState("");
@@ -110,17 +113,25 @@ export function Curriculum({ phases, paths, programme, glossary, caseIds, totalC
         </div>
         {paths.map((p) => (
           <div className="aie-path" key={p.title}>
-            <h3>{p.title}</h3>
+            <h3>
+              <Title text={p.title} />
+            </h3>
             <p>{p.blurb}</p>
-            <ol>
-              {p.items.map((it) => (
-                <li key={it.href}>
-                  <Link href={it.href}>{it.title}</Link>
-                  {seen(it.href) ? " ✓" : ""}
-                  <small>{it.why}</small>
-                </li>
+            <div className="cb-grid">
+              {p.items.map((it, i) => (
+                <Link key={it.href} href={it.href} className={`cb pc-${i % 8}`}>
+                  <Book icon={ICONS[i % ICONS.length]} label={`STEP ${String(i + 1).padStart(2, "0")}`} />
+                  <span className="cb-tx">
+                    <small>Step {String(i + 1).padStart(2, "0")}</small>
+                    <b>
+                      <Title text={it.title} />
+                    </b>
+                    <span>{it.why}</span>
+                    <i>{seen(it.href) ? "Opened ✓" : "Not started"}</i>
+                  </span>
+                </Link>
               ))}
-            </ol>
+            </div>
           </div>
         ))}
       </div>
@@ -130,19 +141,27 @@ export function Curriculum({ phases, paths, programme, glossary, caseIds, totalC
         <input id="aie-q" type="search" placeholder="Search lessons and terms" aria-label="Search" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
       <div className="aie-cur">
-        {phases.map((p) => {
+        {phases.map((p, idx) => {
           const its = p.lessons.filter((i) => !ql || `${i.title} ${p.title} ${i.kind}`.toLowerCase().includes(ql));
           if (!its.length) return null;
+          const opened = p.lessons.filter((l) => seen(l.href)).length;
+          const status = opened === 0 ? "Not started" : opened === p.lessons.length ? "Done" : "In progress";
           return (
-            <details className="aie-ph" key={p.num + (ql ? "q" : "")} open={!!ql || p.num === "00"}>
-              <summary>
-                <span className="n">{p.num}</span>
-                <span className="tx">
-                  <b>{p.title}</b>
-                  <small>{p.blurb}</small>
-                </span>
-                <span className="st">
-                  {p.lessons.filter((l) => seen(l.href)).length}/{p.lessons.length}
+            <details className={`aie-ph pc-${idx % 8}`} key={p.num + (ql ? "q" : "")} open={!!ql}>
+              <summary className="cb">
+                <Book icon={ICONS[idx % ICONS.length]} label={`PHASE ${p.num}`} />
+                <span className="cb-tx">
+                  <small>
+                    Phase {p.num} · {opened}/{p.lessons.length}
+                  </small>
+                  <b>
+                    <Title text={p.title} />
+                  </b>
+                  <span>{p.blurb}</span>
+                  <i>{status}</i>
+                  <span className="cb-bar" aria-hidden>
+                    <span style={{ width: `${(opened / p.lessons.length) * 100}%` }} />
+                  </span>
                 </span>
               </summary>
               <div className="aie-its">

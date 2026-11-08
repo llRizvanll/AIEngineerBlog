@@ -807,8 +807,8 @@ html:root article .qlist li:first-child { border-top: 0; }
    Sections inside stay flat; only the sheet has a background, so text never sits on the dots.
    ===================================================================== */
 body:has(.navrail) .layout > article,
-body:has(.navrail) .ls,
-body:has(.navrail) .pg,
+body:has(.navrail) main.ls,
+body:has(.navrail) main.pg,
 body:has(.navrail) #main main:not(.app-page):not(.landing):not(.view-reels-page):not(.io):not(.ls):not(.pg) > .wrap {
   background: var(--surface);
   border-radius: 32px;
@@ -818,7 +818,7 @@ body:has(.navrail) #main main:not(.app-page):not(.landing):not(.view-reels-page)
 }
 body:has(.navrail) #main main:not(.app-page):not(.landing):not(.view-reels-page):not(.io):not(.ls):not(.pg) > .wrap { max-width: 1180px; margin: 8px 28px 0 0; }
 body:has(.navrail) .layout > article { margin-bottom: 8px; }
-body:has(.navrail) .ls, body:has(.navrail) .pg { max-width: 860px; margin: 8px auto 40px; }
+body:has(.navrail) main.ls, body:has(.navrail) main.pg { max-width: 860px; margin: 8px auto 40px; }
 body:has(.navrail) .layout > article > section[class^="in-"]:first-of-type { padding-top: 8px; }
 
 /* the flashcard deck, the library and the practice runner sit on the same kind of sheet */
@@ -827,7 +827,7 @@ body:has(.navrail) .layout > article > section[class^="in-"]:first-of-type { pad
 .rv-card .meta, .rv-card .tags { margin-bottom: 4px; }
 
 @media (max-width: 860px) {
-  body:has(.navrail) .layout > article, body:has(.navrail) .ls, body:has(.navrail) .pg,
+  body:has(.navrail) .layout > article, body:has(.navrail) main.ls, body:has(.navrail) main.pg,
   body:has(.navrail) #main main:not(.app-page):not(.landing):not(.view-reels-page):not(.io):not(.ls):not(.pg) > .wrap { border-radius: 24px; padding: 20px 16px; margin-left: 8px; margin-right: 8px; }
 }
 
@@ -868,3 +868,132 @@ body:has(.navrail) .ls-body, body:has(.navrail) .bs-read { max-width: none; }
 .end-list h2 { font: 400 clamp(26px, 3vw, 34px) var(--font-serif); color: var(--ink); letter-spacing: -0.035em; }
 .end-list h2::after { content: ""; display: block; width: 40px; height: 3px; margin-top: 8px; border-radius: 2px; background: var(--accent-2); }
 .end-list ul { border-top: 0; margin-top: 10px; }
+
+/* =====================================================================
+   HUB CARDS — pastel cards with a notebook cover, on every list page
+   (modules, deep dives, interview rounds, protocols, coding patterns)
+   ===================================================================== */
+body :is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a) {
+  --pc: #8a857a;
+  --inner: radial-gradient(circle at 50% 66%, #ff5a1f 0 5px, transparent 5.6px);
+  position: relative; display: flex; flex-direction: column; justify-content: center; gap: 6px; min-height: 176px; padding: 24px 24px 24px 142px !important;
+  background: color-mix(in srgb, var(--pc) 20%, var(--surface)) !important; border: 1px solid color-mix(in srgb, var(--pc) 22%, transparent) !important; border-radius: 26px !important;
+  box-shadow: none !important; color: var(--ink); text-decoration: none; overflow: hidden;
+  transition: transform 0.25s var(--ease, ease), box-shadow 0.25s var(--ease, ease);
+}
+body :is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a):hover { transform: translateY(-3px); box-shadow: var(--shadow-md) !important; }
+/* the tab on the notebook's edge, and the notebook itself */
+:is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a)::before { content: ""; position: absolute; left: 100px; top: 50%; width: 18px; height: 46px; margin-top: -30px; border-radius: 0 9px 9px 0; background: color-mix(in srgb, var(--pc) 62%, var(--surface)); }
+:is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a)::after {
+  content: ""; position: absolute; left: 24px; top: 50%; width: 82px; height: 104px; margin-top: -54px; border-radius: 8px 13px 13px 8px; rotate: -4deg;
+  background:
+    var(--inner),
+    linear-gradient(#fcfbf8, #fcfbf8) 50% 66% / 58px 52px no-repeat,
+    linear-gradient(color-mix(in srgb, var(--ink) 38%, transparent), color-mix(in srgb, var(--ink) 38%, transparent)) 12px 13px / 34px 4px no-repeat,
+    linear-gradient(color-mix(in srgb, var(--ink) 20%, transparent), color-mix(in srgb, var(--ink) 20%, transparent)) 12px 22px / 22px 3px no-repeat,
+    radial-gradient(color-mix(in srgb, var(--ink) 16%, transparent) 0.8px, transparent 1px) 0 0 / 6px 6px,
+    color-mix(in srgb, var(--pc) 46%, var(--surface));
+  box-shadow: 0 12px 18px -8px rgba(40, 30, 20, 0.38), inset 0 0 0 1px color-mix(in srgb, var(--pc) 34%, transparent);
+}
+/* three small pictures inside the notebook, so the shelf is not all dots */
+:is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a):nth-child(3n + 2) { --inner: linear-gradient(#1d1c1a99, #1d1c1a99) 50% 58% / 34px 3px no-repeat, linear-gradient(#1d1c1a66, #1d1c1a66) 50% 66% / 34px 3px no-repeat, linear-gradient(#ff5a1f, #ff5a1f) 38% 74% / 16px 3px no-repeat; }
+:is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a):nth-child(3n) { --inner: radial-gradient(circle at 36% 60%, #1d1c1a 0 3px, transparent 3.6px), radial-gradient(circle at 64% 60%, #1d1c1a 0 3px, transparent 3.6px), radial-gradient(circle at 50% 74%, #ff5a1f 0 4px, transparent 4.6px); }
+/* eight tones, cycling; modules take their colour from their domain */
+:is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a):nth-child(8n + 1) { --pc: #3fa89b; }
+:is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a):nth-child(8n + 2) { --pc: #e0735f; }
+:is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a):nth-child(8n + 3) { --pc: #c0689a; }
+:is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a):nth-child(8n + 4) { --pc: #8b78d0; }
+:is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a):nth-child(8n + 5) { --pc: #d4a73a; }
+:is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a):nth-child(8n + 6) { --pc: #5fa862; }
+:is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a):nth-child(8n + 7) { --pc: #4c86c8; }
+:is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a):nth-child(8n) { --pc: #8a857a; }
+.mod-card.d-mobile-systems { --pc: #3fa89b; } .mod-card.d-fine-tuning { --pc: #8b78d0; } .mod-card.d-rag-retrieval { --pc: #e0735f; }
+.mod-card.d-model-serving { --pc: #4c86c8; } .mod-card.d-evals-guardrails { --pc: #d4a73a; } .mod-card.d-infrastructure { --pc: #5fa862; }
+.mod-card.d-agents-apps { --pc: #c0689a; } .mod-card.d-core-engineering { --pc: #8a857a; }
+/* text inside */
+.mod-card b, .iv-card h3, .pe-card h3, .pattern-card h3 { margin: 0; font: 400 clamp(22px, 2.2vw, 28px)/1.12 var(--font-serif); letter-spacing: -0.035em; color: var(--ink); }
+.mod-card .mc-tier, .iv-card .iv-top, .pe-card .top, .pattern-card .pc-idx { font: 500 11.5px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: none; padding: 0; }
+.mod-card .mc-why, .iv-card p, .pe-card p, .pattern-card p { margin: 0; font-size: 15.5px; line-height: 1.45; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.iv-card .iv-go, .pattern-card .pc-foot { margin-top: 6px; font-weight: 600; font-size: 14.5px; color: var(--ink); }
+.pe-card .pe-strip { display: none; }
+.mod-grid, .iv-grid, .pe-grid, .rn-grid { gap: 18px; }
+@media (max-width: 860px) {
+  body :is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a) { min-height: 140px; padding: 18px 18px 18px 108px !important; }
+  :is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a)::after { left: 16px; width: 64px; height: 82px; margin-top: -42px; }
+  :is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a)::before { left: 74px; width: 14px; height: 36px; margin-top: -24px; }
+}
+.mod-grid, .iv-grid, .pe-grid, .rn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 410px), 1fr)); gap: 18px; }
+body :is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a) { padding: 22px 22px 22px 124px !important; min-height: 160px; }
+:is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a)::after { left: 20px; width: 72px; height: 92px; margin-top: -48px; }
+:is(.mod-card, .iv-card, .pe-card, .pattern-card, .ip-path, .pg-days > li > a)::before { left: 84px; width: 16px; height: 40px; margin-top: -26px; }
+.mod-card .mc-tier { white-space: normal; }
+.mod-card b, .iv-card h3, .pe-card h3, .pattern-card h3 { font-size: clamp(21px, 1.9vw, 26px); }
+
+/* /aiengine: learning paths and the curriculum as pastel notebook cards */
+.aie-paths { grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 20px; }
+.aie-paths .aie-feature { grid-column: auto; background: color-mix(in srgb, var(--pc, #e0735f) 20%, var(--surface)) !important; border: 1px solid color-mix(in srgb, var(--pc, #e0735f) 24%, transparent) !important; border-radius: 28px !important; padding: 30px !important; box-shadow: none !important; }
+.aie-paths .aie-feature:nth-child(1) { --pc: #e0735f; } .aie-paths .aie-feature:nth-child(2) { --pc: #3fa89b; }
+.aie-paths .aie-feature h3 { font: 400 clamp(28px, 3vw, 38px)/1.1 var(--font-serif); letter-spacing: -0.04em; }
+.aie-paths .aie-path { grid-column: 1 / -1; border-top: 0 !important; padding: 10px 0 0 !important; }
+.aie-path h3 { margin: 0 0 4px; font: 400 clamp(28px, 3.2vw, 40px)/1.1 var(--font-serif); letter-spacing: -0.04em; }
+.aie-path h3 em { font-style: italic; }
+.aie-path > p { margin: 0 0 18px; color: var(--muted); font-size: 17px; }
+.aie-path .cb-grid { columns: auto; }
+.aie-cur { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr)); gap: 18px; }
+.aie-ph { background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; border-radius: 0 !important; }
+.aie-ph[open] { grid-column: 1 / -1; }
+.aie-ph > summary.cb { list-style: none; cursor: pointer; }
+.aie-ph > summary.cb::-webkit-details-marker { display: none; }
+.aie-ph > summary.cb::before, .aie-ph > summary.cb::after { display: none; }
+.aie-ph[open] > summary.cb { border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }
+.aie-its { margin-top: 8px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 22px; }
+.cb-bar { display: block; height: 5px; margin-top: 10px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 10%, transparent); overflow: hidden; }
+.cb-bar > span { display: block; height: 100%; border-radius: 3px; background: var(--ink); }
+
+/* paths and lesson lists (React Native hub, AI-interview paths, programme days) use the same notebook cards */
+.pg-days, .ip-paths { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 410px), 1fr)); gap: 18px; }
+.pg-days > li { list-style: none; }
+.pg-days > li > a { display: flex !important; flex-direction: column; grid-template-columns: none; align-items: flex-start; }
+.pg-days .pg-n { display: block; width: auto; height: auto; background: none !important; border-radius: 0; font: 500 11.5px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted) !important; }
+.pg-days .pg-tx { display: flex; flex-direction: column; gap: 6px; }
+.pg-days .pg-tx b { font: 400 clamp(21px, 1.9vw, 26px)/1.12 var(--font-serif); letter-spacing: -0.035em; }
+.pg-days .pg-tx > span { font-size: 15.5px; line-height: 1.45; color: var(--muted); }
+.ip-path small { font: 500 11.5px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.ip-path h3 { margin: 0; font: 400 clamp(22px, 2.2vw, 28px)/1.12 var(--font-serif); letter-spacing: -0.035em; }
+.ip-path p { margin: 0; font-size: 15.5px; line-height: 1.45; color: var(--muted); }
+.pg-days > li:nth-child(8n + 1) > a { --pc: #3fa89b; } .pg-days > li:nth-child(8n + 2) > a { --pc: #e0735f; } .pg-days > li:nth-child(8n + 3) > a { --pc: #c0689a; }
+.pg-days > li:nth-child(8n + 4) > a { --pc: #8b78d0; } .pg-days > li:nth-child(8n + 5) > a { --pc: #d4a73a; } .pg-days > li:nth-child(8n + 6) > a { --pc: #5fa862; }
+.pg-days > li:nth-child(8n + 7) > a { --pc: #4c86c8; } .pg-days > li:nth-child(8n) > a { --pc: #8a857a; }
+.pg-days > li:nth-child(3n + 2) > a { --inner: linear-gradient(#1d1c1a99, #1d1c1a99) 50% 58% / 34px 3px no-repeat, linear-gradient(#1d1c1a66, #1d1c1a66) 50% 66% / 34px 3px no-repeat, linear-gradient(#ff5a1f, #ff5a1f) 38% 74% / 16px 3px no-repeat; }
+.pg-days > li:nth-child(3n) > a { --inner: radial-gradient(circle at 36% 60%, #1d1c1a 0 3px, transparent 3.6px), radial-gradient(circle at 64% 60%, #1d1c1a 0 3px, transparent 3.6px), radial-gradient(circle at 50% 74%, #ff5a1f 0 4px, transparent 4.6px); }
+.ip-paths .ip-path:nth-child(4n + 1) { --pc: #e0735f; } .ip-paths .ip-path:nth-child(4n + 2) { --pc: #3fa89b; }
+.ip-paths .ip-path:nth-child(4n + 3) { --pc: #d4a73a; } .ip-paths .ip-path:nth-child(4n) { --pc: #8b78d0; }
+.pg-days .now > a, .pg-days .done > a { box-shadow: inset 0 0 0 2px var(--ink) !important; }
+/* the dense catalog (Explore) keeps small cards, now tinted */
+.asset-card { --pc: #8a857a; background: color-mix(in srgb, var(--pc) 14%, var(--surface)) !important; border: 0 !important; }
+.asset-card:nth-child(6n + 1) { --pc: #3fa89b; } .asset-card:nth-child(6n + 2) { --pc: #e0735f; } .asset-card:nth-child(6n + 3) { --pc: #c0689a; }
+.asset-card:nth-child(6n + 4) { --pc: #8b78d0; } .asset-card:nth-child(6n + 5) { --pc: #d4a73a; } .asset-card:nth-child(6n) { --pc: #5fa862; }
+
+/* curriculum phases: the card layout wins over the old accordion grid */
+.aie-ph > summary.cb { display: flex !important; grid-template-columns: none !important; align-items: center; gap: 18px; padding: 22px 22px 22px 22px !important; min-height: 176px; border-radius: 26px; }
+.aie-ph > summary.cb > .bk { flex: none; position: relative; width: 96px; height: 116px; }
+.aie-ph > summary.cb > .cb-tx { flex: 1; min-width: 0; align-self: stretch; }
+.aie-ph > summary.cb::before, .aie-ph > summary.cb::after { content: none !important; display: none !important; }
+.aie-ph > summary .cb-tx small, .aie-ph > summary .cb-tx i { position: static; background: none; padding: 0; }
+.aie-ph .cb-tx > span:not(.cb-bar) { font-weight: 400 !important; }
+.aie-ph .cb-tx small { font-weight: 500 !important; }
+.aie-ph .cb-tx i { font-weight: 600; }
+
+/* reels: the old, more specific course-button rule is overridden, and the logo and crumbs stay on one line */
+.cols a.colbtn { background: var(--surface-2) !important; color: var(--ink) !important; border: 1px solid transparent; border-radius: 14px; }
+.cols a.colbtn:hover { border-color: var(--line-strong); }
+.cols a.colbtn[aria-current="page"] { background: var(--surface) !important; border-color: var(--ink); box-shadow: var(--shadow-sm); }
+.cols a.colbtn small { color: var(--muted); }
+.tb-logo, .tb-logo b { white-space: nowrap; }
+.tb-crumb, .tb-cur { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* reel pages are exactly as wide as the stage, so long lines wrap instead of running past the edge */
+.t-read .pages { grid-template-columns: minmax(0, 1fr) !important; }
+.t-read .sheet, .t-read .pg { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+/* code windows on phones: the file name stays on one line */
+.ed-tab { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 55%; }
+.ed-bar { min-width: 0; }
