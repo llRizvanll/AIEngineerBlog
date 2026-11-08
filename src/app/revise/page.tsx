@@ -51,7 +51,7 @@ export default function RevisePage() {
           </div>
         </div>
 
-        <section className="ap-card today" aria-labelledby="today">
+        <section className="ap-card todaycard" aria-labelledby="today">
           <div>
             <h2 id="today">
               Today&apos;s <em>set</em>

@@ -12,7 +12,7 @@ import { PATTERN_BASICS } from "@/content/basics";
 import { MORE_PROBLEMS } from "@/content/coding-more";
 import { Reading } from "@/components/Reading";
 import { Code, Faq, Footer } from "@/components/ui";
-import { TEMPLATE_ALT } from "@/content/coding-alt";
+import { TEMPLATE_ALT, WORKED_ALT } from "@/content/coding-alt";
 import { Chapters, type ChapterPart } from "@/components/Chapters";
 import { Icon } from "@/components/Icons";
 import { AssetMeta } from "@/components/AssetMeta";
@@ -126,7 +126,7 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
           intro: "Strict TypeScript, type-checked and tested.",
           body: (
             <>
-              <Code sample={[p.worked.problem, "ts", p.worked.code]} />
+              <Code sample={[p.worked.problem, "ts", p.worked.code]} alt={WORKED_ALT[p.id]} />
               {workedSteps.length > 0 && (
                 <>
                   <h3>Step by step</h3>

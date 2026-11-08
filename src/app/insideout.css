@@ -69,7 +69,6 @@ body {
   background-color: var(--paper);
   background-image: radial-gradient(color-mix(in srgb, var(--ink) 11%, transparent) 1px, transparent 1.2px);
   background-size: 22px 22px;
-  background-attachment: fixed;
   letter-spacing: -0.003em;
   font-feature-settings: normal;
 }
@@ -425,8 +424,8 @@ body:has(.navrail) .layout > article > .part .part-t { font-size: clamp(34px, 5v
 .ap-card h2 { margin: 0 0 10px; font: 400 clamp(34px, 4.6vw, 54px)/1 var(--font-serif); letter-spacing: -0.045em; }
 .ap-card h2 em { font-style: italic; }
 .ap-card > div > p { margin: 0 0 24px; font-size: 18px; color: var(--muted); max-width: 40ch; }
-.today { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); gap: 36px; align-items: center; }
-.today .btn { padding: 15px 28px; border-radius: 16px; font-size: 17px; }
+.todaycard { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); gap: 36px; align-items: center; }
+.todaycard .btn { padding: 15px 28px; border-radius: 16px; font-size: 17px; }
 .week { padding: 26px; border-radius: 26px; text-align: center; background: color-mix(in srgb, #d4a73a 18%, var(--surface)); }
 .week-card { margin: 0 auto 18px; max-width: 360px; padding: 16px 18px 12px; border: 2px solid var(--ink); border-radius: 6px 22px 6px 6px; background: var(--surface); text-align: left; rotate: -1.5deg; }
 .week-card small { display: block; margin-bottom: 14px; font: 600 15px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
@@ -442,7 +441,7 @@ body:has(.navrail) .app-page .wrap { padding: 0; max-width: none; }
 .app-page .mc-proof, .app-page .method { margin-bottom: 26px; }
 .app-page .section-h h2 { font-family: var(--font-serif); font-weight: 340; font-size: clamp(30px, 4vw, 44px); letter-spacing: -0.04em; }
 .app-page .continue, .app-page [class*="keep"] { margin-bottom: 26px; }
-@media (max-width: 860px) { .today { grid-template-columns: 1fr; } .ap-card { border-radius: 26px; } }
+@media (max-width: 860px) { .todaycard { grid-template-columns: 1fr; } .ap-card { border-radius: 26px; } }
 .app-page { padding-left: 14px; }
 
 /* ---------- the end of a page: Watch, Read next, Next lesson ---------- */
@@ -501,11 +500,11 @@ body:has(.navrail) section[class^="in-"] > h2 .n { position: absolute; top: -17p
 .story p { max-width: 70ch; }
 
 /* numbered steps with dashed rules, like the example rows */
-.flow-notes, .qlist { list-style: none; counter-reset: st; margin: 0; padding: 0; }
-.flow-notes li, .qlist li { counter-increment: st; display: grid; grid-template-columns: 52px 1fr; gap: 12px; padding: 18px 0; border-top: 1px dashed var(--line-strong); font-size: 17.5px; line-height: 1.55; }
-.flow-notes li:first-child, .qlist li:first-child { border-top: 0; }
-.flow-notes li::before, .qlist li::before { content: counter(st); font: 400 30px/1 var(--font-serif); color: var(--muted); }
-.flow-notes li::marker, .qlist li::marker { content: ""; }
+.flow-notes { list-style: none; counter-reset: st; margin: 0; padding: 0; }
+.flow-notes li { counter-increment: st; display: grid; grid-template-columns: 52px 1fr; gap: 12px; padding: 18px 0; border-top: 1px dashed var(--line-strong); font-size: 17.5px; line-height: 1.55; }
+.flow-notes li:first-child { border-top: 0; }
+.flow-notes li::before { content: counter(st); font: 400 30px/1 var(--font-serif); color: var(--muted); }
+.flow-notes li::marker { content: ""; }
 
 /* Q&A: a pastel panel; each question is a row, the answer opens as a white card with a green label */
 body:has(.navrail) .layout > article > section.in-qa { background: color-mix(in srgb, var(--pc) 14%, var(--surface)); }
@@ -649,7 +648,7 @@ body:has(.navrail) .layout > article > section.in-qa { background: none; }
 .roadmap a { background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 14px 4px; }
 .roadmap a:hover { background: none; }
 .ap-card { background: none; border: 0; box-shadow: none; border-radius: 0; padding: 0; }
-.today, .pr-pick, .pr-card, .pr-end { background: var(--surface); border: 1px solid var(--line); border-radius: 34px; padding: clamp(22px, 3.2vw, 44px); box-shadow: var(--shadow-sm); }
+.todaycard, .pr-pick, .pr-card, .pr-end { background: var(--surface); border: 1px solid var(--line); border-radius: 34px; padding: clamp(22px, 3.2vw, 44px); box-shadow: var(--shadow-sm); }
 .end-card, .pe-nav { background: none; border: 0; box-shadow: none; border-radius: 0; padding: 0; }
 .end-card { border-top: 1px solid var(--line); padding-top: 28px; }
 .pe-nav { background: none; }
@@ -674,3 +673,191 @@ details.fu[open] > div::before { content: none; }
 .lang-tabs button:hover { color: var(--ink); }
 .lang-tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent-2); }
 .lang-group .editor { margin: 0; }
+
+/* =====================================================================
+   OLD THEME SWEEP — purple, navy and gradient leftovers re-pointed to the page palette
+   ===================================================================== */
+/* chips on page headers: Learn / Practice / Revise */
+.am-learn, .pf-m-learn { --mc: #e8501a; --mct: #c2410c; }
+.am-practice, .pf-m-practice { --mc: #2f6bd8; --mct: #2556b0; }
+.am-revise, .pf-m-revise { --mc: #23885a; --mct: #1b6b47; }
+.pill.ai { background: var(--accent-soft); color: var(--accent); }
+.pill:not(.ai):not(.live) { background: var(--surface-2); color: var(--muted); }
+:root[data-theme="dark"] .pill:not(.ai):not(.live) { color: var(--muted); }
+.kd-Deepdive { background: rgba(123, 79, 211, 0.14) !important; color: #6038b3 !important; }
+.kd-Protocol { background: rgba(47, 107, 216, 0.14) !important; color: #2556b0 !important; }
+.m-avatar { background: var(--ink); color: var(--paper); box-shadow: none; }
+.theme-chips button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+/* dark indigo gradient cards become pastel cards with ink text */
+.prep-card, .tile.big { --pc: var(--c1, #ff5a1f); background: color-mix(in srgb, var(--pc) 20%, var(--surface)) !important; color: var(--ink) !important; box-shadow: var(--shadow-sm) !important; border: 1px solid var(--line) !important; }
+.prep-card p, .tile.big p, .prep-card .eyebrow, .tile.big .tile-meta { color: var(--muted) !important; }
+.prep-card h3, .tile.big h3, .tile.big .tile-go, .prep-card .pc-go { color: var(--ink) !important; }
+.prep-card .pc-chips span { background: var(--surface) !important; color: var(--ink); backdrop-filter: none; }
+.tile.big .tile-ic { background: var(--surface) !important; box-shadow: inset 0 0 0 1px var(--line) !important; color: var(--ink); }
+.cta-band { background: color-mix(in srgb, var(--accent-2) 14%, var(--surface)) !important; color: var(--ink) !important; box-shadow: none !important; border: 1px solid var(--line); }
+.cta-band p { color: var(--muted) !important; }
+.today-top, .today-meta { color: var(--muted); }
+
+/* protocol explorer: was a fixed navy console, now follows the theme */
+#view-proto { --pe-bg: var(--paper); --pe-p: var(--surface); --pe-p2: var(--surface-2); --pe-l: var(--line); --pe-t: var(--ink); --pe-m: var(--muted); --pe-a: var(--accent); background: transparent !important; color: var(--ink); }
+
+/* AI-interview pages: serif headings, flat tabs, plain disclosure rows */
+.ls h1, .pg-hero h1, .bs-read h2, .ls-part h2, .ls h2 { font-family: var(--font-serif); font-weight: 340; letter-spacing: -0.04em; }
+.ls h1, .pg-hero h1 { font-size: clamp(40px, 5.6vw, 68px); line-height: 1.02; }
+.ls h2, .ls-part h2 { font-size: clamp(32px, 4vw, 48px); line-height: 1.08; }
+.ls h3 { font-family: var(--font-display); font-weight: 600; }
+.bs-read h2 { font-size: clamp(26px, 3vw, 34px); }
+.bs-read h2 span { font-family: var(--font-mono); font-size: 0.55em; padding-top: 0.5em; }
+.bs-modes { background: none; border: 0; box-shadow: none; padding: 0; gap: 26px; display: flex; border-bottom: 1px solid var(--line); border-radius: 0; }
+.bs-modes button { flex: none; min-height: 46px; padding: 0 2px; border-radius: 0; background: none !important; color: var(--muted); font-weight: 500; font-size: 16px; border-bottom: 2px solid transparent; }
+.bs-modes button[aria-selected="true"] { background: none !important; color: var(--ink) !important; border-bottom-color: var(--accent-2); }
+.bs-cards, details.lvl2 { background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; }
+.bs-cards summary, details.lvl2 > summary { padding: 10px 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; font: 500 16px var(--font-display); color: var(--accent); }
+.bs-drill, .pb { background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 18px 0; }
+.pc { background: var(--surface-2); border: 0; border-radius: 18px; }
+.pc-head, .pc-text { background: none; border: 0; }
+.pc-copy { border-radius: 999px; }
+.ls-ref, .ls-steps, .ls-words { border-radius: 0; }
+
+/* flashcards deck */
+.rv-card { border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; box-shadow: none; padding: 26px 0; min-height: 0; }
+.rv-card::before { display: none !important; }
+.rv-card h2 { font-family: var(--font-serif); font-weight: 340; font-size: clamp(30px, 4vw, 46px); letter-spacing: -0.04em; line-height: 1.1; }
+.rv-btns button { border-radius: 999px; }
+.rv-btns .pri, .rv-show { background: var(--ink) !important; color: var(--paper) !important; border-color: var(--ink) !important; }
+
+/* target questions: a plain numbered list */
+html:root article .qlist { gap: 0; }
+html:root article .qlist li { display: block; background: none; border: 0; border-top: 1px dashed var(--line-strong); border-radius: 0; padding: 18px 0 18px 54px; font: 400 clamp(19px, 2.2vw, 23px)/1.4 var(--font-serif) !important; letter-spacing: -0.015em; }
+html:root article .qlist li:first-child { border-top: 0; }
+.qlist li::before { top: 22px; left: 2px; font: 600 14px var(--font-mono); }
+
+/* the AI-engineering hub: stacked sections instead of boxes squeezed into a grid */
+.aie-feature, .aie-path { grid-column: 1 / -1; background: none !important; border: 0 !important; border-top: 1px solid var(--line) !important; border-radius: 0 !important; box-shadow: none !important; padding: 30px 0 !important; }
+.aie-path ol { columns: 2; column-gap: 40px; }
+.aie-path li { break-inside: avoid; margin-bottom: 14px; }
+.aie-stats div, .kit div { background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 16px 0 0; }
+.aie-stats b { font: 400 clamp(36px, 5vw, 56px)/1 var(--font-serif); letter-spacing: -0.04em; color: var(--ink); }
+.kit b { font: 400 22px var(--font-serif); letter-spacing: -0.02em; }
+.hc, .iv-card, .mod-card, .pattern-card, .rc, .hm-c { border: 0 !important; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow-sm); }
+@media (max-width: 720px) { .aie-path ol { columns: 1; } }
+
+/* landing FAQ: the page's generic details box is removed, leaving hairlines */
+.io-faq-list details { background: none !important; border: 0 !important; border-top: 1px solid var(--line) !important; border-radius: 0 !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
+.io-faq-list details:last-child { border-bottom: 1px solid var(--line) !important; }
+.io-faq-list summary { padding: 26px 40px 26px 2px !important; background: none !important; }
+.io-faq-list p { padding: 0 2px; }
+
+/* accent strips on old cards are gone; step rows and stat rows flow with hairlines */
+.tldr::before, .hack::before, .goal::before, .pattern-card::before, .asset-card::before, .iv-card::before { display: none !important; }
+.asset-card, .ip-path, .lp-skill { border-top: 1px solid var(--line) !important; border-radius: 22px; box-shadow: var(--shadow-sm); }
+.method { gap: 0 28px; }
+.method-step, .mc-proof > div, .iv-step, .steps > * { background: none !important; border: 0 !important; border-top: 1px solid var(--line) !important; border-radius: 0 !important; box-shadow: none !important; padding: 16px 0 !important; }
+.method-step .m-n { background: none; color: var(--accent); font: 600 14px var(--font-mono); padding: 0; width: auto; height: auto; }
+.mc-proof { background: none !important; border: 0 !important; box-shadow: none !important; gap: 0 28px; }
+.mc-proof b { font: 400 clamp(30px, 4vw, 44px)/1 var(--font-serif); letter-spacing: -0.04em; color: var(--ink); }
+.hack, .goal, .tldr { background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; }
+
+/* landing hero: sits at the top with the art beside it, and the next section follows without a blank screen */
+.io-hero { min-height: 0 !important; padding: 72px 0 96px !important; place-items: start center; }
+.io-art-l, .io-art-r { top: 0 !important; }
+.io-hero-in { padding-top: clamp(40px, 9vh, 120px); }
+
+/* ---------- end of an AI-interview lesson: checklist, score, sources, next ---------- */
+.dp-items li { border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; padding: 16px 0; }
+.dp-items li.on { background: none; }
+.dp-items a { font: 400 22px/1.3 var(--font-serif); letter-spacing: -0.02em; }
+.dp-rubric label { padding: 10px 2px; border-radius: 0; border-bottom: 1px solid var(--line); font-size: 17px; }
+.dp-rubric label:hover { background: none; }
+.dp-items input, .dp-rubric input { appearance: none; -webkit-appearance: none; width: 22px; height: 22px; margin: 3px 0 0; border: 1.5px solid var(--line-strong); border-radius: 50%; background: var(--surface); display: grid; place-items: center; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.dp-items input:checked, .dp-rubric input:checked { background: var(--good); border-color: var(--good); }
+.dp-items input:checked::after, .dp-rubric input:checked::after { content: ""; width: 6px; height: 11px; margin-top: -2px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.dp-score { padding: 14px 0 !important; border-radius: 0 !important; background: none !important; border-top: 1px solid var(--line); font-size: 17px !important; }
+.dp-score b, .dp-score strong { font: 400 28px var(--font-serif); margin-right: 8px; }
+.ls-ref, .ls-ref.ip-sources { border: 0 !important; border-top: 1px solid var(--line) !important; border-bottom: 1px solid var(--line) !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; padding: 0 !important; }
+.ls-ref summary { padding: 18px 40px 18px 2px; font: 400 clamp(21px, 2.4vw, 26px)/1.25 var(--font-serif); color: var(--ink); letter-spacing: -0.02em; background: none !important; }
+.ls-ref > :not(summary) { padding-left: 2px; padding-right: 2px; }
+.ls-ref[open] { padding-bottom: 18px !important; }
+.ip-sources li { margin: 8px 0; }
+.ls-tomorrow { font: 340 clamp(26px, 3.2vw, 36px)/1.2 var(--font-serif) !important; letter-spacing: -0.035em; max-width: 30ch; }
+.dp-done { gap: 12px; }
+.dp-done .btn { border-radius: 999px; padding: 14px 26px; font-size: 16px; }
+.ls-prev a { color: var(--muted); text-underline-offset: 5px; }
+
+/* landing artwork: hard-shadow windows, so the SVGs carry their own shadows */
+.io-art svg { filter: none; }
+.io-art { padding: 0; }
+.io-card-art { background-image: radial-gradient(color-mix(in srgb, var(--ink) 10%, transparent) 1px, transparent 1.2px); }
+.io-card-art svg { filter: none; }
+
+/* series pages: pastel covers, serif headings, no loud gradients */
+.m-more h3 { font: 340 clamp(28px, 3.6vw, 42px)/1.1 var(--font-serif); letter-spacing: -0.04em; }
+.m-card { border: 0 !important; border-radius: 26px !important; box-shadow: var(--shadow-sm) !important; background: var(--surface); }
+.m-card .post-cover { filter: none; }
+.post-cover text { font-weight: 340; }
+.io-art-l, .io-art-r { width: clamp(220px, 19vw, 330px) !important; }
+
+/* soft objects carry their own shadows */
+.io-art svg, .io-card-art svg { filter: none; }
+.io-card-art { padding: 26px; }
+
+/* =====================================================================
+   READING SHEET — one cream sheet behind content, as in the reference lessons.
+   Sections inside stay flat; only the sheet has a background, so text never sits on the dots.
+   ===================================================================== */
+body:has(.navrail) .layout > article,
+body:has(.navrail) .ls,
+body:has(.navrail) .pg,
+body:has(.navrail) #main main:not(.app-page):not(.landing):not(.view-reels-page):not(.io):not(.ls):not(.pg) > .wrap {
+  background: var(--surface);
+  border-radius: 32px;
+  padding: clamp(22px, 4vw, 52px);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--line);
+}
+body:has(.navrail) #main main:not(.app-page):not(.landing):not(.view-reels-page):not(.io):not(.ls):not(.pg) > .wrap { max-width: 1180px; margin: 8px 28px 0 0; }
+body:has(.navrail) .layout > article { margin-bottom: 8px; }
+body:has(.navrail) .ls, body:has(.navrail) .pg { max-width: 860px; margin: 8px auto 40px; }
+body:has(.navrail) .layout > article > section[class^="in-"]:first-of-type { padding-top: 8px; }
+
+/* the flashcard deck, the library and the practice runner sit on the same kind of sheet */
+.app-page #deck, .app-page > div > .ap-card:not(.todaycard):not(.pr-pick):not(.pr-card):not(.pr-end) { background: var(--surface); border: 1px solid var(--line); border-radius: 32px; box-shadow: var(--shadow-sm); padding: clamp(20px, 3.4vw, 44px); }
+.rv-card { border-top: 0; padding: 18px 0 8px; }
+.rv-card .meta, .rv-card .tags { margin-bottom: 4px; }
+
+@media (max-width: 860px) {
+  body:has(.navrail) .layout > article, body:has(.navrail) .ls, body:has(.navrail) .pg,
+  body:has(.navrail) #main main:not(.app-page):not(.landing):not(.view-reels-page):not(.io):not(.ls):not(.pg) > .wrap { border-radius: 24px; padding: 20px 16px; margin-left: 8px; margin-right: 8px; }
+}
+
+
+/* =====================================================================
+   SMOOTHNESS — nothing animates on navigation, nothing blurs, nothing repaints on scroll
+   ===================================================================== */
+html { scroll-behavior: auto !important; }
+.page-in { animation: none !important; opacity: 1 !important; transform: none !important; }
+*, *::before, *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+:root { --glass: var(--surface); }
+:root[data-theme="dark"], :root:not([data-theme="light"]):not([data-theme="sepia"]) { --glass: var(--surface); }
+.btn, .rail a, .navrail a, .navrail button, .nav-top, .tb-search, .tb-icon { transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s !important; }
+/* long image-like blocks and big lists are laid out only when near the screen */
+.mc-grid, .cb-grid, .io-more, .io-start { contain: layout style; }
+.navrail, .topbar { contain: layout style; }
+.rvl { will-change: auto; }
+.rvl.in { transition: none; }
+
+/* landing artwork: pictures sit on pastel panels with a soft shadow from the SVG itself */
+.io-art svg, .io-card-art svg { filter: drop-shadow(0 12px 12px rgba(60, 48, 30, 0.2)); }
+.io-art { background: transparent; }
+.io-art-l, .io-art-r { width: clamp(250px, 21.5vw, 380px) !important; }
+.io-art-l { left: clamp(-60px, -2vw, 0px) !important; } .io-art-r { right: clamp(-60px, -2vw, 0px) !important; }
+
+/* lesson pages: one sheet, left-aligned with the rest of the app, wide enough to read comfortably */
+body:has(.navrail) main.ls, body:has(.navrail) main.pg { max-width: 920px; margin: 8px auto 40px 14px; }
+body:has(.navrail) main.ls > .wrap, body:has(.navrail) main.pg > .wrap { background: none; border: 0; box-shadow: none; padding: 0; margin: 0; max-width: none; border-radius: 0; }
+body:has(.navrail) .ls-body, body:has(.navrail) .bs-read { max-width: none; }
+
+/* the Read / Memorise / Practise tabs stay put while scrolling and cover the text beneath them */
+.bs-modes { position: sticky; top: 0; z-index: 30; background: var(--surface) !important; margin: 0 calc(-1 * clamp(22px, 4vw, 52px)) 20px; padding: 0 clamp(22px, 4vw, 52px); }
+@media (max-width: 860px) { body:has(.navrail) main.ls, body:has(.navrail) main.pg { margin: 8px 8px 24px; } }

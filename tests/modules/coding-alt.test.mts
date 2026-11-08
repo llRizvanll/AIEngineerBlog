@@ -6,9 +6,12 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PATTERNS } from "../../src/content/coding.ts";
-import { TEMPLATE_ALT } from "../../src/content/coding-alt.ts";
+import { TEMPLATE_ALT, WORKED_ALT } from "../../src/content/coding-alt.ts";
 
-for (const p of PATTERNS) assert.ok(TEMPLATE_ALT[p.id]?.java && TEMPLATE_ALT[p.id]?.kotlin, `${p.id} has Kotlin and Java`);
+for (const p of PATTERNS) {
+  assert.ok(TEMPLATE_ALT[p.id]?.java && TEMPLATE_ALT[p.id]?.kotlin, `${p.id} template has Kotlin and Java`);
+  assert.ok(WORKED_ALT[p.id]?.java && WORKED_ALT[p.id]?.kotlin, `${p.id} worked solution has Kotlin and Java`);
+}
 
 const top: string[] = [];
 const methods: string[] = [];
@@ -30,13 +33,16 @@ function blocks(code: string): string[] {
   return out;
 }
 for (const p of PATTERNS) {
-  for (const block of blocks(TEMPLATE_ALT[p.id].java)) (/^class /.test(block.trim()) ? top : methods).push(block);
+  for (const block of [...blocks(TEMPLATE_ALT[p.id].java), ...blocks(WORKED_ALT[p.id].java)]) (/^class /.test(block.trim()) ? top : methods).push(block);
 }
 const src = `import java.util.*;
 import java.util.function.*;
 
 public class T {
 ${methods.join("\n\n")}
+
+  static ListNode list(int... v) { ListNode d = new ListNode(0), t = d; for (int i : v) { t.next = new ListNode(i); t = t.next; } return d.next; }
+  static String listStr(ListNode n) { List<Integer> o = new ArrayList<>(); for (; n != null; n = n.next) o.add(n.val); return o.toString(); }
 
   static void eq(Object a, Object b) { if (!Objects.deepEquals(a, b)) throw new AssertionError(Arrays.deepToString(new Object[] {a}) + " != " + Arrays.deepToString(new Object[] {b})); }
 
@@ -70,6 +76,29 @@ ${methods.join("\n\n")}
     eq(t.startsWith("app"), true); eq(t.startsWith("apx"), false);
     eq(canJump(new int[] {2, 3, 1, 1, 4}), true);
     eq(canJump(new int[] {3, 2, 1, 0, 4}), false);
+    eq(threeSum(new int[] {-1, 0, 1, 2, -1, -4}).toString(), "[[-1, -1, 2], [-1, 0, 1]]");
+    eq(minWindow("ADOBECODEBANC", "ABC"), "BANC");
+    eq(minWindow("a", "b"), "");
+    ListNode x = new ListNode(3), y = new ListNode(2), z = new ListNode(0);
+    x.next = y; y.next = z; z.next = y;
+    eq(detectCycle(x) == y, true);
+    eq(detectCycle(new ListNode(1)) == null, true);
+    eq(minEatingSpeed(new int[] {3, 6, 7, 11}, 8), 4);
+    eq(longestConsecutive(new int[] {100, 4, 200, 1, 3, 2}), 4);
+    eq(dailyTemperatures(new int[] {73, 74, 75, 71, 69, 72, 76, 73}), new int[] {1, 1, 4, 2, 1, 1, 0, 0});
+    eq(listStr(mergeKLists(new ListNode[] {list(1, 4, 5), list(1, 3, 4), list(2, 6)})), "[1, 1, 2, 3, 4, 4, 5, 6]");
+    eq(minRooms(new int[][] {{0, 30}, {5, 10}, {15, 20}}), 2);
+    eq(numIslands(new char[][] {"11110".toCharArray(), "11010".toCharArray(), "11000".toCharArray(), "00000".toCharArray()}), 1);
+    eq(numIslands(new char[][] {"11000".toCharArray(), "11000".toCharArray(), "00100".toCharArray(), "00011".toCharArray()}), 3);
+    eq(canFinish(2, new int[][] {{1, 0}}), true);
+    eq(canFinish(2, new int[][] {{1, 0}, {0, 1}}), false);
+    eq(findRedundantConnection(new int[][] {{1, 2}, {1, 3}, {2, 3}}), new int[] {2, 3});
+    eq(combinationSum(new int[] {2, 3, 6, 7}, 7).toString(), "[[2, 2, 3], [7]]");
+    eq(coinChange(new int[] {1, 2, 5}, 11), 3);
+    eq(coinChange(new int[] {2}, 3), -1);
+    eq(suggestedProducts(new String[] {"mobile", "mouse", "moneypot", "monitor", "mousepad"}, "mouse").toString(), "[[mobile, moneypot, monitor], [mobile, moneypot, monitor], [mouse, mousepad], [mouse, mousepad], [mouse, mousepad]]");
+    eq(canCompleteCircuit(new int[] {1, 2, 3, 4, 5}, new int[] {3, 4, 5, 1, 2}), 3);
+    eq(canCompleteCircuit(new int[] {2, 3, 4}, new int[] {3, 4, 3}), -1);
     System.out.println("ok");
   }
 }
@@ -81,4 +110,4 @@ writeFileSync(join(dir, "T.java"), src);
 execFileSync("javac", ["-Xlint:all", "-d", dir, join(dir, "T.java")], { stdio: "pipe" });
 const out = execFileSync("java", ["-cp", dir, "T"]).toString().trim();
 assert.equal(out, "ok");
-console.log(`${PATTERNS.length} Java templates compiled and passed`);
+console.log(`${PATTERNS.length} templates and ${PATTERNS.length} worked solutions in Java compiled and passed`);
