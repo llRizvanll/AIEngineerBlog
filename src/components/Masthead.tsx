@@ -105,9 +105,6 @@ export function Masthead({ groups }: { groups: NavGroup[] }) {
         </Link>
 
         <nav aria-label="Main" ref={navRef} className="mega-nav" onMouseLeave={() => hover(null)}>
-          <Link href="/" className={"nav-top" + (path === "/" ? " cur" : "")} aria-current={path === "/" ? "page" : undefined}>
-            Home
-          </Link>
           {groups.map((g) => {
             const active = g.items.some((it) => itemActive(path, it));
             return (
@@ -130,7 +127,7 @@ export function Masthead({ groups }: { groups: NavGroup[] }) {
                   }
                 }}
               >
-                {g.label}
+                {g.short ?? g.label}
                 <Icon name="chevron" size={14} />
               </button>
             );

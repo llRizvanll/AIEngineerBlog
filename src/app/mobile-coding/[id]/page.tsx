@@ -1,3 +1,4 @@
+import { PageTrail } from "@/components/PageTrail";
 import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
@@ -173,6 +174,7 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
         <h1>{p.title}</h1>
         <p className="dek">{p.tagline}</p>
         <AssetMeta href={`/mobile-coding/${p.id}`} />
+        <PageTrail href={`/mobile-coding/${p.id}`} />
         <PathLink href={`/mobile-coding/${p.id}`} />
         <StudyWithAI />
         <div className="pat-meta">

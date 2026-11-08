@@ -1,3 +1,4 @@
+import { PageTrail } from "@/components/PageTrail";
 import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
@@ -184,6 +185,7 @@ export default async function DeepPage({ params }: { params: Promise<{ id: strin
         </div>
         <h1>{d.title}</h1>
         <AssetMeta href={`/deep/${d.id}`} />
+        <PageTrail href={`/deep/${d.id}`} />
         <PathLink href={`/deep/${d.id}`} />
         <StudyWithAI />
       </div>

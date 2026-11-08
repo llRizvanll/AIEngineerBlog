@@ -83,6 +83,11 @@ export function SlideDeck({ slides }: { slides: DeckSlide[] }) {
         {s.caption}
         {s.flag && <span className="rs-flag">{s.flag}</span>}
       </p>
+      <ol className="sr-only">
+        {slides.map((t) => (
+          <li key={t.src}>{t.caption}</li>
+        ))}
+      </ol>
       <div className="sd-thumbs" role="tablist" aria-label="Choose a slide">
         {slides.map((t, k) => (
           <button key={t.src} type="button" role="tab" className="sd-thumb" aria-current={k === i} aria-selected={k === i} aria-label={`Slide ${k + 1}: ${t.caption}`} onClick={() => go(k)}>

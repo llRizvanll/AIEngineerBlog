@@ -66,3 +66,6 @@ export const AI_PATHS_HREF = "/paths/ai-interviews";
 export const AI_BASICS_HREF = `${AI_PATHS_HREF}/basics`;
 export const aiPathHref = (path: string) => `${AI_PATHS_HREF}/${path}`;
 export const aiLessonHref = (path: string, lesson: string) => `${AI_PATHS_HREF}/${path}/${lesson}`;
+
+/** Every mobile page across modules, rounds and exercises, as a filtered catalog view. */
+export const MOBILE_HREF = "/explore?domain=mobile-systems";

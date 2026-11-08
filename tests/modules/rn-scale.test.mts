@@ -317,6 +317,14 @@ await t("every hub link points at a page that exists", () => {
   assert.equal(new Set(all).size, all.length, "a page is listed twice");
 });
 
+import { SYNC_SLIDES } from "../../src/content/sync-slides.ts";
+await t("every sync slide file exists, in order, and none is left over", () => {
+  for (const sl of SYNC_SLIDES) assert.ok(fs.existsSync(`public/slides/sync/${sl.file}.jpg`), sl.file);
+  const files = fs.readdirSync("public/slides/sync").map((f) => f.replace(".jpg", "")).sort();
+  assert.deepEqual(files, SYNC_SLIDES.map((s) => s.file));
+  assert.deepEqual(SYNC_SLIDES.map((s) => s.file), [...SYNC_SLIDES.map((s) => s.file)].sort());
+});
+
 if (failed.length) {
   failed.forEach((f) => console.log("  FAILED", f));
   process.exit(1);

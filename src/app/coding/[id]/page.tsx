@@ -1,3 +1,4 @@
+import { PageTrail } from "@/components/PageTrail";
 import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
@@ -233,6 +234,7 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
         <h1>{p.name}</h1>
         <p className="dek">{p.tagline}</p>
         <AssetMeta href={`/coding/${p.id}`} />
+        <PageTrail href={`/coding/${p.id}`} />
         <StudyWithAI />
         <div className="pat-meta">
           <span>

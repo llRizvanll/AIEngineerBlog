@@ -1,3 +1,6 @@
+import { SlideDeck } from "@/components/SlideDeck";
+import { SYNC_SLIDES } from "@/content/sync-slides";
+import { PageTrail } from "@/components/PageTrail";
 import { StudyWithAI } from "@/components/StudyWithAI";
 import fs from "node:fs";
 import path from "node:path";
@@ -93,10 +96,16 @@ export default async function SeriesPage({ params }: { params: Promise<{ slug: s
         <JsonLd data={articleLd({ title: PART_ONE.title, description: PART_ONE.dek, path: `/series/${PART_ONE.id}`, section: "Series" })} />
         <PostHeader m={PART_ONE} />
         <div className="m-meta">
+          <PageTrail href={`/series/${PART_ONE.id}`} />
           <PathLink href={`/series/${PART_ONE.id}`} />
           <StudyWithAI />
         </div>
         <BgSyncInteractive html={html} title={PART_ONE.title} />
+        <div className="m-walk" id="slides">
+          <h2>The whole story in 15 slides</h2>
+          <p>Swipe through the article's ideas in order. Notes flag where a slide differs from the article.</p>
+          <SlideDeck slides={SYNC_SLIDES.map((sl) => ({ src: `/slides/sync/${sl.file}.jpg`, alt: sl.alt, caption: sl.caption, flag: sl.flag }))} />
+        </div>
         <div className="m-walk">
           <h2>Tested code, explained</h2>
           <CodeWalks ids={PAGE_CODE[`/series/${PART_ONE.id}`]} />
@@ -114,6 +123,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ slug: s
       <JsonLd data={articleLd({ title: p.title, description: p.dek, path: `/series/${p.id}`, section: "Series" })} />
       <PostHeader m={{ ...p, date: "Nov 4, 2026" }} />
       <div className="m-meta">
+        <PageTrail href={`/series/${p.id}`} />
         <PathLink href={`/series/${p.id}`} />
         <StudyWithAI />
       </div>

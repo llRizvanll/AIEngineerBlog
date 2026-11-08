@@ -334,7 +334,7 @@ export const RN_MODULES: ModuleDoc[] = [
       ["Should the sync run in headless JavaScript?", "For a short drain, it works. The OS can stop it early, so for long or critical syncs run the engine in a native worker that calls the same endpoints."],
     ],
     further: [
-      ["Compared with the deep dives", "The sync engine and transfer manager pages cover the whole system: server versions, field merge, and resumable uploads. This module covers the React Native side."],
+      ["Compared with the deep dives", "The sync engine and transfer manager pages cover the whole system: server versions, field merge, and resumable uploads. This module covers the React Native side. The background sync article has a 15-slide overview of the whole system."],
       ["Debugging from the field", "Store each entry's attempts and last error. Support teams then see why a change is stuck."],
       ["Counterpoint", "A read-mostly app with rare edits may need only a retry on a failed request, and a queue adds more than it saves."],
     ],

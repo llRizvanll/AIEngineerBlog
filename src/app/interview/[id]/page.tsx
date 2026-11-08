@@ -1,3 +1,4 @@
+import { PageTrail } from "@/components/PageTrail";
 import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
@@ -379,6 +380,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
         </div>
         <h1>{c.title}</h1>
         <AssetMeta href={`/interview/${c.id}`} />
+        <PageTrail href={`/interview/${c.id}`} />
         <PathLink href={`/interview/${c.id}`} />
         <StudyWithAI />
       </div>

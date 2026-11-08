@@ -17,6 +17,8 @@ export interface NavItem {
 export interface NavGroup {
   id: string;
   label: string;
+  /** a shorter name for the top bar, where space is tight */
+  short?: string;
   blurb: string;
   items: NavItem[];
 }
