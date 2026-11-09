@@ -1,10 +1,11 @@
 "use client";
 
+import { STORAGE } from "@/config/storage";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { emptyLibrary, LIBRARY_KEY, useLocal, type LibraryState } from "@/lib/store";
 
-const CLAP_KEY = "pae-claps";
+const CLAP_KEY = STORAGE.claps;
 
 export function ActionBar({ id, title, baseClaps }: { id: string; title: string; baseClaps: number }) {
   const path = usePathname();

@@ -1,13 +1,15 @@
 "use client";
 
+import { STORAGE } from "@/config/storage";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { check, LEVELS, PROBLEMS, type Level, type Problem } from "@/content/practice";
 import { useLocal } from "@/lib/store";
 import { Icon } from "../Icons";
 import { Title } from "../HubCards";
+import { RUNNER_COPY } from "@/content/ui-copy";
 
-const KEY = "pae-practice-v1";
+const KEY = STORAGE.practice;
 type Done = Record<string, "ok" | "shown">;
 
 /** One problem at a time: read, answer, check, then see how it goes. Progress stays in this browser. */
@@ -51,7 +53,7 @@ export function Runner() {
           <h2>
             Where do you want to <em>start?</em>
           </h2>
-          <p>Pick a level. You can change it any time.</p>
+          <p>{RUNNER_COPY.pickHint}</p>
           <div className="pr-levels">
             {LEVELS.map((l) => {
               const set = PROBLEMS.filter((x) => x.level === l.id);
@@ -85,7 +87,7 @@ export function Runner() {
           <b>
             Fresh <em>numbers</em>
           </b>
-          <span>Each answer is checked for you, with the working shown.</span>
+          <span>{RUNNER_COPY.checked}</span>
         </div>
       </section>
     );

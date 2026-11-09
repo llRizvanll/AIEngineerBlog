@@ -4,8 +4,9 @@ import { GLOSSARY, PATHS, PHASES, lessonTitle } from "@/lib/curriculum";
 import { Footer } from "@/components/ui";
 import { Curriculum } from "@/components/Curriculum";
 import { DAYS, WEEKS } from "@/content/programme/mobile-principal";
+import { AIENGINE_PAGE_META } from "@/content/pages/aiengine";
 
-export const metadata: Metadata = { title: "AIEngine", description: "One curriculum for the principal engineer loop with AI." };
+export const metadata: Metadata = AIENGINE_PAGE_META;
 
 export default function AIEnginePage() {
   const paths = PATHS.map((p) => ({ ...p, items: p.steps.map(([h, why]) => ({ href: h, why, title: h === "/revise" ? "Revise cards" : lessonTitle(h) })) }));

@@ -11,7 +11,8 @@ import { CodeWalks } from "@/components/CodeWalk";
 import { Code, Faq, Footer } from "@/components/ui";
 import { DayChecklist, DayComplete, DayRubric } from "@/components/programme/DayPlan";
 import { titleFor } from "@/lib/programme";
-import { dayHref, PROGRAMME_HREF } from "@/lib/routes";
+import { dayHref } from "@/lib/routes";
+import { PROGRAMME_HREF } from "@/config/constants";
 
 export const dynamicParams = false;
 export const generateStaticParams = () => DAYS.map((d) => ({ n: String(d.n) }));

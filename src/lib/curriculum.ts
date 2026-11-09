@@ -1,7 +1,8 @@
-import { CASES, DEEP, POSTS, PROTOCOLS, REELS, PART_ONE, totalCritical } from "./content";
+import { CASES, DEEP, POSTS, PROTOCOLS, REELS, totalCritical } from "./content";
 import { PATTERNS } from "@/content/coding";
 import { MOBILE_PROBLEMS } from "@/content/mobile-coding";
 import { MODULES } from "@/content/modules";
+import { PART_ONE } from "@/content/site";
 
 export interface Lesson {
   href: string;

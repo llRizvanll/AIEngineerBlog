@@ -1,0 +1,72 @@
+/* The reading sheet behind content, and the rules that keep clicks and scrolling smooth. */
+/* =====================================================================
+   READING SHEET — one cream sheet behind content, as in the reference lessons.
+   Sections inside stay flat; only the sheet has a background, so text never sits on the dots.
+   ===================================================================== */
+body:has(.navrail) .layout > article,
+body:has(.navrail) main.ls,
+body:has(.navrail) main.pg,
+body:has(.navrail) #main main:not(.app-page):not(.landing):not(.view-reels-page):not(.io):not(.ls):not(.pg) > .wrap {
+  background: var(--surface);
+  border-radius: 32px;
+  padding: clamp(22px, 4vw, 52px);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--line);
+}
+body:has(.navrail) #main main:not(.app-page):not(.landing):not(.view-reels-page):not(.io):not(.ls):not(.pg) > .wrap { max-width: 1180px; margin: 8px 28px 0 0; }
+body:has(.navrail) .layout > article { margin-bottom: 8px; }
+body:has(.navrail) main.ls, body:has(.navrail) main.pg { max-width: 860px; margin: 8px auto 40px; }
+body:has(.navrail) .layout > article > section[class^="in-"]:first-of-type { padding-top: 8px; }
+
+/* the flashcard deck, the library and the practice runner sit on the same kind of sheet */
+.app-page #deck, .app-page > div > .ap-card:not(.todaycard):not(.pr-pick):not(.pr-card):not(.pr-end) { background: var(--surface); border: 1px solid var(--line); border-radius: 32px; box-shadow: var(--shadow-sm); padding: clamp(20px, 3.4vw, 44px); }
+.rv-card { border-top: 0; padding: 18px 0 8px; }
+.rv-card .meta, .rv-card .tags { margin-bottom: 4px; }
+
+@media (max-width: 860px) {
+  body:has(.navrail) .layout > article, body:has(.navrail) main.ls, body:has(.navrail) main.pg,
+  body:has(.navrail) #main main:not(.app-page):not(.landing):not(.view-reels-page):not(.io):not(.ls):not(.pg) > .wrap { border-radius: 24px; padding: 20px 16px; margin-left: 8px; margin-right: 8px; }
+}
+
+
+/* =====================================================================
+   SMOOTHNESS — nothing animates on navigation, nothing blurs, nothing repaints on scroll
+   ===================================================================== */
+html { scroll-behavior: auto !important; }
+.page-in { animation: none !important; opacity: 1 !important; transform: none !important; }
+*, *::before, *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+:root { --glass: var(--surface); }
+:root[data-theme="dark"], :root:not([data-theme="light"]):not([data-theme="sepia"]) { --glass: var(--surface); }
+.btn,
+.rail a,
+.navrail a,
+.navrail button,
+.tb-search,
+.tb-icon { transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s !important; }
+/* long image-like blocks and big lists are laid out only when near the screen */
+.mc-grid, .cb-grid, .io-more, .io-start { contain: layout style; }
+.navrail, .topbar { contain: layout style; }
+.rvl { will-change: auto; }
+.rvl.in { transition: none; }
+
+/* landing artwork: pictures sit on pastel panels with a soft shadow from the SVG itself */
+.io-art svg, .io-card-art svg { filter: drop-shadow(0 12px 12px rgba(60, 48, 30, 0.2)); }
+.io-art { background: transparent; }
+.io-art-l, .io-art-r { width: clamp(250px, 21.5vw, 380px) !important; }
+.io-art-l { left: clamp(-60px, -2vw, 0px) !important; } .io-art-r { right: clamp(-60px, -2vw, 0px) !important; }
+
+/* lesson pages: one sheet, left-aligned with the rest of the app, wide enough to read comfortably */
+body:has(.navrail) main.ls, body:has(.navrail) main.pg { max-width: 920px; margin: 8px auto 40px 14px; }
+body:has(.navrail) main.ls > .wrap, body:has(.navrail) main.pg > .wrap { background: none; border: 0; box-shadow: none; padding: 0; margin: 0; max-width: none; border-radius: 0; }
+body:has(.navrail) .ls-body, body:has(.navrail) .bs-read { max-width: none; }
+
+/* the Read / Memorise / Practise tabs stay put while scrolling and cover the text beneath them */
+.bs-modes { position: sticky; top: 0; z-index: 30; background: var(--surface) !important; margin: 0 calc(-1 * clamp(22px, 4vw, 52px)) 20px; padding: 0 clamp(22px, 4vw, 52px); }
+@media (max-width: 860px) { body:has(.navrail) main.ls, body:has(.navrail) main.pg { margin: 8px 8px 24px; } }
+
+/* the end of a page: a sheet behind the lists, the pastel Next lesson card beneath it */
+.page-end { margin-top: 28px; }
+.end-card { background: var(--surface) !important; border: 1px solid var(--line) !important; border-radius: 32px !important; box-shadow: var(--shadow-sm) !important; padding: clamp(22px, 3.6vw, 48px) !important; }
+.end-list h2 { font: 400 clamp(26px, 3vw, 34px) var(--font-serif); color: var(--ink); letter-spacing: -0.035em; }
+.end-list h2::after { content: ""; display: block; width: 40px; height: 3px; margin-top: 8px; border-radius: 2px; background: var(--accent-2); }
+.end-list ul { border-top: 0; margin-top: 10px; }

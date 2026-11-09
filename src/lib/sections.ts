@@ -9,9 +9,10 @@ import { AI_PATHS, BASIC_CARD_COUNT, LESSON_COUNT } from "@/content/ai-interview
 import { RN_CARDS } from "@/content/rn-cards";
 import { RN_HUB } from "@/content/rn-hub";
 import type { NavGroup } from "./nav-types";
-import { MOBILE_HREF } from "./routes";
+
 import { CODE } from "@/content/code-docs";
 import { buildCatalog } from "./catalog";
+import { MOBILE_HREF } from "@/config/constants";
 
 /**
  * The single source for the menu and the landing page. Add a section here and it

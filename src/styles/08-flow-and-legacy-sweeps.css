@@ -1,0 +1,166 @@
+/* Content flows without boxes; leftovers of the old theme re-pointed to the page palette. */
+/* =====================================================================
+   FLOW, NOT BOXES — content sits on the page. Cards stay only where the references use them:
+   module and track cards, the lesson header, worked examples, index cards, code, the practice card, the next-lesson card.
+   ===================================================================== */
+body:has(.navrail) .layout > article > section[class^="in-"] { background: none; border: 0; box-shadow: none; border-radius: 0; padding: 38px 4px 8px; margin: 0; border-top: 1px solid var(--line); }
+body:has(.navrail) .layout > article > section[class^="in-"]:first-of-type { border-top: 0; }
+body:has(.navrail) section[class^="in-"] > h2 .n { position: static; display: inline-block; margin-right: 12px; padding: 3px 10px; border: 0; border-radius: 999px !important; background: color-mix(in srgb, var(--pc) 14%, transparent) !important; font: 600 13px var(--font-mono) !important; vertical-align: middle; }
+body:has(.navrail) .layout > article > section.in-qa { background: none; }
+.roadmap { background: none; border: 0; box-shadow: none; padding: 0; }
+.roadmap a { background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 14px 4px; }
+.roadmap a:hover { background: none; }
+.ap-card { background: none; border: 0; box-shadow: none; border-radius: 0; padding: 0; }
+.todaycard, .pr-pick, .pr-card, .pr-end { background: var(--surface); border: 1px solid var(--line); border-radius: 34px; padding: clamp(22px, 3.2vw, 44px); box-shadow: var(--shadow-sm); }
+.end-card, .pe-nav { background: none; border: 0; box-shadow: none; border-radius: 0; padding: 0; }
+.end-card { border-top: 1px solid var(--line); padding-top: 28px; }
+.pe-nav { background: none; }
+.next { background: none; border: 0; box-shadow: none; border-radius: 0; border-top: 1px solid var(--line); padding: 28px 4px 0; }
+.rv-side { background: none; border: 0; box-shadow: none; border-radius: 0; padding: 6px 6px; }
+
+/* questions as a plain list between hairlines, like the FAQ reference */
+details.fu { background: none !important; border: 0 !important; border-top: 1px solid var(--line) !important; border-radius: 0 !important; margin: 0; }
+details.fu:last-of-type { border-bottom: 1px solid var(--line) !important; }
+details.fu > summary { padding: 22px 40px 22px 2px !important; font: 400 clamp(21px, 2.4vw, 26px)/1.25 var(--font-serif) !important; letter-spacing: -0.02em; }
+details.fu > summary::before { display: none; }
+details.fu[open] > div { margin: 0 0 22px; padding: 0; background: none; max-width: 70ch; }
+details.fu[open] > div::before { content: none; }
+.io-faq-list summary { font: 400 clamp(22px, 2.6vw, 28px)/1.25 var(--font-serif); letter-spacing: -0.02em; padding: 26px 40px 26px 2px; }
+.io-faq-list details[open] summary::after { content: "×"; rotate: 0deg; font-size: 30px; }
+.io-faq h2 { margin-bottom: 36px; }
+
+/* language tabs: plain words, the chosen one underlined */
+.lang-group { margin: 6px 0 26px; }
+.lang-tabs { display: flex; gap: 22px; margin: 0 0 10px 4px; }
+.lang-tabs button { background: none; border: 0; padding: 4px 0; font: 500 15px var(--font-display); color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
+.lang-tabs button:hover { color: var(--ink); }
+.lang-tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent-2); }
+.lang-group .editor { margin: 0; }
+
+/* =====================================================================
+   OLD THEME SWEEP — purple, navy and gradient leftovers re-pointed to the page palette
+   ===================================================================== */
+/* chips on page headers: Learn / Practice / Revise */
+.am-learn, .pf-m-learn { --mc: #e8501a; --mct: #c2410c; }
+.am-practice, .pf-m-practice { --mc: #2f6bd8; --mct: #2556b0; }
+.am-revise, .pf-m-revise { --mc: #23885a; --mct: #1b6b47; }
+.pill.ai { background: var(--accent-soft); color: var(--accent); }
+.pill:not(.ai):not(.live) { background: var(--surface-2); color: var(--muted); }
+:root[data-theme="dark"] .pill:not(.ai):not(.live) { color: var(--muted); }
+.kd-Deepdive { background: rgba(123, 79, 211, 0.14) !important; color: #6038b3 !important; }
+.kd-Protocol { background: rgba(47, 107, 216, 0.14) !important; color: #2556b0 !important; }
+.m-avatar { background: var(--ink); color: var(--paper); box-shadow: none; }
+.theme-chips button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+/* dark indigo gradient cards become pastel cards with ink text */
+.prep-card, .tile.big { --pc: var(--c1, #ff5a1f); background: color-mix(in srgb, var(--pc) 20%, var(--surface)) !important; color: var(--ink) !important; box-shadow: var(--shadow-sm) !important; border: 1px solid var(--line) !important; }
+.prep-card p, .tile.big p, .prep-card .eyebrow, .tile.big .tile-meta { color: var(--muted) !important; }
+.prep-card h3, .tile.big h3, .tile.big .tile-go, .prep-card .pc-go { color: var(--ink) !important; }
+.prep-card .pc-chips span { background: var(--surface) !important; color: var(--ink); backdrop-filter: none; }
+.tile.big .tile-ic { background: var(--surface) !important; box-shadow: inset 0 0 0 1px var(--line) !important; color: var(--ink); }
+.cta-band { background: color-mix(in srgb, var(--accent-2) 14%, var(--surface)) !important; color: var(--ink) !important; box-shadow: none !important; border: 1px solid var(--line); }
+.cta-band p { color: var(--muted) !important; }
+.today-top, .today-meta { color: var(--muted); }
+
+/* protocol explorer: was a fixed navy console, now follows the theme */
+#view-proto { --pe-bg: var(--paper); --pe-p: var(--surface); --pe-p2: var(--surface-2); --pe-l: var(--line); --pe-t: var(--ink); --pe-m: var(--muted); --pe-a: var(--accent); background: transparent !important; color: var(--ink); }
+
+/* AI-interview pages: serif headings, flat tabs, plain disclosure rows */
+.ls h1, .pg-hero h1, .bs-read h2, .ls-part h2, .ls h2 { font-family: var(--font-serif); font-weight: 340; letter-spacing: -0.04em; }
+.ls h1, .pg-hero h1 { font-size: clamp(40px, 5.6vw, 68px); line-height: 1.02; }
+.ls h2, .ls-part h2 { font-size: clamp(32px, 4vw, 48px); line-height: 1.08; }
+.ls h3 { font-family: var(--font-display); font-weight: 600; }
+.bs-read h2 { font-size: clamp(26px, 3vw, 34px); }
+.bs-read h2 span { font-family: var(--font-mono); font-size: 0.55em; padding-top: 0.5em; }
+.bs-modes { background: none; border: 0; box-shadow: none; padding: 0; gap: 26px; display: flex; border-bottom: 1px solid var(--line); border-radius: 0; }
+.bs-modes button { flex: none; min-height: 46px; padding: 0 2px; border-radius: 0; background: none !important; color: var(--muted); font-weight: 500; font-size: 16px; border-bottom: 2px solid transparent; }
+.bs-modes button[aria-selected="true"] { background: none !important; color: var(--ink) !important; border-bottom-color: var(--accent-2); }
+.bs-cards, details.lvl2 { background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; }
+.bs-cards summary, details.lvl2 > summary { padding: 10px 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; font: 500 16px var(--font-display); color: var(--accent); }
+.bs-drill, .pb { background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 18px 0; }
+.pc { background: var(--surface-2); border: 0; border-radius: 18px; }
+.pc-head, .pc-text { background: none; border: 0; }
+.pc-copy { border-radius: 999px; }
+.ls-ref, .ls-steps, .ls-words { border-radius: 0; }
+
+/* flashcards deck */
+.rv-card { border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; box-shadow: none; padding: 26px 0; min-height: 0; }
+.rv-card::before { display: none !important; }
+.rv-card h2 { font-family: var(--font-serif); font-weight: 340; font-size: clamp(30px, 4vw, 46px); letter-spacing: -0.04em; line-height: 1.1; }
+.rv-btns button { border-radius: 999px; }
+.rv-btns .pri, .rv-show { background: var(--ink) !important; color: var(--paper) !important; border-color: var(--ink) !important; }
+
+/* target questions: a plain numbered list */
+html:root article .qlist { gap: 0; }
+html:root article .qlist li { display: block; background: none; border: 0; border-top: 1px dashed var(--line-strong); border-radius: 0; padding: 18px 0 18px 54px; font: 400 clamp(19px, 2.2vw, 23px)/1.4 var(--font-serif) !important; letter-spacing: -0.015em; }
+html:root article .qlist li:first-child { border-top: 0; }
+.qlist li::before { top: 22px; left: 2px; font: 600 14px var(--font-mono); }
+
+/* the AI-engineering hub: stacked sections instead of boxes squeezed into a grid */
+.aie-feature, .aie-path { grid-column: 1 / -1; background: none !important; border: 0 !important; border-top: 1px solid var(--line) !important; border-radius: 0 !important; box-shadow: none !important; padding: 30px 0 !important; }
+.aie-path ol { columns: 2; column-gap: 40px; }
+.aie-path li { break-inside: avoid; margin-bottom: 14px; }
+.aie-stats div, .kit div { background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 16px 0 0; }
+.aie-stats b { font: 400 clamp(36px, 5vw, 56px)/1 var(--font-serif); letter-spacing: -0.04em; color: var(--ink); }
+.kit b { font: 400 22px var(--font-serif); letter-spacing: -0.02em; }
+.hc, .iv-card, .mod-card, .pattern-card, .rc, .hm-c { border: 0 !important; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow-sm); }
+@media (max-width: 720px) { .aie-path ol { columns: 1; } }
+
+/* landing FAQ: the page's generic details box is removed, leaving hairlines */
+.io-faq-list details { background: none !important; border: 0 !important; border-top: 1px solid var(--line) !important; border-radius: 0 !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
+.io-faq-list details:last-child { border-bottom: 1px solid var(--line) !important; }
+.io-faq-list summary { padding: 26px 40px 26px 2px !important; background: none !important; }
+.io-faq-list p { padding: 0 2px; }
+
+/* accent strips on old cards are gone; step rows and stat rows flow with hairlines */
+.tldr::before, .hack::before, .goal::before, .pattern-card::before, .asset-card::before, .iv-card::before { display: none !important; }
+.asset-card, .ip-path, .lp-skill { border-top: 1px solid var(--line) !important; border-radius: 22px; box-shadow: var(--shadow-sm); }
+.method { gap: 0 28px; }
+.method-step, .mc-proof > div, .iv-step, .steps > * { background: none !important; border: 0 !important; border-top: 1px solid var(--line) !important; border-radius: 0 !important; box-shadow: none !important; padding: 16px 0 !important; }
+.method-step .m-n { background: none; color: var(--accent); font: 600 14px var(--font-mono); padding: 0; width: auto; height: auto; }
+.mc-proof { background: none !important; border: 0 !important; box-shadow: none !important; gap: 0 28px; }
+.mc-proof b { font: 400 clamp(30px, 4vw, 44px)/1 var(--font-serif); letter-spacing: -0.04em; color: var(--ink); }
+.hack, .goal, .tldr { background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; }
+
+/* landing hero: sits at the top with the art beside it, and the next section follows without a blank screen */
+.io-hero { min-height: 0 !important; padding: 72px 0 96px !important; place-items: start center; }
+.io-art-l, .io-art-r { top: 0 !important; }
+.io-hero-in { padding-top: clamp(40px, 9vh, 120px); }
+
+/* ---------- end of an AI-interview lesson: checklist, score, sources, next ---------- */
+.dp-items li { border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; padding: 16px 0; }
+.dp-items li.on { background: none; }
+.dp-items a { font: 400 22px/1.3 var(--font-serif); letter-spacing: -0.02em; }
+.dp-rubric label { padding: 10px 2px; border-radius: 0; border-bottom: 1px solid var(--line); font-size: 17px; }
+.dp-rubric label:hover { background: none; }
+.dp-items input, .dp-rubric input { appearance: none; -webkit-appearance: none; width: 22px; height: 22px; margin: 3px 0 0; border: 1.5px solid var(--line-strong); border-radius: 50%; background: var(--surface); display: grid; place-items: center; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.dp-items input:checked, .dp-rubric input:checked { background: var(--good); border-color: var(--good); }
+.dp-items input:checked::after, .dp-rubric input:checked::after { content: ""; width: 6px; height: 11px; margin-top: -2px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.dp-score { padding: 14px 0 !important; border-radius: 0 !important; background: none !important; border-top: 1px solid var(--line); font-size: 17px !important; }
+.dp-score b, .dp-score strong { font: 400 28px var(--font-serif); margin-right: 8px; }
+.ls-ref, .ls-ref.ip-sources { border: 0 !important; border-top: 1px solid var(--line) !important; border-bottom: 1px solid var(--line) !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; padding: 0 !important; }
+.ls-ref summary { padding: 18px 40px 18px 2px; font: 400 clamp(21px, 2.4vw, 26px)/1.25 var(--font-serif); color: var(--ink); letter-spacing: -0.02em; background: none !important; }
+.ls-ref > :not(summary) { padding-left: 2px; padding-right: 2px; }
+.ls-ref[open] { padding-bottom: 18px !important; }
+.ip-sources li { margin: 8px 0; }
+.ls-tomorrow { font: 340 clamp(26px, 3.2vw, 36px)/1.2 var(--font-serif) !important; letter-spacing: -0.035em; max-width: 30ch; }
+.dp-done { gap: 12px; }
+.dp-done .btn { border-radius: 999px; padding: 14px 26px; font-size: 16px; }
+.ls-prev a { color: var(--muted); text-underline-offset: 5px; }
+
+/* landing artwork: hard-shadow windows, so the SVGs carry their own shadows */
+.io-art svg { filter: none; }
+.io-art { padding: 0; }
+.io-card-art { background-image: radial-gradient(color-mix(in srgb, var(--ink) 10%, transparent) 1px, transparent 1.2px); }
+.io-card-art svg { filter: none; }
+
+/* series pages: pastel covers, serif headings, no loud gradients */
+.m-more h3 { font: 340 clamp(28px, 3.6vw, 42px)/1.1 var(--font-serif); letter-spacing: -0.04em; }
+.m-card { border: 0 !important; border-radius: 26px !important; box-shadow: var(--shadow-sm) !important; background: var(--surface); }
+.m-card .post-cover { filter: none; }
+.post-cover text { font-weight: 340; }
+.io-art-l, .io-art-r { width: clamp(220px, 19vw, 330px) !important; }
+
+/* soft objects carry their own shadows */
+.io-art svg, .io-card-art svg { filter: none; }
+.io-card-art { padding: 26px; }

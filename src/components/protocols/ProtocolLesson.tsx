@@ -1,12 +1,13 @@
 "use client";
 
+import { STORAGE } from "@/config/storage";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Protocol } from "@/content/types";
 import { emptyLibrary, LIBRARY_KEY, useLocal, type LibraryState } from "@/lib/store";
 import { hexs } from "./hex";
 
-const KEY = "pae-proto";
+const KEY = STORAGE.protocols;
 type DoneState = { done: Record<string, boolean> };
 
 export function DoneMark({ id, inline }: { id: string; inline?: boolean }) {

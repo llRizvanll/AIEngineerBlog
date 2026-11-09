@@ -7,6 +7,7 @@ import type { Reel, ReelCollection } from "@/content/types";
 import { MORE_PROBLEMS } from "@/content/coding-more";
 import { MOBILE_PROBLEMS } from "@/content/mobile-coding";
 import { kotlinLines } from "./mobile-source";
+import { REEL_CODE_WINDOW } from "@/config/constants";
 
 /* Reel collections generated from the problem-solving and coding sections. */
 
@@ -29,15 +30,14 @@ const behavioralReels: Reel[] = BEHAVIORAL.map((b) => ({
 
 /** Long snippets (a hand-written heap, a trie class…) would shrink to an unreadable size in a reel:
     show a window around each step's lines instead, with real line numbers. */
-const LONG = 24;
 type Beat = { hl?: number[]; note?: string; window?: [number, number] };
 function windowed(lines: string[], beats: Beat[]): { beats: Beat[]; firstLine?: number } {
-  if (lines.length <= LONG) return { beats };
+  if (lines.length <= REEL_CODE_WINDOW) return { beats };
   const last = lines.length - 1;
   return {
     firstLine: 1,
     beats: beats.map((b) => {
-      if (!b.hl?.length) return { ...b, window: [0, Math.min(last, LONG - 4)] as [number, number] };
+      if (!b.hl?.length) return { ...b, window: [0, Math.min(last, REEL_CODE_WINDOW - 4)] as [number, number] };
       const lo = Math.min(...b.hl), hi = Math.max(...b.hl);
       return { ...b, window: [Math.max(0, lo - 2), Math.min(last, hi + 2)] as [number, number] };
     }),

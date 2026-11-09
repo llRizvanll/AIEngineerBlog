@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { SERIES, SITE } from "@/lib/content";
+import { SERIES } from "@/lib/content";
 import { hashNum, postVars } from "@/lib/postStyle";
 import { ActionBar } from "./ActionBar";
 import { PostCover } from "./PostCover";
+import { SITE } from "@/content/site";
 
 interface Meta {
   id: string;

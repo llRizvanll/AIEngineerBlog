@@ -1,25 +1,6 @@
 import type { MetadataRoute } from "next";
-import { absoluteUrl, SITE_URL } from "@/lib/site";
-
-/* Named so the intent is plain: search engines and AI crawlers are all welcome here. */
-const AI_CRAWLERS = [
-  "GPTBot",
-  "OAI-SearchBot",
-  "ChatGPT-User",
-  "ClaudeBot",
-  "Claude-SearchBot",
-  "Claude-User",
-  "PerplexityBot",
-  "Perplexity-User",
-  "Google-Extended",
-  "Applebot-Extended",
-  "Amazonbot",
-  "Meta-ExternalAgent",
-  "CCBot",
-  "cohere-ai",
-  "DuckAssistBot",
-  "MistralAI-User",
-];
+import { absoluteUrl } from "@/lib/site";
+import { AI_CRAWLERS, SITE_URL } from "@/config/constants";
 
 export const dynamic = "force-static";
 

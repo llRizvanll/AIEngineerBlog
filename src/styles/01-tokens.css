@@ -1,0 +1,68 @@
+/* =====================================================================
+   INSIDE-OUT — warm paper, ink, one orange accent.
+   Satoshi-like sans (Figtree) for UI, Fraunces for headings, JetBrains Mono for code.
+   Loaded last: it re-points the design tokens, so every existing component picks it up.
+   ===================================================================== */
+
+:root {
+  --f-sans: var(--ff-figtree);
+  --f-serif: var(--ff-fraunces);
+  --f-mono: var(--ff-jetbrains);
+  /* Card tone palette, indexed to match config/tones.ts */
+  --tone-0: #3fa89b; --tone-1: #e0735f; --tone-2: #c0689a; --tone-3: #8b78d0;
+  --tone-4: #d4a73a; --tone-5: #5fa862; --tone-6: #4c86c8; --tone-7: #8a857a;
+}
+:root,
+:root[data-theme="light"] {
+  --paper: #efece6;
+  --surface: #fcfbf8;
+  --surface-2: #f5f3ee;
+  --ink: #1d1c1a;
+  --muted: #5e5b55;
+  --line: rgba(29, 28, 26, 0.1);
+  --line-strong: rgba(29, 28, 26, 0.18);
+  --accent: #c2410c;
+  --accent-2: #ff5a1f;
+  --accent-3: #2f6bd8;
+  --accent-soft: rgba(255, 90, 31, 0.1);
+  --good: #23885a;
+  --warn: #b7791f;
+  --bad: #d23f2a;
+  --code-bg: #1d1c1a;
+  --code-ink: #efebe3;
+  --grad: linear-gradient(100deg, #ff5a1f, #e8430c);
+  --grad-soft: rgba(255, 90, 31, 0.08);
+  --glass: color-mix(in srgb, #f6f5f1 78%, transparent);
+  --shadow-sm: 0 1px 1px rgba(60, 48, 30, 0.06), 0 2px 4px rgba(60, 48, 30, 0.06);
+  --shadow-md: 0 1px 2px rgba(60, 48, 30, 0.07), 0 4px 8px rgba(60, 48, 30, 0.07), 0 12px 24px rgba(60, 48, 30, 0.07);
+  --shadow-lg: 0 2px 4px rgba(60, 48, 30, 0.07), 0 18px 40px -12px rgba(60, 48, 30, 0.22);
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --p1: #ff5a1f;
+  --p3: #ff5a1f;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="sepia"]) {
+    --paper: #121110; --surface: #1c1b19; --surface-2: #242320; --ink: #eeebe4; --muted: #afaaa0;
+    --line: rgba(238, 235, 228, 0.09); --line-strong: rgba(238, 235, 228, 0.16);
+    --accent: #ff8a5b; --accent-soft: rgba(255, 138, 91, 0.13); --good: #4cc08a; --warn: #e2a64a; --bad: #f07563;
+    --code-bg: #0c0b0a; --code-ink: #eeebe4;
+    --grad: linear-gradient(100deg, #ff7a45, #ff5a1f); --glass: color-mix(in srgb, #1c1b19 80%, transparent);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3); --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.3), 0 12px 24px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 24px 60px -20px rgba(0, 0, 0, 0.7);
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #121110; --surface: #1c1b19; --surface-2: #242320; --ink: #eeebe4; --muted: #afaaa0;
+  --line: rgba(238, 235, 228, 0.09); --line-strong: rgba(238, 235, 228, 0.16);
+  --accent: #ff8a5b; --accent-soft: rgba(255, 138, 91, 0.13); --good: #4cc08a; --warn: #e2a64a; --bad: #f07563;
+  --code-bg: #0c0b0a; --code-ink: #eeebe4;
+  --grad: linear-gradient(100deg, #ff7a45, #ff5a1f); --glass: color-mix(in srgb, #1c1b19 80%, transparent);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3); --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.3), 0 12px 24px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 24px 60px -20px rgba(0, 0, 0, 0.7);
+}
+:root[data-theme="sepia"] {
+  --paper: #f1e8d6; --surface: #fbf5e8; --surface-2: #f4ebd9; --ink: #2a2118; --muted: #6f604a;
+  --accent: #b4430c; --grad: linear-gradient(100deg, #ff5a1f, #d9420b); --grad-soft: rgba(217, 66, 11, 0.08);
+}

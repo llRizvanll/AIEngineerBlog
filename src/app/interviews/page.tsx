@@ -2,12 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CardGrid } from "@/components/HubCards";
 import { siteMap } from "@/lib/sections";
+import { INTERVIEWS_COPY, INTERVIEWS_META } from "@/content/pages/interviews";
 
-export const metadata: Metadata = {
-  title: "Interview",
-  description: "Prepare for AI-era interviews: AI-assisted coding rounds, system design, coding patterns and behavioral questions.",
-  alternates: { canonical: "/interviews" },
-};
+export const metadata: Metadata = INTERVIEWS_META;
 
 export default function Interviews() {
   const map = siteMap();
@@ -17,15 +14,15 @@ export default function Interviews() {
       <div className="ap-head">
         <div>
           <h1>
-            Get ready for <em>the round</em>
+            {INTERVIEWS_COPY.title.lead}<em>{INTERVIEWS_COPY.title.accent}</em>
           </h1>
-          <p>Every round companies run now, with practice for each.</p>
+          <p>{INTERVIEWS_COPY.intro}</p>
         </div>
-        <Link className="btn" href="/paths/ai-interviews">
-          Start with AI interviews
+        <Link className="btn" href={INTERVIEWS_COPY.start.href}>
+          {INTERVIEWS_COPY.start.label}
         </Link>
       </div>
-      <CardGrid items={items} tag="Open" />
+      <CardGrid items={items} tag={INTERVIEWS_COPY.cardTag} />
     </main>
   );
 }

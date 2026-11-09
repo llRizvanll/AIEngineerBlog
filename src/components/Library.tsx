@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { emptyLibrary, LIBRARY_KEY, useLocal, type LibraryState } from "@/lib/store";
+import { LIBRARY_COPY } from "@/content/ui-copy";
 
 const ago = (t: number) => {
   const m = Math.round((Date.now() - t) / 60000);
@@ -63,7 +64,7 @@ export function Library() {
       </div>
 
       <div className="section-h" id="seek">
-        <h2>Seek: saved pages</h2>
+        <h2>{LIBRARY_COPY.savedTitle}</h2>
         <span>tap ☆ Save while reading</span>
       </div>
       {saved.length ? (
@@ -92,11 +93,11 @@ export function Library() {
           ))}
         </div>
       ) : (
-        <div className="empty-card">Nothing saved yet. Tap ☆ Save on any article, round or module.</div>
+        <div className="empty-card">{LIBRARY_COPY.savedEmpty}</div>
       )}
 
       <div className="section-h" id="sense">
-        <h2>Sense: your notes</h2>
+        <h2>{LIBRARY_COPY.notesTitle}</h2>
         <span>tap ✎ Note while reading</span>
       </div>
       {notes.length ? (
@@ -128,7 +129,7 @@ export function Library() {
           ))}
         </div>
       ) : (
-        <div className="empty-card">No notes yet. Writing one thing in your own words is what makes it stick.</div>
+        <div className="empty-card">{LIBRARY_COPY.notesEmpty}</div>
       )}
 
       <div className="section-h" id="share">
@@ -145,7 +146,7 @@ export function Library() {
       </div>
 
       <div className="section-h">
-        <h2>Reading history</h2>
+        <h2>{LIBRARY_COPY.historyTitle}</h2>
         <span>{seen.length} pages</span>
       </div>
       {seen.length ? (
@@ -164,7 +165,7 @@ export function Library() {
           ))}
         </div>
       ) : (
-        <div className="empty-card">Open a post, round or module and it shows up here.</div>
+        <div className="empty-card">{LIBRARY_COPY.historyEmpty}</div>
       )}
       {seen.length > 0 && (
         <p style={{ marginTop: 24 }}>

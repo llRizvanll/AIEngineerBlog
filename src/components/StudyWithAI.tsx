@@ -1,47 +1,12 @@
 "use client";
 
+import type { StudyMode } from "@/types/ui";
+import { STORAGE } from "@/config/storage";
 import { useEffect, useRef, useState } from "react";
 import { fileNameFor, pageMarkdown } from "@/lib/page-markdown";
 import { track } from "@/lib/track";
-
-type Mode = "explain" | "quiz" | "interview";
-const MODES: [Mode, string][] = [
-  ["explain", "Explain it"],
-  ["quiz", "Quiz me"],
-  ["interview", "Interview"],
-];
-const ASK: Record<Mode, string> = {
-  explain:
-    "Help me study the page below. Teach it step by step: the basics in plain words first, then the key ideas, then the code if there is any. After each part, check my understanding with one short question and wait for my answer. Say clearly when something goes beyond the page or when you're unsure.",
-  quiz: "Quiz me on the page below. Ask one question at a time and wait for my answer. Tell me what I got right and what I missed, then ask the next one. Start easy and get harder. After 8 questions, list my weak spots.",
-  interview:
-    "Act as a senior technical interviewer. Use the page below as the topic. Ask me one interview question at a time, probe weak answers before moving on, and don't give me the answers during the round. When I say 'end', score me from 1 to 5 and say what to study next.",
-};
-
-interface Tool {
-  id: string;
-  name: string;
-  open: string;
-  /** builds a link that prefills the prompt. Tools without one get the prompt on the clipboard instead. */
-  prefill?: (q: string) => string;
-}
-
-/* Prefill links are undocumented conventions that tools may change, so the full prompt is always copied too. */
-const MAIN: Tool[] = [
-  { id: "claude", name: "Claude", open: "https://claude.ai/new", prefill: (q) => `https://claude.ai/new?q=${encodeURIComponent(q)}` },
-  { id: "chatgpt", name: "ChatGPT", open: "https://chatgpt.com/", prefill: (q) => `https://chatgpt.com/?q=${encodeURIComponent(q)}` },
-  { id: "gemini", name: "Gemini", open: "https://gemini.google.com/app" },
-  { id: "perplexity", name: "Perplexity", open: "https://www.perplexity.ai/", prefill: (q) => `https://www.perplexity.ai/search?q=${encodeURIComponent(q)}` },
-];
-const OTHER: Tool[] = [
-  { id: "copilot", name: "Copilot", open: "https://copilot.microsoft.com/" },
-  { id: "grok", name: "Grok", open: "https://grok.com/" },
-  { id: "deepseek", name: "DeepSeek", open: "https://chat.deepseek.com/" },
-  { id: "mistral", name: "Le Chat", open: "https://chat.mistral.ai/chat" },
-];
-
-/** A link that's too long gets cut off or refused, so long pages travel by clipboard and the link carries a short prompt. */
-const MAX_LINK = 6000;
+import { STUDY_MAX_LINK, STUDY_TOOLS_MAIN, STUDY_TOOLS_OTHER, type Tool } from "@/config/constants";
+import { STUDY_MODES, STUDY_PROMPTS } from "@/content/ui-copy";
 
 function Mark({ id }: { id: string }) {
   switch (id) {
@@ -102,14 +67,14 @@ function Mark({ id }: { id: string }) {
  */
 export function StudyWithAI({ root = "main", title, markdown }: { root?: string; title?: string; markdown?: string }) {
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<Mode>("explain");
+  const [mode, setMode] = useState<StudyMode>("explain");
   const [toast, setToast] = useState("");
   const [canShare, setCanShare] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     try {
-      const m = localStorage.getItem("pae-study-mode");
+      const m = localStorage.getItem(STORAGE.studyMode);
       if (m === "quiz" || m === "interview" || m === "explain") setMode(m);
     } catch {}
     try {
@@ -143,15 +108,15 @@ export function StudyWithAI({ root = "main", title, markdown }: { root?: string;
 
   const go = async (tool: Tool) => {
     const { md, name, url } = build();
-    const full = `${ASK[mode]}\n\n---\n\n${md}`;
+    const full = `${STUDY_PROMPTS[mode]}\n\n---\n\n${md}`;
     const copied = await copy(full);
     let href = tool.open;
     let note: string;
-    if (tool.prefill && encodeURIComponent(full).length <= MAX_LINK) {
+    if (tool.prefill && encodeURIComponent(full).length <= STUDY_MAX_LINK) {
       href = tool.prefill(full);
       note = `Opened ${tool.name} with this page. Check the message, then send it.`;
     } else if (tool.prefill) {
-      href = tool.prefill(`${ASK[mode]}\n\nThe page is "${name}" (${url}). I'll paste its full text in my next message.`);
+      href = tool.prefill(`${STUDY_PROMPTS[mode]}\n\nThe page is "${name}" (${url}). I'll paste its full text in my next message.`);
       note = copied ? `Opened ${tool.name}. The page is long, so it's on your clipboard: paste it in as your next message.` : `Opened ${tool.name}. The page is too long for a link, so use Download .md and attach the file.`;
     } else {
       note = copied ? `Opened ${tool.name}. The prompt and page are on your clipboard: paste them into the chat.` : `Opened ${tool.name}. Copying failed, so use Download .md and attach the file.`;
@@ -163,7 +128,7 @@ export function StudyWithAI({ root = "main", title, markdown }: { root?: string;
 
   const download = () => {
     const { md, name } = build();
-    const blob = new Blob([`${ASK[mode]}\n\n---\n\n${md}`], { type: "text/markdown;charset=utf-8" });
+    const blob = new Blob([`${STUDY_PROMPTS[mode]}\n\n---\n\n${md}`], { type: "text/markdown;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = fileNameFor(name);
@@ -175,7 +140,7 @@ export function StudyWithAI({ root = "main", title, markdown }: { root?: string;
 
   const share = async () => {
     const { md, name } = build();
-    const file = new File([`${ASK[mode]}\n\n---\n\n${md}`], fileNameFor(name), { type: "text/markdown" });
+    const file = new File([`${STUDY_PROMPTS[mode]}\n\n---\n\n${md}`], fileNameFor(name), { type: "text/markdown" });
     try {
       await navigator.share({ files: [file], title: name });
       track("study_with_ai", { tool: "share", mode, page: location.pathname });
@@ -186,15 +151,15 @@ export function StudyWithAI({ root = "main", title, markdown }: { root?: string;
 
   const copyOnly = async () => {
     const { md } = build();
-    const ok = await copy(`${ASK[mode]}\n\n---\n\n${md}`);
+    const ok = await copy(`${STUDY_PROMPTS[mode]}\n\n---\n\n${md}`);
     track("study_with_ai", { tool: "copy", mode, page: location.pathname });
     say(ok ? "Copied as Markdown. Paste it into any AI chat." : "Copying failed. Use Download .md instead.");
   };
 
-  const pickMode = (m: Mode) => {
+  const pickMode = (m: StudyMode) => {
     setMode(m);
     try {
-      localStorage.setItem("pae-study-mode", m);
+      localStorage.setItem(STORAGE.studyMode, m);
     } catch {}
   };
 
@@ -203,7 +168,7 @@ export function StudyWithAI({ root = "main", title, markdown }: { root?: string;
       <div className="sa-row">
         <span className="sa-label">Study with AI</span>
         <div className="sa-tools">
-          {MAIN.map((t) => (
+          {STUDY_TOOLS_MAIN.map((t) => (
             <button key={t.id} type="button" className="sa-tool" onClick={() => go(t)} aria-label={`Study this page with ${t.name}`} title={`Study with ${t.name}`}>
               <Mark id={t.id} />
               <span>{t.name}</span>
@@ -217,7 +182,7 @@ export function StudyWithAI({ root = "main", title, markdown }: { root?: string;
       {open && (
         <div className="sa-panel">
           <div className="sa-modes" role="radiogroup" aria-label="What should the AI do?">
-            {MODES.map(([m, label]) => (
+            {STUDY_MODES.map(([m, label]) => (
               <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => pickMode(m)}>
                 {label}
               </button>
@@ -225,7 +190,7 @@ export function StudyWithAI({ root = "main", title, markdown }: { root?: string;
           </div>
           <p className="sa-hint">Other AI tools open in a new tab, with the prompt and page on your clipboard to paste.</p>
           <div className="sa-tools sa-other">
-            {OTHER.map((t) => (
+            {STUDY_TOOLS_OTHER.map((t) => (
               <button key={t.id} type="button" className="sa-tool" onClick={() => go(t)} aria-label={`Study this page with ${t.name}`}>
                 <Mark id={t.id} />
                 <span>{t.name}</span>

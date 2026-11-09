@@ -2,48 +2,21 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { Reel, ReelCollection } from "@/content/types";
 import { routeFor } from "@/lib/routes";
 import type { CollectionSummary } from "@/lib/reel-summary";
 import { useLocal } from "@/lib/store";
-import { beatsOf, captionOf, durationOf, ReelBody } from "./templates";
-
-interface Item {
-  r: Reel;
-  c: ReelCollection;
-}
-
-interface ReelStore {
-  likes: Record<string, boolean>;
-  saves: Record<string, boolean>;
-  done: Record<string, boolean>;
-  settings: { autoBeats: boolean; autoNext: boolean; captions: boolean; speed: number; size: "s" | "m" | "l" };
-}
-const KEY = "pae-reels";
-const EMPTY: ReelStore = {
-  likes: {},
-  saves: {},
-  done: {},
-  settings: { autoBeats: true, autoNext: true, captions: true, speed: 1, size: "m" },
-};
-
-function hashNum(s: string) {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return h;
-}
-
-const ICON = {
-  like: <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />,
-  save: <path d="M6 3h12v18l-6-4-6 4z" />,
-  share: <path d="M14 4l7 7-7 7M21 11H9a6 6 0 0 0-6 6v2" />,
-};
+import { beatsOf, durationOf } from "./templates";
+import { EMPTY_REEL_STORE, REELS_STORE_KEY } from "./store";
+import { ReelCard } from "./ReelCard";
+import { UpNext } from "./UpNext";
+import type { Handlers, Item, ReelStore } from "./types";
 
 export function ReelsPlayer({ collections, summaries, filter }: { collections: ReelCollection[]; summaries: CollectionSummary[]; filter: string }) {
   const router = useRouter();
-  const [store, update, hydrated] = useLocal<ReelStore>(KEY, EMPTY);
-  const S = { ...EMPTY.settings, ...store.settings };
+  const [store, update, hydrated] = useLocal<ReelStore>(REELS_STORE_KEY, EMPTY_REEL_STORE);
+  const S = { ...EMPTY_REEL_STORE.settings, ...store.settings };
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [toast, setToast] = useState("");
 
@@ -146,10 +119,15 @@ export function ReelsPlayer({ collections, summaries, filter }: { collections: R
     if (!item || paused) return;
     let raf = 0;
     const dur = durationOf(item.r, beat) / (S.speed || 1);
+    let shown = -1;
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
       const prog = Math.min(1, (now - startAt.current) / dur);
-      setP(prog);
+      // Re-render only when progress moves a visible amount, not on every frame.
+      if (prog >= 1 || prog - shown >= 0.012) {
+        shown = prog;
+        setP(prog);
+      }
       if (prog >= 1 && !beatDone.current) {
         beatDone.current = true;
         if (beat === n - 1) markDone(item.r.id);
@@ -384,191 +362,3 @@ export function ReelsPlayer({ collections, summaries, filter }: { collections: R
     </main>
   );
 }
-
-const UpNext = memo(function UpNext({ list, cur, done, onGo }: { list: Item[]; cur: number; done: Record<string, boolean>; onGo: (i: number) => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    ref.current?.querySelector(".on")?.scrollIntoView({ block: "nearest" });
-  }, [cur]);
-  return (
-    <div className="un" ref={ref}>
-      {list.map((x, i) => (
-        <button key={x.c.id + x.r.id} type="button" className={(i === cur ? "on" : "") + (done[x.r.id] ? " done" : "")} onClick={() => onGo(i)}>
-          <i>{String(i + 1).padStart(2, "0")}</i>
-          <span>
-            {x.r.title}
-            <span className="c" style={{ "--sw": x.c.theme.accent } as CSSProperties}>
-              <b />
-              {x.c.title}
-            </span>
-          </span>
-        </button>
-      ))}
-    </div>
-  );
-});
-
-interface Handlers {
-  back: () => void;
-  next: () => void;
-  pause: () => void;
-  act: (what: "like" | "save" | "share" | "cta", r: Reel) => void;
-  pick: (id: string, v: number) => void;
-}
-
-interface CardProps {
-  x: Item;
-  i: number;
-  total: number;
-  active: boolean;
-  beat: number;
-  p: number;
-  paused: boolean;
-  liked: boolean;
-  saved: boolean;
-  pick?: number;
-  near: boolean;
-  h: Handlers;
-}
-
-/** Quick-hit reels: shrink (or gently grow) the slide so it always fits the space above the caption. */
-function FitBody({ children, watch }: { children: ReactNode; watch: string }) {
-  const outer = useRef<HTMLDivElement>(null);
-  const inner = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const o = outer.current;
-    const el = inner.current;
-    if (!o || !el) return;
-    const run = () => {
-      const cs = getComputedStyle(o);
-      const have = o.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-      if (have <= 0) return;
-      let z = 1;
-      el.style.setProperty("zoom", "1");
-      for (let pass = 0; pass < 4; pass++) {
-        const need = el.getBoundingClientRect().height;
-        const next = Math.min(1.45, Math.max(0.5, z * ((have * 0.97) / need)));
-        if (Math.abs(next - z) < 0.01) break;
-        z = next;
-        el.style.setProperty("zoom", String(z));
-      }
-      // Text rewraps as it scales, so make sure the last step never overflows.
-      const after = el.getBoundingClientRect().height;
-      if (after > have) el.style.setProperty("zoom", String(Math.max(0.5, (z * have * 0.97) / after)));
-    };
-    run();
-    const ro = new ResizeObserver(run);
-    ro.observe(o);
-    ro.observe(el);
-    document.fonts?.ready.then(run);
-    return () => ro.disconnect();
-  }, [watch]);
-  return (
-    <div className="r-body" ref={outer}>
-      <div className="r-fit" ref={inner}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-const ReelCard = memo(function ReelCard({ x, i, total, active, beat, p, paused, liked, saved, pick, near, h }: CardProps) {
-  const { r, c } = x;
-  // Only reels next to the one on screen render their content; the rest are light shells.
-  if (!near)
-    return (
-      <section
-        className="reel reel-shell"
-        data-i={i}
-        aria-label={r.title}
-        style={{ "--rbg": c.theme.bg, "--rfg": c.theme.fg, "--rac": c.theme.accent, "--rmu": c.theme.muted } as CSSProperties}
-      >
-        <span>{r.title}</span>
-      </section>
-    );
-  const n = beatsOf(r);
-  const th = c.theme;
-  const style = { "--rbg": th.bg, "--rfg": th.fg, "--rac": th.accent, "--rmu": th.muted } as CSSProperties;
-  return (
-    <section
-      className={"reel" + (r.template === "read" ? " is-read" : r.template === "code" ? " is-code" : " is-quick") + (paused ? " paused" : "")}
-      data-i={i}
-      aria-roledescription="reel"
-      aria-label={r.title}
-      style={style}
-    >
-      <div className="r-top">
-        <div className="segs">
-          {Array.from({ length: n }, (_, k) => (
-            <span key={k}>
-              <i style={{ width: k < beat ? "100%" : k === beat && active ? `${p * 100}%` : "0" }} />
-            </span>
-          ))}
-        </div>
-        <div className="r-meta">
-          <b>{c.title}</b>
-          <span>
-            {i + 1} / {total}
-          </span>
-        </div>
-      </div>
-      {r.template === "read" || r.template === "code" ? (
-        <div className="r-body">
-          <ReelBody r={r} beat={beat} p={p} pick={pick} onPick={(v) => h.pick(r.id, v)} />
-        </div>
-      ) : (
-        <FitBody watch={`${beat}:${pick ?? ""}`}>
-          <ReelBody r={r} beat={beat} p={p} pick={pick} onPick={(v) => h.pick(r.id, v)} />
-        </FitBody>
-      )}
-      <div className="r-bottom">
-        <div className="r-title">{r.title}</div>
-        <div className="r-cap">{captionOf(r, beat)}</div>
-        {r.tags && r.tags.length > 0 && (
-          <div className="r-tags">
-            {r.tags.map((t) => (
-              <span key={t}>#{t}</span>
-            ))}
-          </div>
-        )}
-        <div className="r-row">
-          {r.cta && (
-            <button type="button" className="r-cta" onClick={() => h.act("cta", r)}>
-              {r.cta.label || "Read in post"} →
-            </button>
-          )}
-          <div className="r-rail">
-            <button type="button" aria-pressed={liked} aria-label="Like" onClick={() => h.act("like", r)}>
-              <svg viewBox="0 0 24 24" aria-hidden>
-                {ICON.like}
-              </svg>
-              <span>{120 + (hashNum(r.id) % 880) + (liked ? 1 : 0)}</span>
-            </button>
-            <button type="button" aria-pressed={saved} aria-label="Save" onClick={() => h.act("save", r)}>
-              <svg viewBox="0 0 24 24" aria-hidden>
-                {ICON.save}
-              </svg>
-              <span>Save</span>
-            </button>
-            <button type="button" aria-label="Copy link" onClick={() => h.act("share", r)}>
-              <svg viewBox="0 0 24 24" aria-hidden>
-                {ICON.share}
-              </svg>
-              <span>Share</span>
-            </button>
-          </div>
-        </div>
-      </div>
-      {active && (
-        <div className="reel-tap" aria-hidden>
-          <button type="button" tabIndex={-1} onClick={h.back} />
-          <button type="button" tabIndex={-1} onClick={h.pause} />
-          <button type="button" tabIndex={-1} onClick={h.next} />
-        </div>
-      )}
-      <div className="pp" aria-hidden>
-        <span>❚❚</span>
-      </div>
-    </section>
-  );
-});

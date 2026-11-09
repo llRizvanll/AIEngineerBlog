@@ -1,3 +1,4 @@
+import { toneClass } from "@/config/tones";
 import Link from "next/link";
 import type { NavItem } from "@/lib/nav-types";
 import { Icon } from "./Icons";
@@ -31,7 +32,7 @@ export function CardGrid({ items, start = 1, tag = "Start here" }: { items: NavI
   return (
     <div className="cb-grid">
       {items.map((it, i) => (
-        <Link key={it.href} href={it.href} className={`cb pc-${(start + i - 1) % 8}`}>
+        <Link key={it.href} href={it.href} className={`cb ${toneClass(start + i - 1)}`}>
           <Book icon={it.icon} label={it.title.split(" ")[0].toUpperCase().slice(0, 11)} />
           <span className="cb-tx">
             <small>{it.count ?? `Module ${String(start + i).padStart(2, "0")}`}</small>

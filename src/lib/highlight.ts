@@ -1,3 +1,4 @@
+import { SQL_KW, LANG_EXTENSION, LANG_NAME } from "@/config/constants";
 /* Tiny, dependency-free syntax highlighter that renders an editor-style block
    (title bar, line-number gutter, status bar). Used by React code samples and
    by the hand-written Part 1 article, so both look identical. */
@@ -17,24 +18,6 @@ const KW = new Set(
     "protocol defer weak unowned mutating fileprivate nonisolated inout rethrows associatedtype precondition repeat"
   ).split(" ")
 );
-const SQL_KW = new Set(
-  (
-    "select from where and or not insert into values update set delete create table index unique primary key references on conflict do " +
-    "nothing returning join left right inner outer group by order having limit offset as is null default integer text blob real boolean " +
-    "begin commit rollback transaction pragma if exists alter add column drop view trigger for each row without rowid using virtual " +
-    "fts5 match desc asc distinct case when then else end union all count max min sum coalesce check foreign constraint serial bigint " +
-    "timestamptz timestamp varchar jsonb uuid partition range with recursive lateral returning now interval cascade"
-  ).split(" ")
-);
-
-const EXT: Record<string, string> = {
-  kotlin: "kt", java: "java", swift: "swift", ts: "ts", tsx: "tsx", js: "js", sql: "sql", python: "py", json: "json", yaml: "yaml",
-  http: "http", bash: "sh", markdown: "md", text: "txt",
-};
-const NAME: Record<string, string> = {
-  kotlin: "Kotlin", java: "Java", swift: "Swift", ts: "TypeScript", tsx: "TypeScript JSX", js: "JavaScript", sql: "SQL", python: "Python",
-  json: "JSON", yaml: "YAML", http: "HTTP", bash: "Shell", markdown: "Markdown", text: "Plain text",
-};
 
 function lineComment(lang: string) {
   if (lang === "sql") return "--";
@@ -119,7 +102,7 @@ function tokenize(line: string, lang: string, state: { block: boolean }): [Tok, 
 
 export function langName(lang: string) {
   const l = lang.toLowerCase();
-  return NAME[l] ?? lang;
+  return LANG_NAME[l] ?? lang;
 }
 
 export function fileName(title: string, lang: string) {
@@ -131,7 +114,7 @@ export function fileName(title: string, lang: string) {
     .filter((w) => w && !["a", "an", "the", "and", "of", "for", "to", "with", "in", "on"].includes(w))
     .slice(0, 3)
     .join("-");
-  return `${slug || "snippet"}.${EXT[l] ?? "txt"}`;
+  return `${slug || "snippet"}.${LANG_EXTENSION[l] ?? "txt"}`;
 }
 
 /** Highlighted lines as HTML strings (one per source line). */

@@ -4,9 +4,11 @@ import { MORE_PROBLEMS } from "@/content/coding-more";
 import { MOBILE_PROBLEMS } from "@/content/mobile-coding";
 import { AI_REELS, FLASHCARDS, MODULES } from "@/content/modules";
 import { durationCategory, type AssetFormat, type CognitiveLevel, type ComplexityTier, type CurationMetadata, type Domain, type PortalAsset, type PortalMode } from "@/types/portal";
-import { CASES, CRITICAL, DEEP, POSTS, PROTOCOLS, REELS, SERIES, SERIES_BLURBS } from "./content";
+import { CASES, CRITICAL, DEEP, POSTS, PROTOCOLS, REELS, SERIES } from "./content";
 import { validateAssets } from "./catalog-validate";
-import { SECTION_NAME } from "./routes";
+import { SECTION_NAME } from "@/content/ui-copy";
+import { CASE_META, DEEP_META, COLLECTION_DOMAIN, COLLECTION_CURRICULUM, KIND_NOTE } from "@/content/catalog-meta";
+import { SERIES_BLURBS } from "@/content/site";
 
 /* One catalog of every learning asset, in the spec's metadata format. Built once at build time. */
 
@@ -14,37 +16,6 @@ const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(
 const plain = (s: string) => s.replace(/\*\*|`/g, "").replace(/\s+/g, " ").trim();
 const firstSentence = (s: string) => plain(s).match(/^.*?[.!?](?=\s|$)/)?.[0] ?? plain(s);
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s);
-
-const CASE_META: Record<string, { domain: Domain; curriculum?: number }> = {
-  "offline-field": { domain: "mobile-systems" },
-  chat: { domain: "mobile-systems" },
-  feed: { domain: "mobile-systems" },
-  payments: { domain: "mobile-systems" },
-  booking: { domain: "mobile-systems" },
-  release: { domain: "mobile-systems", curriculum: 11 },
-  "ai-assistant": { domain: "agents-apps", curriculum: 6 },
-  "on-device": { domain: "model-serving", curriculum: 1 },
-  rag: { domain: "rag-retrieval", curriculum: 4 },
-  "llm-serving": { domain: "model-serving", curriculum: 1 },
-  "ai-evals": { domain: "evals-guardrails", curriculum: 7 },
-};
-const DEEP_META: Record<string, { domain: Domain; curriculum?: number }> = {
-  "llm-internals": { domain: "model-serving", curriculum: 1 },
-  "inference-accel": { domain: "model-serving", curriculum: 1 },
-  embeddings: { domain: "rag-retrieval", curriculum: 4 },
-  "adapt-models": { domain: "fine-tuning", curriculum: 3 },
-  "agents-mcp": { domain: "agents-apps", curriculum: 6 },
-  "llm-integration": { domain: "agents-apps", curriculum: 10 },
-  "ai-dev-accel": { domain: "agents-apps" },
-};
-const COLLECTION_DOMAIN: Record<string, Domain> = {
-  "c-aihb": "model-serving",
-  "c-behavioral": "core-engineering",
-  "c-patterns": "core-engineering",
-  "q-coding-hacks": "core-engineering",
-  "q-star": "core-engineering",
-};
-const COLLECTION_CURRICULUM: Record<string, number> = { "c-aihb": 1 };
 
 interface Input {
   id: string;
@@ -85,12 +56,6 @@ function asset(a: Input): PortalAsset {
 
 const modeOf = (format: AssetFormat): PortalMode =>
   format === "long-read" || format === "deep-dive" || format === "protocol" ? "learn" : format === "flashcard" || format === "reel" ? "revise" : "practice";
-
-const KIND_NOTE: Record<string, string> = {
-  Incident: "Panels use incidents to test whether you stop the damage first.",
-  Probe: "Probes test the mechanism behind the term, not just the term.",
-  Trap: "Traps catch answers that sound right but fail in production.",
-};
 
 const BEHAVIORAL_SOURCE_LABEL = "Question from " + BEHAVIORAL_SOURCE.name;
 

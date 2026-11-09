@@ -22,6 +22,7 @@ import { Code, Faq, Footer, Table } from "@/components/ui";
 import { assetByHref } from "@/lib/catalog";
 import { moduleCode } from "@/lib/module-source";
 import { DOMAIN_LABEL, FORMAT_LABEL } from "@/types/portal";
+import { MODULE_DETAIL_COPY } from "@/content/pages/modules-detail";
 
 export const dynamicParams = false;
 export const generateStaticParams = () => MODULES.map((m) => ({ id: m.assetId }));
@@ -49,12 +50,12 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
       </>
     ),
   };
-  if (drawn[m.assetId]) detail.push({ id: "picture", title: "The picture", intro: "Drawn for this page, at a size that reads on a phone.", body: drawn[m.assetId] });
+  if (drawn[m.assetId]) detail.push({ id: "picture", title: MODULE_DETAIL_COPY.sections["detail.picture"].title, intro: MODULE_DETAIL_COPY.sections["detail.picture"].intro, body: drawn[m.assetId] });
   if (m.arch)
     detail.push({
       id: "arch",
-      title: "Architecture",
-      intro: "The components and how they connect.",
+      title: MODULE_DETAIL_COPY.sections["detail.arch"].title,
+      intro: MODULE_DETAIL_COPY.sections["detail.arch"].intro,
       body: (
         <Figure caption="Boxes are components; arrows show calls and data flow.">
           <ArchSvg a={m.arch} uid={m.assetId} />
@@ -63,8 +64,8 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
     });
   detail.push({
     id: "steps",
-    title: "Step by step",
-    intro: "The mechanism, in the order you would explain it.",
+    title: MODULE_DETAIL_COPY.sections["detail.steps"].title,
+    intro: MODULE_DETAIL_COPY.sections["detail.steps"].intro,
     body: (
       <ol className="step-list">
         {m.steps.map(([h, p]) => (
@@ -86,8 +87,8 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
   if (m.code)
     detail.push({
       id: "code",
-      title: "Code",
-      intro: "Working code for the core of it.",
+      title: MODULE_DETAIL_COPY.sections["detail.code"].title,
+      intro: MODULE_DETAIL_COPY.sections["detail.code"].intro,
       body: (
         <>
           {m.code.map((c) =>
@@ -110,15 +111,15 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
     detail.push({
       id: "walk",
       title: m.code ? "More tested code" : "Code",
-      intro: "A working implementation, then what each part does and why.",
+      intro: MODULE_DETAIL_COPY.sections["detail.walk"].intro,
       body: <CodeWalks ids={extra} />,
     });
 
   if (slides)
     detail.push({
       id: "slides",
-      title: "Slides",
-      intro: "From the source decks this page draws on. Swipe, use the arrows, or press the left and right keys. Notes flag where a slide's numbers or flow differ from this page.",
+      title: MODULE_DETAIL_COPY.sections["detail.slides"].title,
+      intro: MODULE_DETAIL_COPY.sections["detail.slides"].intro,
       body: (
         <SlideDeck slides={slides.map((sl) => ({ src: `/slides/rn/${sl.file}.jpg`, alt: sl.alt, caption: sl.caption, flag: sl.flag }))} />
       ),
@@ -127,11 +128,11 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
   const parts: ChapterPart[] = [
     {
       key: "basics",
-      lead: "The whole idea first, then the terms the rest of this page uses.",
+      lead: MODULE_DETAIL_COPY.parts.basics.lead,
       sections: [
         {
           id: "epitome",
-          title: "Whole idea",
+          title: MODULE_DETAIL_COPY.sections["basics.epitome"].title,
           body: (
             <>
               <p className="lead">{m.epitome}</p>
@@ -142,16 +143,16 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
             </>
           ),
         },
-        { id: "concepts", title: "Key concepts", intro: "One idea per card, in plain words.", body: <ConceptGrid items={m.concepts} /> },
+        { id: "concepts", title: MODULE_DETAIL_COPY.sections["basics.concepts"].title, intro: MODULE_DETAIL_COPY.sections["basics.concepts"].intro, body: <ConceptGrid items={m.concepts} /> },
       ],
     },
     {
       key: "question",
-      lead: "What exactly you must answer, and what to settle before you start.",
+      lead: MODULE_DETAIL_COPY.parts.question.lead,
       sections: [
         {
           id: "prompt",
-          title: "Question",
+          title: MODULE_DETAIL_COPY.sections["question.prompt"].title,
           body: (
             <div className="ask">
               <span className="who">Interviewer</span>
@@ -159,19 +160,19 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
             </div>
           ),
         },
-        ...(m.clarify ? [{ id: "clarify", title: "Clarify first", intro: "Each answer removes a guess.", body: <Table head={["You ask", "Answer"]} rows={m.clarify} /> }] : []),
+        ...(m.clarify ? [{ id: "clarify", title: MODULE_DETAIL_COPY.sections["question.clarify"].title, intro: MODULE_DETAIL_COPY.sections["question.clarify"].intro, body: <Table head={["You ask", "Answer"]} rows={m.clarify} /> }] : []),
       ],
     },
-    { key: "detail", lead: "How it works, and how to build or explain it.", sections: detail },
-    { key: "qa", lead: "What interviewers ask next. Answer out loud, then open.", sections: [{ id: "qa", title: "Interview questions", body: <Faq items={m.qa} /> }] },
+    { key: "detail", lead: MODULE_DETAIL_COPY.parts.detail.lead, sections: detail },
+    { key: "qa", lead: MODULE_DETAIL_COPY.parts.qa.lead, sections: [{ id: "qa", title: MODULE_DETAIL_COPY.sections["qa.qa"].title, body: <Faq items={m.qa} /> }] },
     {
       key: "more",
-      lead: "Edge cases, counterpoints and what to read next.",
+      lead: MODULE_DETAIL_COPY.parts.more.lead,
       sections: [
         {
           id: "further",
-          title: "Edge cases and counterpoints",
-          intro: "Includes the strongest argument against this approach.",
+          title: MODULE_DETAIL_COPY.sections["more.further"].title,
+          intro: MODULE_DETAIL_COPY.sections["more.further"].intro,
           body: (
             <dl className="notes">
               {m.further.map(([t, d]) => [<dt key={t + "t"}>{t}</dt>, <dd key={t + "d"}>{d}</dd>])}
@@ -182,7 +183,7 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
           ? [
               {
                 id: "related",
-                title: "Read next",
+                title: MODULE_DETAIL_COPY.sections["more.related"].title,
                 body: (
                   <div className="mod-grid tight">
                     {related.map((r) => (

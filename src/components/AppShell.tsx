@@ -3,32 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import type { NavGroup } from "@/lib/nav-types";
-void (null as unknown as NavGroup);
 import { defaultPrefs, PREFS_KEY, useLocal, type Prefs } from "@/lib/store";
 import { Icon } from "./Icons";
-import { openSearch } from "./Masthead";
+import { DASHBOARD_HREF, LANDING_LINKS, RAIL, railFor } from "@/config/navigation";
+import { onUiEvent, openSearch, UI_EVENTS } from "@/lib/ui-events";
 import { SearchIcon } from "./SearchIcon";
 import { Settings } from "./Settings";
+import { SHELL_COPY } from "@/content/ui-copy";
 
-/* The rail: where you go. Each entry is a hub that lists everything beneath it. */
-const RAIL: { id: string; label: string; href: string; icon: string; match: string[] }[] = [
-  { id: "learn", label: "Learn", href: "/learn", icon: "book", match: ["/learn", "/aiengine", "/modules", "/deep", "/protocols", "/series", "/mobile", "/explore"] },
-  { id: "tracks", label: "Tracks", href: "/tracks", icon: "route", match: ["/tracks", "/paths/react-native", "/paths/mobile-principal"] },
-  { id: "projects", label: "Projects", href: "/mobile-coding", icon: "code", match: ["/mobile-coding", "/coding"] },
-  { id: "practice", label: "Practice", href: "/practice", icon: "target", match: ["/practice", "/revise", "/reels", "/paths/ai-interviews/basics"] },
-  { id: "interview", label: "Interview", href: "/interviews", icon: "chat", match: ["/interviews", "/interview", "/paths/ai-interviews", "/problem-solving"] },
-  { id: "progress", label: "Progress", href: "/library", icon: "user", match: ["/library"] },
-];
-
-const on = (path: string, m: string[]) => m.some((h) => path === h || path.startsWith(h + "/"));
-const railFor = (path: string) => {
-  // The more specific match wins: /paths/ai-interviews/basics is Practice, not Interview.
-  const hits = RAIL.map((r) => ({ r, len: Math.max(0, ...r.match.filter((h) => path === h || path.startsWith(h + "/")).map((h) => h.length)) })).filter((x) => x.len);
-  return hits.sort((a, b) => b.len - a.len)[0]?.r;
-};
-
-export function Chrome({ groups }: { groups?: NavGroup[] }) {
+export function Chrome() {
   const path = usePathname();
   if (path === "/") return <LandingNav />;
   return <Shell path={path} />;
@@ -46,9 +29,7 @@ function Shell({ path }: { path: string }) {
     return () => clearTimeout(t);
   }, [path]);
   useEffect(() => {
-    const open = () => setSettings(true);
-    window.addEventListener("pae-appearance", open);
-    return () => window.removeEventListener("pae-appearance", open);
+    return onUiEvent(UI_EVENTS.appearance, () => setSettings(true));
   }, []);
 
   const dark = typeof document !== "undefined" && (document.documentElement.getAttribute("data-theme") === "dark" || (!document.documentElement.getAttribute("data-theme") && matchMedia("(prefers-color-scheme: dark)").matches));
@@ -80,10 +61,10 @@ function Shell({ path }: { path: string }) {
             )}
           </>
         )}
-        <button type="button" className="tb-search" onClick={openSearch} aria-label="Search everything">
-          <SearchIcon size={16} /> <span>Search lessons and projects</span> <kbd>⌘K</kbd>
+        <button type="button" className="tb-search" onClick={openSearch} aria-label={SHELL_COPY.searchAria}>
+          <SearchIcon size={16} /> <span>{SHELL_COPY.searchLabel}</span> <kbd>⌘K</kbd>
         </button>
-        <button type="button" className="tb-icon" onClick={flip} aria-label="Switch between light and dark">
+        <button type="button" className="tb-icon" onClick={flip} aria-label={SHELL_COPY.themeAria}>
           <Icon name="sun" size={18} />
         </button>
       </header>
@@ -118,16 +99,13 @@ function LandingNav() {
         </b>
       </Link>
       <nav className="ln-pill" aria-label="Main">
-        <Link href="/learn">Learn</Link>
-        <Link href="/practice">Practice</Link>
-        <Link href="/interviews">Interview</Link>
-        <a href="#faq">FAQ</a>
+        {LANDING_LINKS.map((l) => (l.href.startsWith("#") ? <a key={l.label} href={l.href}>{l.label}</a> : <Link key={l.label} href={l.href}>{l.label}</Link>))}
       </nav>
       <div className="ln-act">
         <button type="button" onClick={openSearch} aria-label="Search everything" className="ln-s">
           <SearchIcon size={17} />
         </button>
-        <Link href="/learn" className="btn ln-btn">
+        <Link href={DASHBOARD_HREF} className="btn ln-btn">
           Your dashboard
         </Link>
       </div>

@@ -1,8 +1,9 @@
 "use client";
 
+import { STORAGE } from "@/config/storage";
 import { useEffect, useState, type ReactNode } from "react";
 
-const KEY = "pae-lang";
+const KEY = STORAGE.language;
 type Panel = { id: string; label: string; node: ReactNode };
 
 /** Tabs for the same code in several languages. One choice applies to every sample on the page, and is remembered. */
@@ -17,8 +18,8 @@ export function LangGroup({ panels }: { panels: Panel[] }) {
       } catch {}
     };
     read();
-    window.addEventListener("pae-lang", read);
-    return () => window.removeEventListener("pae-lang", read);
+    window.addEventListener(KEY, read);
+    return () => window.removeEventListener(KEY, read);
   }, [panels]);
 
   const pick = (next: string) => {
@@ -26,7 +27,7 @@ export function LangGroup({ panels }: { panels: Panel[] }) {
     try {
       localStorage.setItem(KEY, next);
     } catch {}
-    window.dispatchEvent(new Event("pae-lang"));
+    window.dispatchEvent(new Event(KEY));
   };
 
   return (

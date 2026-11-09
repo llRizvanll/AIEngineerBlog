@@ -5,6 +5,7 @@ import { Footer } from "@/components/ui";
 import { DAYS, JOURNEY, THREADS, WEEKS } from "@/content/programme/mobile-principal";
 import { EditJourney } from "@/components/programme/EditJourney";
 import { ProgrammeContinue, ProgrammeDays, type DayRow } from "@/components/programme/ProgrammeDays";
+import { PROGRAMME_PAGE_COPY } from "@/content/pages/paths-mobile-principal";
 
 export const metadata: Metadata = {
   title: "Mobile principal in two weeks",
@@ -25,15 +26,13 @@ export default function ProgrammePage() {
       <div className="wrap">
         <section className="pg-hero">
           <div className="kicker">
-            <Link href="/aiengine">Curriculum</Link> · Two-week programme
+            <Link href={PROGRAMME_PAGE_COPY.curriculum.href}>{PROGRAMME_PAGE_COPY.curriculum.label}</Link>{PROGRAMME_PAGE_COPY.kickerTail}
           </div>
           <h1>
-            Mobile principal <span className="serif grad-text">in two weeks.</span>
+            {PROGRAMME_PAGE_COPY.title.lead}<span className="serif grad-text">{PROGRAMME_PAGE_COPY.title.accent}</span>
           </h1>
-          <p>
-            One edit, made in a basement with no signal, followed all the way to a supervisor&rsquo;s tablet. Then the same parts rebuilt as chat, checkout, a feed and a release platform. Each day is one complete lesson, from the basics up, and picks up where the last one stopped. You can read it with nothing else open.
-          </p>
-          <StudyWithAI title="Mobile principal in two weeks" />
+<p>{PROGRAMME_PAGE_COPY.intro}</p>
+          <StudyWithAI title={PROGRAMME_PAGE_COPY.studyTitle} />
           <ProgrammeContinue days={rows} />
         </section>
 
@@ -48,14 +47,14 @@ export default function ProgrammePage() {
         ))}
 
         <div className="section-h">
-          <h2>See the whole journey</h2>
-          <span>Priya changes valve 3. Step through what happens.</span>
+          <h2>{PROGRAMME_PAGE_COPY.journey.title}</h2>
+          <span>{PROGRAMME_PAGE_COPY.journey.blurb}</span>
         </div>
         <EditJourney stops={JOURNEY} />
 
         <div className="section-h">
-          <h2>Six ideas that connect it all</h2>
-          <span>The same parts, in different products</span>
+          <h2>{PROGRAMME_PAGE_COPY.threads.title}</h2>
+          <span>{PROGRAMME_PAGE_COPY.threads.blurb}</span>
         </div>
         <div className="pg-threads">
           {THREADS.map((t) => (
@@ -76,7 +75,7 @@ export default function ProgrammePage() {
           ))}
         </div>
       </div>
-      <Footer>AI Engineer · two-week programme · progress stays in this browser</Footer>
+      <Footer>{PROGRAMME_PAGE_COPY.footer}</Footer>
     </main>
   );
 }

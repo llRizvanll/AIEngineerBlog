@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { ArchDiagram, SeqDiagram } from "@/content/types";
+import { DIAGRAM_LEGEND } from "@/content/ui-copy";
 
 /* Architecture and sequence diagrams drawn from data. Ported from the original archSVG / seqSVG. */
 
@@ -17,15 +18,6 @@ function wrapText(text: string, max: number): string[] {
   if (line) out.push(line);
   return out;
 }
-
-const LEGEND: [string, string][] = [
-  ["c", "Client"],
-  ["s", "Service"],
-  ["d", "Data store"],
-  ["q", "Queue / stream"],
-  ["a", "AI component"],
-  ["x", "External"],
-];
 
 function Arrowhead({ id }: { id: string }) {
   return (
@@ -201,7 +193,7 @@ export function ArchSvg({ a, uid = "a" }: { a: ArchDiagram; uid?: string }) {
     );
   });
 
-  const legend = LEGEND.filter((l) => a.nodes.some((n) => (n[5] || "s") === l[0]));
+  const legend = DIAGRAM_LEGEND.filter((l) => a.nodes.some((n) => (n[5] || "s") === l[0]));
   return (
     <>
       <div className="dg-scroll">

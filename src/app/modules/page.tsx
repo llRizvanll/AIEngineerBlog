@@ -4,30 +4,29 @@ import { MODULES } from "@/content/modules";
 import { ModuleCard } from "@/components/ModuleShelf";
 import { Footer } from "@/components/ui";
 import { CURRICULUM } from "@/types/portal";
+import { MODULES_COPY, MODULES_META } from "@/content/pages/modules";
 
-export const metadata: Metadata = {
-  title: "AI systems modules",
-  description: "Serving, retrieval, fine-tuning, evals, safety and GPU infrastructure, one tested module at a time.",
-};
+export const metadata: Metadata = MODULES_META;
 
 export default function ModulesPage() {
   return (
     <main>
       <div className="wrap">
         <section className="iv-hero">
-          <div className="kicker">AI systems · {MODULES.length} modules</div>
+          <div className="kicker">{MODULES_COPY.kicker} · {MODULES.length} modules</div>
           <h1>
-            AI systems, <span className="serif grad-text">part by part.</span>
+            {MODULES_COPY.title.lead}<span className="serif grad-text">{MODULES_COPY.title.accent}</span>
           </h1>
           <p>
-            Each module opens with the whole idea, states the question, walks the mechanism, then tests you. Use{" "}
-            <Link href="/explore?mode=practice">Explore</Link> to filter by mode, tier or time.
+            {MODULES_COPY.intro}
+            <Link href={MODULES_COPY.introLink.href}>{MODULES_COPY.introLink.label}</Link>
+            {MODULES_COPY.introTail}
           </p>
         </section>
         <section className="mod-shelf">
           <div className="section-h">
-            <h2>Mobile systems</h2>
-            <span>Startup, observability, security, location, push, experiments</span>
+            <h2>{MODULES_COPY.mobileShelf.title}</h2>
+            <span>{MODULES_COPY.mobileShelf.blurb}</span>
           </div>
           <div className="mod-grid">
             {MODULES.filter((m) => !m.curriculum).map((m) => (
@@ -53,7 +52,7 @@ export default function ModulesPage() {
           );
         })}
       </div>
-      <Footer>AI Engineer · AI systems modules</Footer>
+      <Footer>{MODULES_COPY.footer}</Footer>
     </main>
   );
 }

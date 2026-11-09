@@ -2,7 +2,7 @@ import { siteMap } from "./sections";
 import { RN_HUB } from "@/content/rn-hub";
 import { assetByHref } from "./catalog";
 import { titleFor } from "./programme";
-import { MOBILE_HREF } from "./routes";
+import { MOBILE_HREF } from "@/config/constants";
 
 /* Where a page sits: the menu group it belongs to, the hub that lists it, and its place in a reading order.
    Server only. It reads the same site map as the menu, so the trail and the menu can't disagree. */

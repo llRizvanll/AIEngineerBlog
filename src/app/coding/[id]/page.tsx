@@ -12,10 +12,11 @@ import { PATTERN_BASICS } from "@/content/basics";
 import { MORE_PROBLEMS } from "@/content/coding-more";
 import { Reading } from "@/components/Reading";
 import { Code, Faq, Footer } from "@/components/ui";
-import { TEMPLATE_ALT, WORKED_ALT } from "@/content/coding-alt";
+import { TEMPLATE_ALT, variantsOf, WORKED_ALT } from "@/content/coding-alt";
 import { Chapters, type ChapterPart } from "@/components/Chapters";
 import { Icon } from "@/components/Icons";
 import { AssetMeta } from "@/components/AssetMeta";
+import { CODING_DETAIL_COPY } from "@/content/pages/coding-detail";
 
 export const dynamicParams = false;
 export const generateStaticParams = () => PATTERNS.map((p) => ({ id: p.id }));
@@ -41,12 +42,12 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
   const parts: ChapterPart[] = [
     {
       key: "basics",
-      lead: "The idea behind the pattern, why it is correct, and the clues in a question that point to it.",
+      lead: CODING_DETAIL_COPY.parts.basics.lead,
       sections: [
         {
           id: "idea",
-          title: "Core idea",
-          intro: "What the pattern does, in plain words.",
+          title: CODING_DETAIL_COPY.sections["basics.idea"].title,
+          intro: CODING_DETAIL_COPY.sections["basics.idea"].intro,
           body: (
             <>
               <p className="lead">{p.idea}</p>
@@ -64,8 +65,8 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
         },
         {
           id: "signals",
-          title: "Recognition signals",
-          intro: "If a question has one of these clues, try this pattern first.",
+          title: CODING_DETAIL_COPY.sections["basics.signals"].title,
+          intro: CODING_DETAIL_COPY.sections["basics.signals"].intro,
           body: (
             <div className="sig-chips">
               {p.signals.map((x) => (
@@ -78,12 +79,12 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
     },
     {
       key: "question",
-      lead: "A classic interview problem from this family. Read it carefully and plan the approach before writing any code.",
+      lead: CODING_DETAIL_COPY.parts.question.lead,
       sections: [
         {
           id: "worked",
           title: p.worked.problem,
-          intro: "The problem statement, then the plan you would say out loud.",
+          intro: CODING_DETAIL_COPY.sections["question.worked"].intro,
           body: (
             <>
               <div className="ask">
@@ -103,15 +104,15 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
     },
     {
       key: "detail",
-      lead: "First the reusable template, then the worked solution built from it and a walk through it one step at a time.",
+      lead: CODING_DETAIL_COPY.parts.detail.lead,
       sections: [
         {
           id: "template",
-          title: "Template",
-          intro: "Memorise this shape. Most problems in this family are this code plus one twist.",
+          title: CODING_DETAIL_COPY.sections["detail.template"].title,
+          intro: CODING_DETAIL_COPY.sections["detail.template"].intro,
           body: (
             <>
-              <Code sample={[p.template.title, "ts", p.template.code]} alt={TEMPLATE_ALT[p.id]} />
+              <Code sample={[p.template.title, "ts", p.template.code]} variants={variantsOf(TEMPLATE_ALT[p.id])} />
               <ol className="flow-notes">
                 {p.template.beats.map((b) => (
                   <li key={b.note}>{b.note}</li>
@@ -122,11 +123,11 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
         },
         {
           id: "solution",
-          title: "Solution",
-          intro: "Strict TypeScript, type-checked and tested.",
+          title: CODING_DETAIL_COPY.sections["detail.solution"].title,
+          intro: CODING_DETAIL_COPY.sections["detail.solution"].intro,
           body: (
             <>
-              <Code sample={[p.worked.problem, "ts", p.worked.code]} alt={WORKED_ALT[p.id]} />
+              <Code sample={[p.worked.problem, "ts", p.worked.code]} variants={variantsOf(WORKED_ALT[p.id])} />
               {workedSteps.length > 0 && (
                 <>
                   <h3>Step by step</h3>
@@ -147,15 +148,15 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
     },
     {
       key: "qa",
-      lead: "What interviewers ask once your code works, and problems to try on your own.",
+      lead: CODING_DETAIL_COPY.parts.qa.lead,
       sections: [
-        ...(basics ? [{ id: "qa", title: "Interview questions", intro: "Answer out loud, then open.", body: <Faq items={basics.qa} /> }] : []),
+        ...(basics ? [{ id: "qa", title: CODING_DETAIL_COPY.sections["qa.qa"].title, intro: CODING_DETAIL_COPY.sections["qa.qa"].intro, body: <Faq items={basics.qa} /> }] : []),
         ...(practice.length
           ? [
               {
                 id: "practice",
-                title: "Solo practice",
-                intro: "Try these without looking; open the hint only when stuck.",
+                title: CODING_DETAIL_COPY.sections["qa.practice"].title,
+                intro: CODING_DETAIL_COPY.sections["qa.practice"].intro,
                 body: (
                   <div className="practice">
                     {practice.map((x) => (
@@ -177,14 +178,14 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
     },
     {
       key: "more",
-      lead: "More fully worked problems in the same family, and the mistakes that cost offers.",
+      lead: CODING_DETAIL_COPY.parts.more.lead,
       sections: [
         ...(more.length
           ? [
               {
                 id: "more",
                 title: `${more.length} more worked problems`,
-                intro: "Each one: the problem, the plan, the code and its cost.",
+                intro: CODING_DETAIL_COPY.sections["more.more"].intro,
                 body: (
                   <>
                     {more.map((m, k) => (
@@ -212,8 +213,8 @@ export default async function PatternPage({ params }: { params: Promise<{ id: st
           : []),
         {
           id: "traps",
-          title: "Traps",
-          intro: "Bugs and misreadings that come up again and again with this pattern.",
+          title: CODING_DETAIL_COPY.sections["more.traps"].title,
+          intro: CODING_DETAIL_COPY.sections["more.traps"].intro,
           body: (
             <ul className="traps">
               {p.pitfalls.map((x) => (

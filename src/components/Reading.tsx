@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { emptyLibrary, LIBRARY_KEY, useLocal, type LibraryState } from "@/lib/store";
+import { READING_COPY } from "@/content/ui-copy";
 
 interface Props {
   title: string;
@@ -263,8 +264,8 @@ export function Reading({ title, kind, articleId = "article", articleClass, rail
                   ✕
                 </button>
               </div>
-              <textarea className="rd-note" rows={7} autoFocus value={note} onChange={(e) => setNote(e.target.value)} placeholder="In your own words: what did this change, and where will you use it?" />
-              <p className="rd-note-hint">Saved on this device. Find every note in My library.</p>
+              <textarea className="rd-note" rows={7} autoFocus value={note} onChange={(e) => setNote(e.target.value)} placeholder={READING_COPY.notePlaceholder} />
+              <p className="rd-note-hint">{READING_COPY.noteHint}</p>
             </div>
           </div>,
           document.body

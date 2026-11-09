@@ -1,4 +1,4 @@
-import type { ReviseCard } from "@/components/interview/Revise";
+import type { ReviseCard } from "@/types/revise";
 import { RN_CARDS } from "@/content/rn-cards";
 import { getModule } from "@/content/modules";
 

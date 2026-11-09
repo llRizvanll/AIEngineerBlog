@@ -1,0 +1,94 @@
+/* Page canvas, typography, buttons, base cards, and the first pass of landing and lesson styles. */
+/* ---------- canvas: flat warm paper with a faint dot grid ---------- */
+body {
+  background-color: var(--paper);
+  background-image: radial-gradient(color-mix(in srgb, var(--ink) 11%, transparent) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+  letter-spacing: -0.003em;
+  font-feature-settings: normal;
+}
+body::before { display: none !important; }
+
+/* ---------- type: serif headings, sans for the rest ---------- */
+h1, h2 { font-family: var(--font-serif); font-weight: 340; letter-spacing: -0.035em; font-optical-sizing: auto; }
+h3, h4 { font-family: var(--font-display); font-weight: 650; letter-spacing: -0.02em; }
+h1 em, h2 em, .serif { font-family: var(--font-serif); font-style: italic; font-weight: 340; }
+.grad-text { background: none; color: var(--accent-2); -webkit-text-fill-color: currentColor; }
+.eyebrow, .kicker, .lp-eyebrow { font-family: var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; font-size: 11.5px; color: var(--accent); }
+
+/* ---------- header: a quiet floating pill ---------- */
+
+
+.logo-mark { background: var(--ink); color: var(--paper); box-shadow: none; border-radius: 9px; font-family: var(--font-mono); font-weight: 700; }
+
+
+
+
+
+
+.progress { background: var(--accent-2) !important; }
+
+
+/* ---------- buttons: ink pill, quiet ghost ---------- */
+.btn { background: var(--ink); color: var(--paper); border-radius: 12px; box-shadow: var(--shadow-sm); font-weight: 600; }
+.btn:hover { filter: none; background: color-mix(in srgb, var(--ink) 88%, var(--accent-2)); }
+.btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.btn.ghost:hover { background: var(--surface); box-shadow: inset 0 0 0 1px var(--ink); }
+.btn.light { background: var(--surface); color: var(--ink); }
+
+/* ---------- cards: warm paper, soft lift, generous radius ---------- */
+:is(.lp-skill,
+.card,
+.pc,
+.hc,
+.tile,
+.feed-row,
+.ex-card,
+.mod-card) { background: var(--surface); border-radius: var(--r-lg); }
+.lp-skill { border: 1px solid var(--line); border-top: 1px solid var(--line); box-shadow: var(--shadow-sm); transition: box-shadow 0.25s var(--ease, ease), transform 0.25s var(--ease, ease); }
+.lp-skill:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+pre, .editor { background: var(--code-bg); color: var(--code-ink); border-radius: var(--r-md); }
+:not(pre) > code { background: var(--surface-2); border-radius: 6px; }
+
+/* ---------- landing ---------- */
+.lp-hero { max-width: 860px; margin: 0 auto; padding: 88px 0 48px; text-align: center; }
+.lp-hero h1 { font-family: var(--font-display); font-weight: 500; font-size: clamp(40px, 7vw, 72px); letter-spacing: -0.045em; line-height: 1.02; }
+.lp-hero h1 .serif { display: block; color: var(--accent-2); font-size: 1em; letter-spacing: -0.035em; }
+.lp-lede { margin-left: auto; margin-right: auto; }
+.lp-hero .btns { justify-content: center; }
+
+.lp-facts { font-family: var(--font-mono); }
+.lp-h { font-family: var(--font-serif); font-weight: 340; font-size: clamp(30px, 4.4vw, 46px); letter-spacing: -0.04em; text-align: center; margin: 84px 0 28px; }
+.lp-skills { counter-reset: sk; }
+.lp-skill { padding: 26px; counter-increment: sk; }
+.lp-skill::before { content: "0" counter(sk); display: block; margin-bottom: 14px; font: 500 12px var(--font-mono); color: var(--accent); letter-spacing: 0.06em; }
+.lp-skill h3 { font-family: var(--font-serif); font-weight: 400; font-size: 26px; letter-spacing: -0.03em; }
+.lp-skill li a:hover span { color: var(--accent); }
+.lp-why { max-width: 980px; margin: 0 auto; }
+.lp-why h3 { font-family: var(--font-serif); font-weight: 400; font-size: 21px; }
+.lp-foot { border-top: 1px solid var(--line); }
+:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+@media (max-width: 720px) {
+  
+  .lp-hero { padding: 48px 0 24px; }
+}
+
+/* ---------- detail pages: five parts in muted earth tones, flat cards ---------- */
+.part-basics, .rm-basics, .in-basics { --pc: #e8501a; --pct: #c2410c; }
+.part-question, .rm-question, .in-question { --pc: #2f6bd8; --pct: #2556b0; }
+.part-detail, .rm-detail, .in-detail { --pc: #23885a; --pct: #1b6b47; }
+.part-qa, .rm-qa, .in-qa { --pc: #b7791f; --pct: #8f5e17; }
+.part-more, .rm-more, .in-more { --pc: #7b4fd3; --pct: #6038b3; }
+:root[data-theme="dark"] :is(.part, .roadmap li, article > section[class^="in-"]) { --pct: color-mix(in srgb, var(--pc) 70%, #fff); }
+article > .part { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); }
+article > .part::before { width: 4px; }
+article > .part .part-t { font-family: var(--font-serif); font-weight: 340; letter-spacing: -0.035em; }
+.roadmap { background: var(--surface); border-radius: var(--r-lg); }
+.roadmap a { background: var(--surface-2); border-color: var(--line); border-radius: 14px; }
+.roadmap a:hover { background: color-mix(in srgb, var(--pc) 8%, var(--surface-2)); }
+.rm-n { background: var(--ink); color: var(--paper); border-radius: 999px; }
+.tldr, .callout { border-radius: var(--r-md); }
+
+
+
+/* ---------- menu: solid panel, flat icons ---------- */

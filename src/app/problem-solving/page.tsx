@@ -4,30 +4,26 @@ import { ALL_BEHAVIORAL as BEHAVIORAL, BEHAVIORAL_SOURCE, BEHAVIORAL_TIPS, STAR,
 import { BehavioralList } from "@/components/prep/BehavioralList";
 import { Footer } from "@/components/ui";
 import { Icon } from "@/components/Icons";
+import { PROBLEM_SOLVING_COPY, PROBLEM_SOLVING_META } from "@/content/pages/problem-solving";
 
-export const metadata: Metadata = {
-  title: "Problem-solving interview questions",
-  description: "33 behavioral problem-solving questions with STAR model answers, probes and red flags.",
-};
+export const metadata: Metadata = PROBLEM_SOLVING_META;
 
 export default function ProblemSolvingPage() {
   return (
     <main className="prep-page">
       <div className="wrap">
         <section className="iv-hero">
-          <div className="kicker">Behavioral round · {BEHAVIORAL.length} questions</div>
+          <div className="kicker">{PROBLEM_SOLVING_COPY.kicker} · {BEHAVIORAL.length} questions</div>
           <h1>
-            Problem-solving, <span className="serif grad-text">answered.</span>
+            {PROBLEM_SOLVING_COPY.title.lead}<span className="serif grad-text">{PROBLEM_SOLVING_COPY.title.accent}</span>
           </h1>
-          <p>
-            Competency questions test how you think. Each has a STAR model answer, what the panel really tests, the follow-up probe and the red flags.
-          </p>
+<p>{PROBLEM_SOLVING_COPY.intro}</p>
           <div className="btns">
-            <Link className="btn" href="/reels/c-behavioral">
-              <Icon name="play" size={16} /> Read as reels
+            <Link className="btn" href={PROBLEM_SOLVING_COPY.actions.reels.href}>
+              <Icon name="play" size={16} /> {PROBLEM_SOLVING_COPY.actions.reels.label}
             </Link>
-            <Link className="btn ghost" href="/reels/q-star">
-              STAR in 60 seconds
+            <Link className="btn ghost" href={PROBLEM_SOLVING_COPY.actions.star.href}>
+              {PROBLEM_SOLVING_COPY.actions.star.label}
             </Link>
           </div>
         </section>
@@ -48,8 +44,8 @@ export default function ProblemSolvingPage() {
 
         <div className="section-h">
           <div>
-            <span className="eyebrow">Habits</span>
-            <h2>What makes an answer land</h2>
+            <span className="eyebrow">{PROBLEM_SOLVING_COPY.habits.eyebrow}</span>
+            <h2>{PROBLEM_SOLVING_COPY.habits.title}</h2>
           </div>
         </div>
         <div className="tip-grid stagger">
@@ -61,14 +57,14 @@ export default function ProblemSolvingPage() {
           ))}
         </div>
         <p className="source-note">
-          Question list from{" "}
+          {PROBLEM_SOLVING_COPY.source.before}
           <a href={BEHAVIORAL_SOURCE.url} target="_blank" rel="noopener">
             {BEHAVIORAL_SOURCE.name}
           </a>
-          (questions 1–25). Questions marked “Engineering” are added for software roles. All model answers, probes and red flags are original.
+          {PROBLEM_SOLVING_COPY.source.after}
         </p>
       </div>
-      <Footer>AI Engineer · problem-solving round</Footer>
+      <Footer>{PROBLEM_SOLVING_COPY.footer}</Footer>
     </main>
   );
 }

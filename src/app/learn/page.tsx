@@ -2,12 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CardGrid } from "@/components/HubCards";
 import { siteMap } from "@/lib/sections";
+import { LEARN_COPY, LEARN_META } from "@/content/pages/learn";
 
-export const metadata: Metadata = {
-  title: "Learn",
-  description: "Lessons on AI engineering, mobile engineering and system design, grouped by skill.",
-  alternates: { canonical: "/learn" },
-};
+export const metadata: Metadata = LEARN_META;
 
 export default function Learn() {
   const groups = siteMap().filter((g) => ["ai", "mobile", "design"].includes(g.id));
@@ -16,11 +13,11 @@ export default function Learn() {
     <main className="app-page">
       <div className="ap-head">
         <div>
-          <h1>Learn</h1>
-          <p>Lessons on AI and mobile engineering, from the basics up.</p>
+          <h1>{LEARN_COPY.title}</h1>
+          <p>{LEARN_COPY.intro}</p>
         </div>
-        <Link className="btn" href="/aiengine">
-          Start with lesson 1
+        <Link className="btn" href={LEARN_COPY.start.href}>
+          {LEARN_COPY.start.label}
         </Link>
       </div>
       {groups.map((g) => {
@@ -37,7 +34,7 @@ export default function Learn() {
         );
       })}
       <p className="ap-foot">
-        Looking for something specific? <Link href="/explore">Browse every page</Link>
+        {LEARN_COPY.foot.text}<Link href={LEARN_COPY.foot.href}>{LEARN_COPY.foot.link}</Link>
       </p>
     </main>
   );

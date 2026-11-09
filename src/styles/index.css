@@ -1,0 +1,14 @@
+/* Style entry. Order is the cascade: legacy base first, then the numbered modules. Do not reorder. */
+@import "./legacy/globals.css";
+@import "./legacy/portal.css";
+@import "./legacy/theme.css";
+@import "./01-tokens.css";
+@import "./02-foundation.css";
+@import "./03-landing-sections.css";
+@import "./04-app-shell-and-cards.css";
+@import "./05-landing-nav-and-hero.css";
+@import "./06-lessons-practice-code.css";
+@import "./07-reels.css";
+@import "./08-flow-and-legacy-sweeps.css";
+@import "./09-reading-sheet-and-smoothness.css";
+@import "./10-hub-cards-and-fixes.css";

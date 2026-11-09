@@ -18,20 +18,16 @@ import {
   Source_Serif_4,
   Space_Grotesk,
 } from "next/font/google";
-import "./globals.css";
-import "./portal.css";
-import "./theme.css";
-import "./insideout.css";
+import "@/styles/index.css";
 import { Chrome } from "@/components/AppShell";
 import { SearchPalette } from "@/components/SearchPalette";
-import { TabBar } from "@/components/TabBar";
 import { HashRedirect } from "@/components/HashRedirect";
 import { NavProgress } from "@/components/NavProgress";
-import { siteMap } from "@/lib/sections";
 import { prefsBootScript } from "@/components/Settings";
-import { SITE } from "@/lib/content";
+
 import { Analytics } from "@/components/Analytics";
-import { SITE_URL } from "@/lib/site";
+import { SITE_URL } from "@/config/constants";
+import { SITE } from "@/content/site";
 
 // Defaults preload; alternates download only when a reader picks them in settings.
 const geist = Geist({ subsets: ["latin"], variable: "--ff-geist", display: "swap" });
@@ -87,9 +83,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a className="skip" href="#main">
           Skip to content
         </a>
-        <Chrome groups={siteMap()} />
+        <Chrome />
         <div id="main">{children}</div>
-        <TabBar />
         <SearchPalette />
         <HashRedirect />
         <Analytics />

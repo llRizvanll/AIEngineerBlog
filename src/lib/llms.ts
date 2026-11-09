@@ -1,34 +1,24 @@
-import { codeOf } from "@/components/CodeWalk";
+import { codeOf } from "@/lib/code-source";
 import { AI_PATHS, BASICS } from "@/content/ai-interviews";
 import { SOURCES } from "@/content/ai-interviews/sources";
 import { CODE } from "@/content/code-docs";
-import { SITE } from "@/lib/content";
+
 import { aiLessonHref, aiPathHref } from "@/lib/routes";
 import { buildSearchIndex, type SearchItem } from "@/lib/search";
 import { absoluteUrl } from "@/lib/site";
-
-const ABOUT = "A free site for learning AI engineering and preparing for AI interviews: LLMs, RAG, agents, evals, model serving, mobile systems, protocols, coding patterns and system design. Lessons explain the basics first, and include tested code.";
-
-const SECTIONS: [SearchItem["kind"], string][] = [
-  ["Deep dive", "Deep dives"],
-  ["Module", "AI systems modules"],
-  ["Round", "System design rounds"],
-  ["Protocol", "Protocols"],
-  ["Pattern", "Coding patterns"],
-  ["Mobile", "Machine coding"],
-];
+import { LLMS_ABOUT, LLMS_SECTIONS, SITE } from "@/content/site";
 
 const line = (title: string, path: string, note?: string) => `- [${title}](${absoluteUrl(path)})${note ? `: ${note.replace(/\s+/g, " ").trim()}` : ""}`;
 
 /** The short index, following the llms.txt convention. */
 export function llmsIndex(): string {
   const items = buildSearchIndex();
-  const out = [`# ${SITE.name}`, "", `> ${ABOUT}`, "", `Full text of the AI interview paths: ${absoluteUrl("/llms-full.txt").replace(/\/$/, "")}`, "", "## Crack AI interviews", "", line("All paths", "/paths/ai-interviews", "Hacks, rounds, a study plan and a project."), line("Critical basics", "/paths/ai-interviews/basics", "Essentials to read, memorise and practise.")];
+  const out = [`# ${SITE.name}`, "", `> ${LLMS_ABOUT}`, "", `Full text of the AI interview paths: ${absoluteUrl("/llms-full.txt").replace(/\/$/, "")}`, "", "## Crack AI interviews", "", line("All paths", "/paths/ai-interviews", "Hacks, rounds, a study plan and a project."), line("Critical basics", "/paths/ai-interviews/basics", "Essentials to read, memorise and practise.")];
   for (const p of AI_PATHS) {
     out.push("", `## ${p.title}`, "", `${p.blurb}`, "");
     for (const l of p.lessons) out.push(line(l.title, aiLessonHref(p.id, l.slug), l.question));
   }
-  for (const [kind, title] of SECTIONS) {
+  for (const [kind, title] of LLMS_SECTIONS) {
     const rows = items.filter((i) => i.kind === kind && !/[?#]/.test(i.href));
     if (rows.length === 0) continue;
     out.push("", `## ${title}`, "");
@@ -39,7 +29,7 @@ export function llmsIndex(): string {
 
 /** The complete text of the AI interview paths, for tools that want it all in one fetch. */
 export function llmsFull(): string {
-  const out = [`# ${SITE.name}: AI interview paths and critical basics`, "", `> ${ABOUT}`, ""];
+  const out = [`# ${SITE.name}: AI interview paths and critical basics`, "", `> ${LLMS_ABOUT}`, ""];
   out.push("## Critical basics", "");
   for (const s of BASICS) {
     out.push(`### ${s.title}`, "", s.why, "", ...s.read.flatMap((r) => [r, ""]));

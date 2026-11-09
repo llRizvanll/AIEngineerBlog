@@ -1,10 +1,11 @@
 "use client";
 
+import { STORAGE } from "@/config/storage";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { BQ, Theme } from "@/content/behavioral";
 import { useLocal } from "@/lib/store";
 
-const KEY = "pae-behavioral";
+const KEY = STORAGE.behavioral;
 
 export function BehavioralList({ questions, themes }: { questions: BQ[]; themes: Theme[] }) {
   const [theme, setTheme] = useState("all");

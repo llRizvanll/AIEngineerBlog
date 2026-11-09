@@ -1,9 +1,9 @@
 "use client";
 
 import type { CriticalQ } from "@/content/types";
-import { critKey, SECTION_NAME } from "@/lib/routes";
+import { critKey } from "@/lib/routes";
 import { emptyInterview, INTERVIEW_KEY, useLocal, type InterviewState } from "@/lib/store";
-
+import { SECTION_NAME } from "@/content/ui-copy";
 
 export function CritItem({ caseId, index, q, showSection }: { caseId: string; index: number; q: CriticalQ; showSection?: boolean }) {
   const [st, update] = useLocal<InterviewState>(INTERVIEW_KEY, emptyInterview);

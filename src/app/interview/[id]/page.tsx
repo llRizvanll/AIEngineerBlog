@@ -18,6 +18,8 @@ import { PathLink } from "@/components/programme/PathLink";
 import { CaseRound, type RoundPart } from "@/components/interview/CaseRound";
 import { CritItem } from "@/components/interview/CritItem";
 import type { InterviewCase } from "@/content/types";
+import { TIME_PLAN, CRIT_TOPIC } from "@/content/page-copy";
+import { INTERVIEW_DETAIL_COPY } from "@/content/pages/interview-detail";
 
 export const dynamicParams = false;
 export const generateStaticParams = () => CASES.map((c) => ({ id: c.id }));
@@ -26,30 +28,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const c = getCase((await params).id);
   return c ? { title: c.title, description: c.prompt } : {};
 }
-
-/** How a 45-minute round is usually split; the timer uses the same shares. */
-const TIME_PLAN: [string, number, string][] = [
-  ["Clarify", 0.1, "Ask questions, agree on scope and write down assumptions."],
-  ["Estimate", 0.1, "Rough numbers for users, data and traffic, and what they imply."],
-  ["High-level design", 0.25, "Components, data flow and the key API on the board."],
-  ["Deep dive", 0.35, "The two or three hardest parts, with real mechanisms."],
-  ["Trade-offs and wrap-up", 0.2, "Decisions, failure modes, and what you would do next."],
-];
-
-const CRIT_TOPIC: Record<string, string> = {
-  simple: "The product",
-  clarify: "Requirements",
-  estimate: "Scale",
-  arch: "Architecture",
-  flow: "The key flow",
-  fe: "Front end",
-  api: "Data and APIs",
-  deep: "The hard parts",
-  trade: "Trade-offs",
-  fail: "Failures",
-  follow: "Follow-ups",
-  level: "Seniority",
-};
 
 function parts(c: InterviewCase): RoundPart[] {
   const F = FRONTEND[c.id];
@@ -62,12 +40,12 @@ function parts(c: InterviewCase): RoundPart[] {
   return [
     {
       key: "basics",
-      lead: "Start with the product and the ideas it depends on. If these are clear, the design that follows will feel obvious rather than memorised.",
+      lead: INTERVIEW_DETAIL_COPY.parts.basics.lead,
       sections: [
         {
           key: "simple",
-          title: "Product in plain words",
-          intro: "Who uses it, what a normal day looks like, and why it is harder than it seems.",
+          title: INTERVIEW_DETAIL_COPY.sections["simple.x"].title,
+          intro: INTERVIEW_DETAIL_COPY.sections["simple.x"].intro,
           body: F ? (
             <>
               <p className="lead">{F.simple.what}</p>
@@ -95,8 +73,8 @@ function parts(c: InterviewCase): RoundPart[] {
         },
         {
           key: "concepts",
-          title: "Key concepts",
-          intro: "The building blocks this design uses. Each one appears again in the answer.",
+          title: INTERVIEW_DETAIL_COPY.sections["concepts.x"].title,
+          intro: INTERVIEW_DETAIL_COPY.sections["concepts.x"].intro,
           body: (
             <>
               <ConceptGrid items={CASE_CONCEPTS[c.id] ?? []} />
@@ -115,12 +93,12 @@ function parts(c: InterviewCase): RoundPart[] {
     },
     {
       key: "question",
-      lead: "Now read the question closely. Agree on what you are building, ask what is unclear, and work out the numbers before you draw anything.",
+      lead: INTERVIEW_DETAIL_COPY.parts.question.lead,
       sections: [
         {
           key: "brief",
-          title: "Brief and scope",
-          intro: "The question exactly as the interviewer asks it, and what they want to learn from your answer.",
+          title: INTERVIEW_DETAIL_COPY.sections["brief.x"].title,
+          intro: INTERVIEW_DETAIL_COPY.sections["brief.x"].intro,
           body: (
             <>
               <div className="ask">
@@ -150,28 +128,28 @@ function parts(c: InterviewCase): RoundPart[] {
         },
         {
           key: "clarify",
-          title: "Clarify the problem",
-          prompt: "Before drawing anything, list the questions you would ask the interviewer.",
-          intro: "The first five minutes. Each answer removes a guess from your design.",
+          title: INTERVIEW_DETAIL_COPY.sections["clarify.x"].title,
+          prompt: INTERVIEW_DETAIL_COPY.sections["clarify.x"].prompt,
+          intro: INTERVIEW_DETAIL_COPY.sections["clarify.x"].intro,
           body: <Table head={["You ask", "Interviewer answers"]} rows={c.clarify} />,
         },
         {
           key: "estimate",
-          title: "Estimate the scale",
-          prompt: "Write down the numbers that will drive the design.",
-          intro: "Say the arithmetic out loud. What matters is the order of magnitude and what it forces you to do.",
+          title: INTERVIEW_DETAIL_COPY.sections["estimate.x"].title,
+          prompt: INTERVIEW_DETAIL_COPY.sections["estimate.x"].prompt,
+          intro: INTERVIEW_DETAIL_COPY.sections["estimate.x"].intro,
           body: <Table head={["Metric", "Estimate", "How"]} rows={c.numbers} />,
         },
       ],
     },
     {
       key: "detail",
-      lead: "The design itself, from the big picture down to the code: components first, then one request end to end, then the parts interviewers push hardest on.",
+      lead: INTERVIEW_DETAIL_COPY.parts.detail.lead,
       sections: [
         {
           key: "arch",
-          title: "Architecture",
-          prompt: "Sketch the components and arrows, then compare.",
+          title: INTERVIEW_DETAIL_COPY.sections["arch.x"].title,
+          prompt: INTERVIEW_DETAIL_COPY.sections["arch.x"].prompt,
           intro: c.archIntro,
           body: (
             <>
@@ -184,8 +162,8 @@ function parts(c: InterviewCase): RoundPart[] {
         },
         {
           key: "flow",
-          title: "Key flow, step by step",
-          prompt: "Narrate one request end to end.",
+          title: INTERVIEW_DETAIL_COPY.sections["flow.x"].title,
+          prompt: INTERVIEW_DETAIL_COPY.sections["flow.x"].prompt,
           intro: c.flowIntro,
           body: (
             <>
@@ -200,8 +178,8 @@ function parts(c: InterviewCase): RoundPart[] {
           ? [
               {
                 key: "fe",
-                title: "Front end",
-                prompt: "Sketch the screens, the client layers and every UI state the user can see.",
+                title: INTERVIEW_DETAIL_COPY.sections["fe.x"].title,
+                prompt: INTERVIEW_DETAIL_COPY.sections["fe.x"].prompt,
                 intro: F.fe.intro,
                 body: (
                   <>
@@ -223,26 +201,26 @@ function parts(c: InterviewCase): RoundPart[] {
           : []),
         {
           key: "api",
-          title: "Data model and APIs",
-          prompt: "Write the schema or contract you would put on the board.",
-          intro: "The tables and contracts that make the design concrete.",
+          title: INTERVIEW_DETAIL_COPY.sections["api.x"].title,
+          prompt: INTERVIEW_DETAIL_COPY.sections["api.x"].prompt,
+          intro: INTERVIEW_DETAIL_COPY.sections["api.x"].intro,
           body: <>{c.code.map((k) => <Code key={k[0]} sample={k} />)}</>,
         },
         ...(PAGE_CODE[`/interview/${c.id}`]
           ? [
               {
                 key: "walk",
-                title: "Tested code, explained",
-                intro: "The core of this design as working code, with what each part does and why.",
+                title: INTERVIEW_DETAIL_COPY.sections["walk.x"].title,
+                intro: INTERVIEW_DETAIL_COPY.sections["walk.x"].intro,
                 body: <CodeWalks ids={PAGE_CODE[`/interview/${c.id}`]} />,
               },
             ]
           : []),
         {
           key: "deep",
-          title: "Hard parts, in depth",
-          prompt: "Pick two areas the interviewer will push on and explain them.",
-          intro: "Where interviewers spend the second half of the round.",
+          title: INTERVIEW_DETAIL_COPY.sections["deep.x"].title,
+          prompt: INTERVIEW_DETAIL_COPY.sections["deep.x"].prompt,
+          intro: INTERVIEW_DETAIL_COPY.sections["deep.x"].intro,
           body: (
             <>
               {c.deep.map(([h, ps]) => (
@@ -258,20 +236,20 @@ function parts(c: InterviewCase): RoundPart[] {
     },
     {
       key: "qa",
-      lead: "The questions that come after the design, with model answers. Answer each one out loud before opening it.",
+      lead: INTERVIEW_DETAIL_COPY.parts.qa.lead,
       sections: [
         {
           key: "follow",
-          title: "Follow-up questions",
-          intro: "What the interviewer asks once the main design is on the board.",
+          title: INTERVIEW_DETAIL_COPY.sections["follow.x"].title,
+          intro: INTERVIEW_DETAIL_COPY.sections["follow.x"].intro,
           body: <Faq items={c.followups} />,
         },
         ...(F
           ? [
               {
                 key: "fe-follow",
-                title: "Front-end follow-ups",
-                intro: "Questions aimed at the client: rendering, state and devices.",
+                title: INTERVIEW_DETAIL_COPY.sections["follow.x"].title2,
+                intro: INTERVIEW_DETAIL_COPY.sections["follow.x"].intro2,
                 body: <Faq items={F.fe.followups} />,
               },
             ]
@@ -280,8 +258,8 @@ function parts(c: InterviewCase): RoundPart[] {
           ? [
               {
                 key: "crit",
-                title: "Incidents, probes and traps",
-                intro: "Realistic production incidents and pointed probes, grouped by topic.",
+                title: INTERVIEW_DETAIL_COPY.sections["crit.x"].title,
+                intro: INTERVIEW_DETAIL_COPY.sections["crit.x"].intro,
                 body: (
                   <div className="crit">
                     {critGroups.map(([topic, items]) => (
@@ -303,28 +281,28 @@ function parts(c: InterviewCase): RoundPart[] {
     },
     {
       key: "more",
-      lead: "What turns a good answer into a strong one: the decisions you rejected, how the system fails, and the signals of seniority.",
+      lead: INTERVIEW_DETAIL_COPY.parts.more.lead,
       sections: [
         {
           key: "trade",
-          title: "Trade-offs and decisions",
-          prompt: "State each decision, the alternative you rejected and why.",
-          intro: "Every choice has a cost. Naming it is what interviewers listen for.",
+          title: INTERVIEW_DETAIL_COPY.sections["trade.x"].title,
+          prompt: INTERVIEW_DETAIL_COPY.sections["trade.x"].prompt,
+          intro: INTERVIEW_DETAIL_COPY.sections["trade.x"].intro,
           body: <Table head={["Decision", "Chosen", "Rejected", "Why"]} rows={c.tradeoffs} />,
         },
         {
           key: "fail",
-          title: "Failure modes",
-          prompt: "List what breaks and how the system degrades.",
-          intro: "What breaks in production, and how the design keeps working when it does.",
+          title: INTERVIEW_DETAIL_COPY.sections["fail.x"].title,
+          prompt: INTERVIEW_DETAIL_COPY.sections["fail.x"].prompt,
+          intro: INTERVIEW_DETAIL_COPY.sections["fail.x"].intro,
           body: <Table head={["What breaks", "How the design copes"]} rows={c.failures} />,
         },
         ...(F
           ? [
               {
                 key: "fe-quality",
-                title: "Performance and accessibility",
-                intro: "The client-side details that separate a demo from a product.",
+                title: INTERVIEW_DETAIL_COPY.sections["fail.x"].title2,
+                intro: INTERVIEW_DETAIL_COPY.sections["fail.x"].intro2,
                 body: (
                   <div className="plat">
                     <div>
@@ -342,8 +320,8 @@ function parts(c: InterviewCase): RoundPart[] {
           : []),
         {
           key: "level",
-          title: "Senior versus principal",
-          intro: "The same design, answered at two levels. Use the rubric to score yourself.",
+          title: INTERVIEW_DETAIL_COPY.sections["level.x"].title,
+          intro: INTERVIEW_DETAIL_COPY.sections["level.x"].intro,
           body: (
             <div className="lv">
               <div>
@@ -359,8 +337,8 @@ function parts(c: InterviewCase): RoundPart[] {
         },
         {
           key: "board",
-          title: "Whiteboard",
-          intro: "Draw the design here, in this order. It stays in this browser.",
+          title: INTERVIEW_DETAIL_COPY.sections["board.x"].title,
+          intro: INTERVIEW_DETAIL_COPY.sections["board.x"].intro,
           body: <ol className="draw">{c.draw.map((d) => <li key={d}>{d}</li>)}</ol>,
         },
       ],

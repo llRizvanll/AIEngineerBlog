@@ -4,51 +4,38 @@ import type { Metadata } from "next";
 import { PROTOCOLS } from "@/lib/content";
 import { hexs } from "@/components/protocols/hex";
 import { DoneMark } from "@/components/protocols/ProtocolLesson";
+import { PROTOCOL_LAYERS, PROTOCOL_JOURNEY } from "@/content/page-copy";
+import { PROTOCOLS_PAGE_COPY } from "@/content/pages/protocols";
 
 export const metadata: Metadata = { title: "Protocol Explorer", description: "Fourteen protocols decoded packet by packet." };
-
-const LAYERS: [string, string][] = [
-  ["Application", "What programs say to each other"],
-  ["Transport", "Ports, reliability and flow"],
-  ["Internet", "Addresses and routing"],
-];
-const JOURNEY: [string, string, string][] = [
-  ["dhcp", "Get an address", "The laptop joins Wi-Fi and leases 192.168.1.50."],
-  ["dns", "Find the server", "example.com becomes 93.184.216.34."],
-  ["tcp", "Open a connection", "Three packets agree sequence numbers."],
-  ["tls", "Secure it", "Keys are agreed; the certificate is checked."],
-  ["http", "Ask for the page", "GET / and a 200 OK come back."],
-];
 
 export default function ProtocolsIndex() {
   return (
     <main className="view pe pe-page" id="view-proto">
       <div className="pe-wrap">
         <section className="pe-hero">
-          <div className="pe-kick">Protocol Explorer</div>
+          <div className="pe-kick">{PROTOCOLS_PAGE_COPY.kicker}</div>
           <h1>
-            Watch the internet work, <em>packet by packet.</em>
+            {PROTOCOLS_PAGE_COPY.title.lead}<em>{PROTOCOLS_PAGE_COPY.title.accent}</em>
           </h1>
-          <p>
-            Fourteen interactive lessons decode every packet byte by byte: DHCP, DNS, TCP, TLS, HTTP and the rest.
-          </p>
+<p>{PROTOCOLS_PAGE_COPY.intro}</p>
           <div className="pe-cta">
-            <Link className="pe-btn" href="/protocols/dhcp">
-              Start the journey →
+            <Link className="pe-btn" href={PROTOCOLS_PAGE_COPY.start.href}>
+              {PROTOCOLS_PAGE_COPY.start.label}
             </Link>
-            <Link className="pe-btn ghost" href="/protocols/tcp">
-              Jump to TCP
+            <Link className="pe-btn ghost" href={PROTOCOLS_PAGE_COPY.jump.href}>
+              {PROTOCOLS_PAGE_COPY.jump.label}
             </Link>
           </div>
           <div className="pe-hex" aria-hidden>
-            {"45 00 00 54 1c 46 40 00 40 01 b3 4e c0 a8 01 0a".split(" ").map((h, i) => (
+            {PROTOCOLS_PAGE_COPY.hexSample.split(" ").map((h, i) => (
               <span key={i}>{h}</span>
             ))}
           </div>
         </section>
-        <h2 className="pe-h">One page load, end to end</h2>
+        <h2 className="pe-h">{PROTOCOLS_PAGE_COPY.journeyTitle}</h2>
         <div className="pe-journey stagger">
-          {JOURNEY.map(([id, t, s], i) => (
+          {PROTOCOL_JOURNEY.map(([id, t, s], i) => (
             <Link key={id} href={`/protocols/${id}`}>
               <b>{i + 1}</b>
               <span className="n">{id.toUpperCase()}</span>
@@ -57,9 +44,9 @@ export default function ProtocolsIndex() {
             </Link>
           ))}
         </div>
-        <h2 className="pe-h">The layers</h2>
+        <h2 className="pe-h">{PROTOCOLS_PAGE_COPY.layersTitle}</h2>
         <div className="pe-layers">
-          {LAYERS.map(([l, d]) => (
+          {PROTOCOL_LAYERS.map(([l, d]) => (
             <div key={l}>
               <h3>
                 {l}
@@ -76,7 +63,7 @@ export default function ProtocolsIndex() {
           ))}
         </div>
         <h2 className="pe-h">
-          All protocols <span>{PROTOCOLS.length} lessons</span>
+          {PROTOCOLS_PAGE_COPY.allTitle} <span>{PROTOCOLS.length} {PROTOCOLS_PAGE_COPY.lessons}</span>
         </h2>
         <div className="pe-grid stagger">
           {PROTOCOLS.map((d, i) => {
@@ -99,15 +86,15 @@ export default function ProtocolsIndex() {
                   ))}
                 </div>
                 <small>
-                  {d.port} · {d.packets.reduce((a, p) => a + p.fields.length, 0)} fields decoded
+                  {d.port} · {d.packets.reduce((a, p) => a + p.fields.length, 0)} {PROTOCOLS_PAGE_COPY.fieldsDecoded}
                 </small>
               </Link>
             );
           })}
         </div>
-        <ModuleShelf format="protocol" title="AI infrastructure protocols" blurb="Ring all-reduce, BM25, SLURM, NCCL" />
+        <ModuleShelf format="protocol" title={PROTOCOLS_PAGE_COPY.shelf.title} blurb={PROTOCOLS_PAGE_COPY.shelf.blurb} />
       </div>
-      <footer className="pe-foot">AI Engineer · Protocol Explorer · packets shown are examples with computed checksums</footer>
+      <footer className="pe-foot">{PROTOCOLS_PAGE_COPY.footer}</footer>
     </main>
   );
 }

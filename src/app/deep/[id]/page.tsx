@@ -17,6 +17,7 @@ import { CodeWalks } from "@/components/CodeWalk";
 import { PAGE_CODE } from "@/content/code-docs";
 import { AssetMeta } from "@/components/AssetMeta";
 import { PathLink } from "@/components/programme/PathLink";
+import { DEEP_DETAIL_COPY } from "@/content/pages/deep-detail";
 
 export const dynamicParams = false;
 export const generateStaticParams = () => DEEP.map((d) => ({ id: d.id }));
@@ -46,7 +47,7 @@ export default async function DeepPage({ params }: { params: Promise<{ id: strin
   const parts: ChapterPart[] = [
     {
       key: "basics",
-      lead: "What this part of the system is, what it is responsible for, and the vocabulary you need before the mechanics.",
+      lead: DEEP_DETAIL_COPY.parts.basics.lead,
       sections: [
         sec(
           "ov",
@@ -73,7 +74,7 @@ export default async function DeepPage({ params }: { params: Promise<{ id: strin
     },
     {
       key: "question",
-      lead: "Know what you are reading for. These are the questions this deep dive prepares you to answer, and the rounds where they come up.",
+      lead: DEEP_DETAIL_COPY.parts.question.lead,
       sections: [
         ...(d.interview?.length
           ? [sec("qs", "Target questions", <QuestionList items={d.interview.map(([q]) => q)} note="Model answers are in part 4, after the detail that supports them." />, "Keep them in mind while you read the detail.")]
@@ -94,7 +95,7 @@ export default async function DeepPage({ params }: { params: Promise<{ id: strin
     },
     {
       key: "detail",
-      lead: "How it actually works: the components, the states it moves through, a full run, and the code.",
+      lead: DEEP_DETAIL_COPY.parts.detail.lead,
       sections: [
         ...(d.arch
           ? [
@@ -149,12 +150,12 @@ export default async function DeepPage({ params }: { params: Promise<{ id: strin
     },
     {
       key: "qa",
-      lead: "The questions from part 2, now with model answers. Try each one out loud before opening it.",
+      lead: DEEP_DETAIL_COPY.parts.qa.lead,
       sections: d.interview?.length ? [sec("iq", L.interview, <Faq items={d.interview} />)] : [],
     },
     {
       key: "more",
-      lead: "Practical context for real projects: which technology to pick, what successful teams do, what to measure and the edge cases to plan for.",
+      lead: DEEP_DETAIL_COPY.parts.more.lead,
       sections: [
         ...(d.tech ? [sec("tc", L.tech, <Table head={["Need", "Options", "When to pick"]} rows={d.tech} />)] : []),
         ...(d.real && d.real.length

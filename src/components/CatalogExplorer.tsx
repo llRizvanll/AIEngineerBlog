@@ -5,15 +5,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePortalFilter } from "@/hooks/usePortalFilter";
 import { DOMAIN_LABEL, FORMAT_LABEL, TIER_LABEL, type FilterState, type PortalAsset } from "@/types/portal";
 import { PortalFilterBar } from "./PortalFilterBar";
-
-const PAGE = 48;
-
-const STRING_KEYS = ["domain", "mode", "format", "complexityTier", "cognitiveLevel", "durationCategory"] as const;
+import { CATALOG_PAGE_SIZE, CATALOG_FILTER_KEYS, FORMAT_ORDER, TIER_ORDER } from "@/config/constants";
+import { CATALOG_COPY } from "@/content/ui-copy";
 
 function readUrl(): FilterState {
   const p = new URLSearchParams(window.location.search);
   const f: FilterState = { searchQuery: p.get("q") ?? "" };
-  for (const k of STRING_KEYS) {
+  for (const k of CATALOG_FILTER_KEYS) {
     const v = p.get(k);
     if (v) (f as unknown as Record<string, string>)[k] = v;
   }
@@ -27,21 +25,19 @@ function readUrl(): FilterState {
 function writeUrl(f: FilterState) {
   const p = new URLSearchParams();
   if (f.searchQuery) p.set("q", f.searchQuery);
-  for (const k of STRING_KEYS) if (f[k]) p.set(k, f[k] as string);
+  for (const k of CATALOG_FILTER_KEYS) if (f[k]) p.set(k, f[k] as string);
   if (f.curriculum) p.set("topic", String(f.curriculum));
   if (f.selectedTag) p.set("tag", f.selectedTag);
   const qs = p.toString();
   window.history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
 }
 
-const FORMAT_ORDER = ["long-read", "deep-dive", "protocol", "coding-pattern", "machine-coding", "system-design", "behavioral", "flashcard", "reel"];
-const TIER_ORDER = ["tier1-epitome", "tier2-intermediate", "tier3-edge-cases"];
 const rank = (a: PortalAsset) => FORMAT_ORDER.indexOf(a.format) * 10 + TIER_ORDER.indexOf(a.complexityTier);
 
 export function CatalogExplorer() {
   const [assets, setAssets] = useState<PortalAsset[] | null>(null);
   const [failed, setFailed] = useState(false);
-  const [limit, setLimit] = useState(PAGE);
+  const [limit, setLimit] = useState(CATALOG_PAGE_SIZE);
   const sorted = useMemo(() => (assets ? [...assets].sort((a, b) => rank(a) - rank(b)) : []), [assets]);
   const ctl = usePortalFilter(sorted);
   const { filters, setFilter, setFilters, filteredAssets } = ctl;
@@ -58,13 +54,13 @@ export function CatalogExplorer() {
 
   useEffect(() => {
     if (ready.current) writeUrl(filters);
-    setLimit(PAGE);
+    setLimit(CATALOG_PAGE_SIZE);
   }, [filters]);
 
   return (
     <>
       <PortalFilterBar filterController={ctl} />
-      {failed && <p className="empty-card">The catalog failed to load. Refresh to try again.</p>}
+      {failed && <p className="empty-card">{CATALOG_COPY.failed}</p>}
       {!assets && !failed && (
         <div className="asset-grid" aria-hidden>
           {Array.from({ length: 12 }, (_, i) => (
@@ -72,7 +68,7 @@ export function CatalogExplorer() {
           ))}
         </div>
       )}
-      {assets && filteredAssets.length === 0 && <p className="empty-card">Nothing matches. Remove a filter or try another word.</p>}
+      {assets && filteredAssets.length === 0 && <p className="empty-card">{CATALOG_COPY.empty}</p>}
       {assets && (
         <div className="asset-grid">
           {filteredAssets.slice(0, limit).map((a) => (
@@ -98,8 +94,8 @@ export function CatalogExplorer() {
       )}
       {assets && filteredAssets.length > limit && (
         <p className="ac-more">
-          <button type="button" className="btn ghost" onClick={() => setLimit((l) => l + PAGE)}>
-            Show {Math.min(PAGE, filteredAssets.length - limit)} more
+          <button type="button" className="btn ghost" onClick={() => setLimit((l) => l + CATALOG_PAGE_SIZE)}>
+            Show {Math.min(CATALOG_PAGE_SIZE, filteredAssets.length - limit)} more
           </button>
         </p>
       )}

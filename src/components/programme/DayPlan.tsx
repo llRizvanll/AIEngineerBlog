@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { emptyProgramme, PROGRAMME_KEY, useLocal, type ProgrammeState } from "@/lib/store";
-import { dayHref, PROGRAMME_HREF } from "@/lib/routes";
+import { dayHref } from "@/lib/routes";
+import { PROGRAMME_HREF } from "@/config/constants";
 
 interface PlanItem {
   kind: string;

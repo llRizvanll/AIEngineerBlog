@@ -1,0 +1,33 @@
+/* Reels, themed to the page. */
+/* =====================================================================
+   REELS — same stage, now on the page theme: cream cards around it, and each reel takes the page colours
+   ===================================================================== */
+#view-reels, .view-reels-page { background: transparent !important; color: var(--ink); }
+.rv { height: calc(100dvh - 118px); min-height: 560px; padding: 6px 20px 18px 14px; gap: 22px; }
+.rv-side { padding: 22px 18px; border: 1px solid var(--line); border-radius: 28px; background: var(--surface); box-shadow: var(--shadow-sm); }
+.rv-side h2 { font-family: var(--font-serif); font-stretch: normal; font-weight: 340; font-size: 40px; letter-spacing: -0.045em; }
+.rv-side p.sm { color: var(--muted); }
+.cols button { background: var(--surface-2); border: 1px solid transparent; color: var(--ink); border-radius: 14px; font-weight: 500; }
+.cols button:hover { border-color: var(--line-strong); }
+.cols button[aria-pressed="true"] { background: var(--surface); border-color: var(--ink); box-shadow: var(--shadow-sm); }
+.cols small, .keys, .un-h, .un button i, .un button .c { color: var(--muted); }
+.rv-tools button, .rv-mobile button { background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink); border-radius: 999px; font-weight: 500; }
+.rv-tools button:hover, .rv-mobile button:hover { border-color: var(--ink); }
+.keys kbd { border: 1px solid var(--line-strong); color: var(--ink); background: var(--surface-2); }
+.un button { color: var(--muted); font-weight: 500; border-radius: 14px; }
+.un button:hover { background: var(--surface-2); color: var(--ink); }
+.un button.on { background: var(--surface-2); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.rv-mobile select { background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); border-radius: 999px; font-weight: 500; }
+.rstage { background: var(--surface); border-radius: 34px; box-shadow: 0 0 0 1px var(--line-strong), var(--shadow-lg); }
+.reel { --rbg: color-mix(in srgb, var(--rac) 13%, var(--surface)) !important; --rfg: var(--ink) !important; --rmu: var(--muted) !important; background: var(--rbg) !important; }
+.reel .r-cta { color: #fff; }
+.reel.empty { --rbg: var(--surface) !important; }
+@media (max-width: 860px) { .rv { height: auto; min-height: 0; padding: 0 10px 12px; } .rstage { border-radius: 26px; } }
+.cols .colbtn { background: var(--surface-2); border: 1px solid transparent; color: var(--ink); border-radius: 14px; font-weight: 500; text-decoration: none; }
+.cols .colbtn:hover { border-color: var(--line-strong); }
+.cols .colbtn[aria-current="page"] { background: var(--surface); border-color: var(--ink); box-shadow: var(--shadow-sm); }
+.cols .colbtn small { color: var(--muted); }
+.cols .colbtn[style*="#eef2f7"] .sw { background: var(--ink); }
+
+/* Progress advances in small steps (see ReelsPlayer), so let the bar glide between them. */
+.segs i { transition: width 0.1s linear; }

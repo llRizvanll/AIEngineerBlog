@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { TONE_COUNT } from "@/config/tones";
 import { sourcesFor, type Source } from "@/content/further";
 import { assetByHref, buildCatalog } from "@/lib/catalog";
 import { trailFor } from "@/lib/trail";
 import { Book, Title } from "./HubCards";
+import { PAGE_END_COPY } from "@/content/ui-copy";
 
-const TONES = [0, 1, 2, 3, 4, 5, 6, 7];
+const TONES = Array.from({ length: TONE_COUNT }, (_, i) => i);
 
 /** The next page in reading order: the explicit order when there is one, else the next page in the same section. */
 function nextOf(href: string): { title: string; href: string; blurb: string } | null {
@@ -64,7 +66,7 @@ export function PageEnd({ href }: { href: string }) {
         <div className="end-card">
           <List heading="Watch" items={watch} />
           <List heading="Read next" items={read} />
-          <p className="end-note">These links open public pages outside this site. Check dates and versions before relying on a detail.</p>
+          <p className="end-note">{PAGE_END_COPY.note}</p>
         </div>
       )}
       {next && (

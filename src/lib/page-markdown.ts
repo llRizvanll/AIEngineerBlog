@@ -1,13 +1,12 @@
+import { MARKDOWN_SKIP_SELECTORS } from "@/config/constants";
 /* Turns the rendered page into Markdown, so any lesson, article or post can be handed to an AI tool.
    It reads the page's own HTML, so it works the same for every kind of page. Browser only. */
-
-const SKIP = "script,style,noscript,svg,canvas,button,input,select,textarea,nav,aside,footer,form,.ed-bar,.ed-status,.sa,.pg-cont,.dp-done,.bs-modes,.pb,.asset-meta,.round-l,.round-bar,.round-r,.pm,[data-md-skip],[aria-hidden='true']";
 
 const squash = (s: string) => s.replace(/\s+/g, " ");
 
 function inline(node: Node, base: string, heading = false): string {
   if (node.nodeType === Node.TEXT_NODE) return squash(node.textContent ?? "");
-  if (!(node instanceof HTMLElement) || node.matches(SKIP)) return "";
+  if (!(node instanceof HTMLElement) || node.matches(MARKDOWN_SKIP_SELECTORS)) return "";
   const inner = () => Array.from(node.childNodes).map((c) => inline(c, base, heading)).join("");
   switch (node.tagName) {
     case "BR":
@@ -59,7 +58,7 @@ function blocks(node: Node, base: string, depth = 0): string[] {
     const t = squash(node.textContent ?? "").trim();
     return t ? [t] : [];
   }
-  if (!(node instanceof HTMLElement) || node.matches(SKIP)) return [];
+  if (!(node instanceof HTMLElement) || node.matches(MARKDOWN_SKIP_SELECTORS)) return [];
   const kids = () => Array.from(node.childNodes).flatMap((c) => blocks(c, base, depth));
   const tag = node.tagName;
 

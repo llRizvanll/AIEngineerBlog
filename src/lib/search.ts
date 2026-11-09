@@ -1,4 +1,4 @@
-import { CASES, DEEP, POSTS, PROTOCOLS, REELS, PART_ONE, SERIES_BLURBS } from "./content";
+import { CASES, DEEP, POSTS, PROTOCOLS, REELS } from "./content";
 import { DAYS } from "@/content/programme/mobile-principal";
 import { GLOSSARY } from "./curriculum";
 import { ALL_BEHAVIORAL as BEHAVIORAL } from "@/content/behavioral";
@@ -10,6 +10,7 @@ import { AI_PATHS, BASICS, allLessons } from "@/content/ai-interviews";
 import { basicKey } from "@/content/ai-interviews/basics";
 import { RN_CARDS } from "@/content/rn-cards";
 import { rnCardKey } from "@/lib/rn-cards";
+import { PART_ONE, SERIES_BLURBS } from "@/content/site";
 
 export interface SearchItem {
   href: string;

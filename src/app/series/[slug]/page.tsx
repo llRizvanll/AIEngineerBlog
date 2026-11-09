@@ -10,7 +10,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { articleLd } from "@/lib/site";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PART_ONE, POSTS, SITE, getPost } from "@/lib/content";
+import { POSTS, getPost } from "@/lib/content";
 import { Reading } from "@/components/Reading";
 import { ArchSvg, Figure, SeqSvg } from "@/components/Diagrams";
 import { Code, Faq, Footer, Section, Table } from "@/components/ui";
@@ -35,6 +35,7 @@ function withEditors(html: string): string {
   });
 }
 import type { PostSection } from "@/content/types";
+import { PART_ONE, SITE } from "@/content/site";
 
 export const dynamicParams = false;
 export function generateStaticParams() {

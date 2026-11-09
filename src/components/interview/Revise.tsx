@@ -2,27 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { track } from "@/lib/track";
+import type { ReviseCard } from "@/types/revise";
 import { emptyInterview, emptySrs, INTERVIEW_KEY, intervalLabel, nextSrs, SRS_KEY, useLocal, type InterviewState, type Rating, type SrsState } from "@/lib/store";
-
-export interface ReviseCard {
-  key: string;
-  /** what a deep link uses: round:index, or the flashcard's asset id */
-  link: string;
-  group: string;
-  groupLabel: string;
-  kind: string;
-  q: string;
-  a: string;
-  why: string;
-  source: string;
-}
+import { RATINGS } from "@/content/ui-copy";
 
 type Scope = "due" | "all";
-const RATINGS: [Rating, string][] = [
-  ["again", "Again"],
-  ["good", "Good"],
-  ["easy", "Easy"],
-];
 
 export function Revise({ cards, groups }: { cards: ReviseCard[]; groups: { id: string; label: string }[] }) {
   const [srs, updateSrs, hydrated] = useLocal<SrsState>(SRS_KEY, emptySrs);

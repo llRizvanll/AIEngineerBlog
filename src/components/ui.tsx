@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { CodeSample, Pair } from "@/content/types";
 import { CopyCode } from "./CopyCode";
+import { LANGUAGES, languageById, type CodeVariant, type LanguageId } from "@/config/languages";
 import { LangGroup } from "./LangGroup";
 import { editorBodyHtml, fileName, langName } from "@/lib/highlight";
 
@@ -56,31 +57,29 @@ function Editor({ sample, startLine = 1, name }: { sample: CodeSample; startLine
   );
 }
 
-/** A code sample. With `alt`, the same code is offered in Kotlin and Java too, and the reader's choice is remembered. */
-export function Code({ sample, startLine = 1, fileName: name, hideTitle, alt, variants }: { sample: CodeSample; startLine?: number; fileName?: string; hideTitle?: boolean; alt?: { kotlin: string; java: string }; variants?: { id: "ts" | "kotlin" | "java"; lang: string; src: string; fileName: string }[] }) {
+/** Which language tab a sample's own language belongs to. */
+const idOfLang = (lang: string): LanguageId => LANGUAGES.find((l) => l.highlight === lang)?.id ?? "ts";
+
+/** A code sample. With `variants`, the same code is offered in other languages too, and the reader's choice is remembered. */
+export function Code({ sample, startLine = 1, fileName: name, hideTitle, variants = [] }: { sample: CodeSample; startLine?: number; fileName?: string; hideTitle?: boolean; variants?: CodeVariant[] }) {
   const [title, lang] = sample;
+  const primary = <Editor sample={sample} startLine={startLine} name={name} />;
   return (
     <>
       {!hideTitle && <h3>{title}</h3>}
-      {variants ? (
-        <LangGroup
-          panels={[
-            { id: lang === "kotlin" ? "kotlin" : "ts", label: langName(lang), node: <Editor sample={sample} startLine={startLine} name={name} /> },
-            ...variants.map((v) => ({ id: v.id, label: langName(v.lang), node: <Editor sample={[title, v.lang, v.src]} name={v.fileName} /> })),
-          ]}
-        />
-      ) : alt ? (
-        <LangGroup
-          panels={[
-            { id: "ts", label: "TypeScript", node: <Editor sample={sample} startLine={startLine} name={name} /> },
-            { id: "kotlin", label: "Kotlin", node: <Editor sample={[title, "kotlin", alt.kotlin]} name={fileName(title, "kotlin")} /> },
-            { id: "java", label: "Java", node: <Editor sample={[title, "java", alt.java]} name={fileName(title, "java")} /> },
-          ]}
-        />
+      {variants.length === 0 ? (
+        primary
       ) : (
-        <Editor sample={sample} startLine={startLine} name={name} />
+        <LangGroup
+          panels={[
+            { id: idOfLang(lang), label: languageById(idOfLang(lang))?.label ?? langName(lang), node: primary },
+            ...variants.map((v) => {
+              const language = languageById(v.id)!;
+              return { id: v.id, label: language.label, node: <Editor sample={[title, language.highlight, v.src]} name={v.fileName ?? fileName(title, language.highlight)} /> };
+            }),
+          ]}
+        />
       )}
-      {lang === "x" && null}
     </>
   );
 }

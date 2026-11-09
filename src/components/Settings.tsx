@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, type CSSProperties } from "react";
-import { CODE_FONTS, PALETTES, READ_FONTS, UI_FONTS } from "@/lib/appearance";
+
 import { defaultPrefs, PREFS_KEY, useLocal, type Prefs } from "@/lib/store";
+import { THEMES, CODE_FONTS, PALETTES, READ_FONTS, UI_FONTS } from "@/config/constants";
 
 const varOf = (list: readonly { id: string; v: string }[], id: string) => (list.find((x) => x.id === id) ?? list[0]).v;
 
@@ -28,8 +29,6 @@ if(p.size)s.setProperty('--rd-fs',p.size+'px');if(p.leading)s.setProperty('--rd-
 if(F[p.uiFont])s.setProperty('--f-sans','var('+F[p.uiFont]+')');
 if(F[p.readFont])s.setProperty('--f-read','var('+F[p.readFont]+')');
 if(F[p.codeFont])s.setProperty('--f-mono','var('+F[p.codeFont]+')');}catch(e){}`;
-
-const THEMES: Prefs["theme"][] = ["system", "light", "sepia", "dark"];
 
 export function Settings({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [stored, update, hydrated] = useLocal<Prefs>(PREFS_KEY, defaultPrefs);

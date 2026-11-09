@@ -1,17 +1,11 @@
 import type { ReactNode } from "react";
+import { PART_TITLES } from "@/content/ui-copy";
 
 /* Every detail page follows the same five parts, in this order:
    basics → the question → the answer in detail → Q&A → going further. */
 
-export type PartKey = "basics" | "question" | "detail" | "qa" | "more";
-
-export const PART_TITLES: Record<PartKey, string> = {
-  basics: "Basics",
-  question: "Question",
-  detail: "Detailed answer",
-  qa: "Q&A",
-  more: "Extra depth",
-};
+import type { PartKey } from "@/types/ui";
+export type { PartKey };
 
 export interface ChapterSection {
   id: string;

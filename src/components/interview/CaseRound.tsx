@@ -6,6 +6,7 @@ import { emptyInterview, INTERVIEW_KEY, useLocal, type InterviewState } from "@/
 import { Reading } from "../Reading";
 import { Whiteboard } from "./Whiteboard";
 import { Level2, PartHead, Roadmap, SectionHead, type PartKey } from "../Chapters";
+import { CASE_RUBRIC, CASE_PHASES } from "@/content/ui-copy";
 
 export interface RoundSection {
   key: string;
@@ -21,16 +22,6 @@ export interface RoundPart {
   lead: string;
   sections: RoundSection[];
 }
-
-const RUBRIC: [string, string][] = [
-  ["Requirements", "Asked clarifying questions and stated assumptions."],
-  ["Numbers", "Estimated scale and used it to make a decision."],
-  ["Architecture", "Clear components with responsibilities and data flow."],
-  ["Depth", "Went deep on the hardest part with real mechanisms."],
-  ["Trade-offs", "Named alternatives and why they lost."],
-  ["Operations", "Covered failures, monitoring and rollout."],
-  ["Leadership", "Explained how the team would build and evolve it."],
-];
 
 export function CaseRound({ id, title, minutes, parts, next }: { id: string; title: string; minutes: number; parts: RoundPart[]; next: { id: string; title: string } }) {
   const [st, update] = useLocal<InterviewState>(INTERVIEW_KEY, emptyInterview);
@@ -73,7 +64,7 @@ export function CaseRound({ id, title, minutes, parts, next }: { id: string; tit
                   <>
                     <h3>Score yourself</h3>
                     <div className="rubric">
-                      {RUBRIC.map(([k, d]) => (
+                      {CASE_RUBRIC.map(([k, d]) => (
                         <label key={k}>
                           <input type="checkbox" /> <b>{k}</b> {d}
                         </label>
@@ -105,14 +96,6 @@ export function CaseRound({ id, title, minutes, parts, next }: { id: string; tit
   );
 }
 
-const PHASES: [string, number][] = [
-  ["Clarify", 0.1],
-  ["Estimate", 0.1],
-  ["High-level design", 0.25],
-  ["Deep dive", 0.35],
-  ["Trade-offs and wrap-up", 0.2],
-];
-
 function RoundTimer({ minutes, practice, onPractice }: { minutes: number; practice: boolean; onPractice: (v: boolean) => void }) {
   const total = minutes * 60;
   const [left, setLeft] = useState(total);
@@ -130,8 +113,8 @@ function RoundTimer({ minutes, practice, onPractice }: { minutes: number; practi
 
   const used = total - left;
   let acc = 0,
-    phase = PHASES[PHASES.length - 1][0];
-  const fills = PHASES.map(([name, f]) => {
+    phase = CASE_PHASES[CASE_PHASES.length - 1][0];
+  const fills = CASE_PHASES.map(([name, f]) => {
     const len = f * total;
     const fill = Math.max(0, Math.min(1, (used - acc) / len));
     if (used >= acc && used < acc + len) phase = name;
@@ -149,7 +132,7 @@ function RoundTimer({ minutes, practice, onPractice }: { minutes: number; practi
         </span>
       </div>
       <div className="round-bar">
-        {PHASES.map(([name, f], i) => (
+        {CASE_PHASES.map(([name, f], i) => (
           <span key={name} style={{ flex: f }}>
             <i style={{ width: fills[i] * 100 + "%" }} />
             <em>{name}</em>

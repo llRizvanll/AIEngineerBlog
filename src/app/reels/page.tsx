@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { REELS } from "@/lib/content";
 import { ReelsPlayer } from "@/components/reels/ReelsPlayer";
 import { summarize } from "@/lib/reel-summary";
+import { REELS_PAGE_META } from "@/content/pages/reels";
 
-export const metadata: Metadata = { title: "Reels", description: "Short, swipeable lessons on AI systems, mobile engineering, coding patterns and interview skills." };
+export const metadata: Metadata = REELS_PAGE_META;
 
 export default function ReelsPage() {
   return (

@@ -1,10 +1,12 @@
 "use client";
+import { STORAGE, STORE_EVENT } from "@/config/storage";
 
 import { useCallback, useEffect, useState } from "react";
+import { SRS_DAYS, DAY_MS } from "@/config/constants";
 
 /* Tiny localStorage store with cross-component sync. Progress, notes and saves stay in this browser. */
 
-const EVT = "pae-store";
+const EVT = STORE_EVENT;
 
 export function readLocal<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -67,10 +69,10 @@ export interface LibraryState {
   /** Your own words on a page: the "sense" step of seek, sense, share */
   notes: Record<string, { title: string; kind: string; at: number; text: string }>;
 }
-export const LIBRARY_KEY = "pae-library";
+export const LIBRARY_KEY = STORAGE.library;
 export const emptyLibrary: LibraryState = { saved: {}, seen: {}, notes: {} };
 
-export const PROGRAMME_KEY = "pae-programme-v1";
+export const PROGRAMME_KEY = STORAGE.programme;
 export interface ProgrammeState {
   /** "4:/deep/sync-engine" */
   items: Record<string, boolean>;
@@ -81,7 +83,7 @@ export interface ProgrammeState {
 }
 export const emptyProgramme: ProgrammeState = { items: {}, rubric: {}, done: {} };
 
-export const AI_PATHS_KEY = "pae-ai-paths-v1";
+export const AI_PATHS_KEY = STORAGE.aiPaths;
 export interface AiPathsState {
   /** "rounds/rag-round" */
   done: Record<string, boolean>;
@@ -101,19 +103,18 @@ export interface SrsCard {
 export interface SrsState {
   cards: Record<string, SrsCard>;
 }
-export const SRS_KEY = "pae-srs";
+export const SRS_KEY = STORAGE.srs;
 export const emptySrs: SrsState = { cards: {} };
-export const SRS_DAYS = [0, 1, 3, 7, 14, 30, 60];
-const DAY = 86_400_000;
 
-export type Rating = "again" | "good" | "easy";
+import type { Rating } from "@/types/ui";
+export type { Rating };
 
 export function nextSrs(prev: SrsCard | undefined, rating: Rating, now: number): SrsCard {
   const box = prev?.box ?? 0;
   const reviews = (prev?.reviews ?? 0) + 1;
   if (rating === "again") return { box: 0, due: now + 10 * 60_000, reviews };
   const next = Math.min(box + (rating === "easy" ? 2 : 1), SRS_DAYS.length - 1);
-  return { box: next, due: now + SRS_DAYS[next] * DAY, reviews };
+  return { box: next, due: now + SRS_DAYS[next] * DAY_MS, reviews };
 }
 
 export const intervalLabel = (prev: SrsCard | undefined, rating: Rating): string => {
@@ -130,7 +131,7 @@ export interface InterviewState {
   practice: boolean;
   crit: Record<string, boolean>;
 }
-export const INTERVIEW_KEY = "pae-interview";
+export const INTERVIEW_KEY = STORAGE.interview;
 export const emptyInterview: InterviewState = { notes: {}, done: {}, boards: {}, practice: false, crit: {} };
 
 export interface Prefs {
@@ -142,7 +143,7 @@ export interface Prefs {
   readFont: string;
   codeFont: string;
 }
-export const PREFS_KEY = "pae-prefs";
+export const PREFS_KEY = STORAGE.prefs;
 export const defaultPrefs: Prefs = {
   theme: "system",
   size: 19,

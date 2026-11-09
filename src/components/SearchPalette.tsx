@@ -1,11 +1,11 @@
 "use client";
 
+import { UI_EVENTS } from "@/lib/ui-events";
 import { SearchIcon } from "./SearchIcon";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { SearchItem } from "@/lib/search";
-
-const KIND_ORDER: SearchItem["kind"][] = ["Page", "Post", "Round", "Pattern", "Problem", "Mobile", "Behavioral", "Deep dive", "Protocol", "Reels", "Term"];
+import { SEARCH_KIND_ORDER } from "@/config/constants";
 
 function score(item: SearchItem, terms: string[]): number {
   const t = item.title.toLowerCase(),
@@ -64,10 +64,10 @@ export function SearchPalette() {
         setOpen(true);
       }
     };
-    window.addEventListener("pae-search", show);
+    window.addEventListener(UI_EVENTS.search, show);
     window.addEventListener("keydown", key);
     return () => {
-      window.removeEventListener("pae-search", show);
+      window.removeEventListener(UI_EVENTS.search, show);
       window.removeEventListener("keydown", key);
     };
   }, []);
@@ -93,7 +93,7 @@ export function SearchPalette() {
   }, [q, items]);
 
   const grouped = useMemo(() => {
-    const g = KIND_ORDER.map((k) => ({ k, items: results.filter((r) => r.kind === k) })).filter((x) => x.items.length);
+    const g = SEARCH_KIND_ORDER.map((k) => ({ k, items: results.filter((r) => r.kind === k) })).filter((x) => x.items.length);
     return g;
   }, [results]);
   const flat = grouped.flatMap((g) => g.items);

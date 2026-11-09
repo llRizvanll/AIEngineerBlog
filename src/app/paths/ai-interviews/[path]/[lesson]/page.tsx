@@ -9,8 +9,9 @@ import { LessonComplete, LessonRubric } from "@/components/ai-paths/Progress";
 import { PromptCard } from "@/components/ai-paths/PromptCard";
 import { AI_PATHS, allLessons, getPath } from "@/content/ai-interviews";
 import { CHECKED, SOURCES } from "@/content/ai-interviews/sources";
-import { AI_BASICS_HREF, AI_PATHS_HREF, aiLessonHref, aiPathHref } from "@/lib/routes";
+import { aiLessonHref, aiPathHref } from "@/lib/routes";
 import { articleLd, breadcrumbLd, faqLd } from "@/lib/site";
+import { AI_BASICS_HREF, AI_PATHS_HREF } from "@/config/constants";
 
 export const dynamicParams = false;
 export const generateStaticParams = () => allLessons().map(({ path, lesson }) => ({ path: path.id, lesson: lesson.slug }));

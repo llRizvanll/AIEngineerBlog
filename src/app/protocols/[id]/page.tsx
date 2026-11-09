@@ -1,3 +1,4 @@
+import { PROTOCOL_LAYERS } from "@/content/page-copy";
 import { PageTrail } from "@/components/PageTrail";
 import { PageEnd } from "@/components/PageEnd";
 import { StudyWithAI } from "@/components/StudyWithAI";
@@ -11,6 +12,7 @@ import { DoneButton, DoneMark, PacketDecoder, PacketFlow, TrackSeen } from "@/co
 import { CodeWalk } from "@/components/CodeWalk";
 import { AssetMeta } from "@/components/AssetMeta";
 import { PartHead, QuestionList, Roadmap, SectionHead, type PartKey } from "@/components/Chapters";
+import { PROTOCOL_DETAIL_COPY, ROADMAP } from "@/content/pages/protocols-detail";
 
 export const dynamicParams = false;
 export const generateStaticParams = () => PROTOCOLS.map((p) => ({ id: p.id }));
@@ -20,8 +22,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return p ? { title: `${p.name} · ${p.full}`, description: `How ${p.name} (${p.full}) works, decoded packet by packet: ${p.tag}` } : {};
 }
 
-const LAYERS = ["Application", "Transport", "Internet"];
-
 export default async function ProtocolPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const d = getProtocol(id);
@@ -29,22 +29,16 @@ export default async function ProtocolPage({ params }: { params: Promise<{ id: s
   const di = PROTOCOLS.indexOf(d);
   const prev = PROTOCOLS[(di + PROTOCOLS.length - 1) % PROTOCOLS.length];
   const next = PROTOCOLS[(di + 1) % PROTOCOLS.length];
-  const parts: { key: PartKey; sections: string[] }[] = [
-    { key: "basics", sections: ["What it does", "Key ideas"] },
-    { key: "question", sections: ["Target questions"] },
-    { key: "detail", sections: ["Follow the packets", "Decode it byte by byte", "Decode it in code"] },
-    { key: "qa", sections: ["Check yourself"] },
-    { key: "more", sections: ["Watch out for"] },
-  ];
+  const parts: { key: PartKey; sections: string[] }[] = ROADMAP.map(([key, nums]) => ({ key, sections: nums.map((n) => PROTOCOL_DETAIL_COPY.sections[n].title) }));
   return (
     <main className="view pe pe-page" id="view-proto">
       <JsonLd data={articleLd({ title: `${d.name}: ${d.full}`, description: d.tag, path: `/protocols/${d.id}`, section: "Protocols" })} />
       <div className="pe-wrap pe-lesson">
         <aside className="pe-side">
           <Link className="all" href="/protocols">
-            ← All protocols
+            {PROTOCOL_DETAIL_COPY.all}
           </Link>
-          {LAYERS.map((l) => (
+          {PROTOCOL_LAYERS.map(([l]) => (
             <div key={l}>
               <h4>{l}</h4>
               {PROTOCOLS.filter((p) => p.layer === l).map((p) => (
@@ -70,15 +64,15 @@ export default async function ProtocolPage({ params }: { params: Promise<{ id: s
             <StudyWithAI root="main article" title={`${d.name}: ${d.full}`} />
           </div>
           <Roadmap parts={parts.map((x) => ({ key: x.key, sections: x.sections.map((t) => ({ title: t })) }))} />
-          <PartHead part="basics" n={1} total={5} lead="What the protocol is for, and the ideas it is built on." />
+          <PartHead part="basics" n={1} total={5} lead={PROTOCOL_DETAIL_COPY.parts.basics} />
           <section id="pr-how">
-            <SectionHead num="1.1" title="What it does" intro="The protocol in plain words, before any bytes." />
+            <SectionHead num="1.1" title={PROTOCOL_DETAIL_COPY.sections["1.1"].title} intro={PROTOCOL_DETAIL_COPY.sections["1.1"].intro} />
             {d.intro.map((t) => (
               <p key={t}>{t}</p>
             ))}
           </section>
           <section id="pr-ideas">
-            <SectionHead num="1.2" title="Key ideas" intro="The handful of ideas everything else follows from." />
+            <SectionHead num="1.2" title={PROTOCOL_DETAIL_COPY.sections["1.2"].title} intro={PROTOCOL_DETAIL_COPY.sections["1.2"].intro} />
             <div className="pe-ideas">
               {d.ideas.map(([h, p]) => (
                 <div key={h}>
@@ -88,27 +82,27 @@ export default async function ProtocolPage({ params }: { params: Promise<{ id: s
               ))}
             </div>
           </section>
-          <PartHead part="question" n={2} total={5} lead="What this lesson prepares you to answer. Keep these in mind while you watch the packets." />
+          <PartHead part="question" n={2} total={5} lead={PROTOCOL_DETAIL_COPY.parts.question} />
           <section id="pr-qs">
-            <SectionHead num="2.1" title="Target questions" />
-            <QuestionList items={d.qa.map(([q]) => q)} note="The answers are in part 4." />
+            <SectionHead num="2.1" title={PROTOCOL_DETAIL_COPY.sections["2.1"].title} />
+            <QuestionList items={d.qa.map(([q]) => q)} note={PROTOCOL_DETAIL_COPY.notes.answers} />
           </section>
-          <PartHead part="detail" n={3} total={5} lead="Watch a real exchange step by step, then take each message apart field by field." />
+          <PartHead part="detail" n={3} total={5} lead={PROTOCOL_DETAIL_COPY.parts.detail} />
           <section id="pr-flow">
-            <SectionHead num="3.1" title="Follow the packets" intro="Step through the exchange between the two sides." />
+            <SectionHead num="3.1" title={PROTOCOL_DETAIL_COPY.sections["3.1"].title} intro={PROTOCOL_DETAIL_COPY.sections["3.1"].intro} />
             <PacketFlow actors={d.actors} steps={d.steps} />
           </section>
           <section id="pr-bytes">
-            <SectionHead num="3.2" title="Decode it byte by byte" intro="Click any byte or row. Each colour is one field." />
+            <SectionHead num="3.2" title={PROTOCOL_DETAIL_COPY.sections["3.2"].title} intro={PROTOCOL_DETAIL_COPY.sections["3.2"].intro} />
             <PacketDecoder packets={d.packets} />
           </section>
           <section id="pr-code">
-            <SectionHead num="3.3" title="Decode it in code" intro="A small decoder, tested against the exact bytes shown above." />
+            <SectionHead num="3.3" title={PROTOCOL_DETAIL_COPY.sections["3.3"].title} intro={PROTOCOL_DETAIL_COPY.sections["3.3"].intro} />
             <CodeWalk id={`p-${d.id}`} />
           </section>
-          <PartHead part="qa" n={4} total={5} lead="Check your understanding. Answer out loud, then open." />
+          <PartHead part="qa" n={4} total={5} lead={PROTOCOL_DETAIL_COPY.parts.qa} />
           <section id="pr-qa">
-            <SectionHead num="4.1" title="Check yourself" />
+            <SectionHead num="4.1" title={PROTOCOL_DETAIL_COPY.sections["4.1"].title} />
             {d.qa.map(([q, a]) => (
               <details key={q} className="pe-q">
                 <summary>{q}</summary>
@@ -116,9 +110,9 @@ export default async function ProtocolPage({ params }: { params: Promise<{ id: s
               </details>
             ))}
           </section>
-          <PartHead part="more" n={5} total={5} lead="The mistakes people make with this protocol in real systems." />
+          <PartHead part="more" n={5} total={5} lead={PROTOCOL_DETAIL_COPY.parts.more} />
           <section id="pr-watch">
-            <SectionHead num="5.1" title="Watch out for" />
+            <SectionHead num="5.1" title={PROTOCOL_DETAIL_COPY.sections["5.1"].title} />
             <ul className="pe-watch">
               {d.gotchas.map((g) => (
                 <li key={g}>{g}</li>
@@ -133,7 +127,7 @@ export default async function ProtocolPage({ params }: { params: Promise<{ id: s
         </article>
       </div>
       <PageEnd href={`/protocols/${d.id}`} />
-      <footer className="pe-foot">AI Engineer · Protocol Explorer</footer>
+      <footer className="pe-foot">{PROTOCOL_DETAIL_COPY.footer}</footer>
     </main>
   );
 }

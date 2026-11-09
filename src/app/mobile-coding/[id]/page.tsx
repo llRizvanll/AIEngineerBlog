@@ -1,4 +1,5 @@
 import { PageTrail } from "@/components/PageTrail";
+import type { CodeVariant } from "@/config/languages";
 import { PageEnd } from "@/components/PageEnd";
 import { StudyWithAI } from "@/components/StudyWithAI";
 import Link from "next/link";
@@ -16,6 +17,7 @@ import { Icon } from "@/components/Icons";
 import { AssetMeta } from "@/components/AssetMeta";
 import { PathLink } from "@/components/programme/PathLink";
 import { altSource, kotlinLines, kotlinSource } from "@/lib/mobile-source";
+import { MOBILE_DETAIL_COPY } from "@/content/pages/mobile-coding-detail";
 
 export const dynamicParams = false;
 export const generateStaticParams = () => MOBILE_PROBLEMS.map((p) => ({ id: p.id }));
@@ -34,9 +36,9 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
   const next = MOBILE_PROBLEMS[(i + 1) % MOBILE_PROBLEMS.length];
   const source = kotlinSource(p.file);
   const lines = kotlinLines(p.file);
-  const variants = [
-    { id: "java" as const, lang: "java", src: altSource(p.file, "java"), fileName: `${p.file}.java` },
-    { id: "ts" as const, lang: "ts", src: altSource(p.file, "ts"), fileName: `${p.file}.ts` },
+  const variants: CodeVariant[] = [
+    { id: "java", src: altSource(p.file, "java"), fileName: `${p.file}.java` },
+    { id: "ts", src: altSource(p.file, "ts"), fileName: `${p.file}.ts` },
   ];
   const style = { "--c1": p.color[0], "--c2": p.color[1] } as CSSProperties;
   const related = p.related.map((r) => MOBILE_PROBLEMS.find((x) => x.id === r)).filter((x): x is (typeof MOBILE_PROBLEMS)[number] => !!x);
@@ -44,19 +46,19 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
   const parts: ChapterPart[] = [
     {
       key: "basics",
-      lead: "The concepts this component is built on. With these in mind, every line of the solution has a reason.",
+      lead: MOBILE_DETAIL_COPY.parts.basics.lead,
       sections: [
-        { id: "concepts", title: "Key concepts", intro: "One idea per card, in the order the solution uses them.", body: <ConceptGrid items={MOBILE_CONCEPTS[p.id] ?? []} /> },
+        { id: "concepts", title: MOBILE_DETAIL_COPY.sections["basics.concepts"].title, intro: MOBILE_DETAIL_COPY.sections["basics.concepts"].intro, body: <ConceptGrid items={MOBILE_CONCEPTS[p.id] ?? []} /> },
       ],
     },
     {
       key: "question",
-      lead: "What exactly you are asked to build, what must be true when you are done, and what to ask before you start.",
+      lead: MOBILE_DETAIL_COPY.parts.question.lead,
       sections: [
         {
           id: "prompt",
-          title: "Prompt",
-          intro: "The question as the interviewer asks it, and the requirements to check your solution against.",
+          title: MOBILE_DETAIL_COPY.sections["question.prompt"].title,
+          intro: MOBILE_DETAIL_COPY.sections["question.prompt"].intro,
           body: (
             <>
               <div className="ask">
@@ -72,17 +74,17 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
             </>
           ),
         },
-        { id: "clarify", title: "Clarify first", intro: "Questions worth asking, and the answers this interviewer gives.", body: <Table head={["You ask", "Interviewer answers"]} rows={p.clarify} /> },
+        { id: "clarify", title: MOBILE_DETAIL_COPY.sections["question.clarify"].title, intro: MOBILE_DETAIL_COPY.sections["question.clarify"].intro, body: <Table head={["You ask", "Interviewer answers"]} rows={p.clarify} /> },
       ],
     },
     {
       key: "detail",
-      lead: "The design decisions, the complete Kotlin solution, and a walk through it one block at a time.",
+      lead: MOBILE_DETAIL_COPY.parts.detail.lead,
       sections: [
         {
           id: "design",
-          title: "Design decisions",
-          intro: "Settle these before writing code; each one shows up in the solution.",
+          title: MOBILE_DETAIL_COPY.sections["detail.design"].title,
+          intro: MOBILE_DETAIL_COPY.sections["detail.design"].intro,
           body: (
             <div className="design-grid">
               {p.design.map(([h, d]) => (
@@ -96,14 +98,14 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
         },
         {
           id: "code",
-          title: "Solution",
-          intro: "Complete, compiling Kotlin with coroutines, built with warnings as errors and covered by tests/mobile/MobileTests.kt. The Java and TypeScript tabs do the same job with each language's own tools: Java compiled and run in our tests, TypeScript run in our tests.",
+          title: MOBILE_DETAIL_COPY.sections["detail.code"].title,
+          intro: MOBILE_DETAIL_COPY.sections["detail.code"].intro,
           body: <Code sample={[p.title, "kotlin", source]} fileName={`${p.file}.kt`} hideTitle variants={variants} />,
         },
         {
           id: "walk",
-          title: "Line-by-line walkthrough",
-          intro: "The same code in the order you would explain it in the room. The line numbers follow the Kotlin file; the Java and TypeScript tabs above have the same steps in the same order.",
+          title: MOBILE_DETAIL_COPY.sections["detail.walk"].title,
+          intro: MOBILE_DETAIL_COPY.sections["detail.walk"].intro,
           body: (
             <>
               {p.steps.map((s, k) => (
@@ -128,17 +130,17 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
     },
     {
       key: "qa",
-      lead: "The questions interviewers ask after the code works. Answer out loud, then open.",
-      sections: [{ id: "follow", title: "Follow-up questions", body: <Faq items={p.followups} /> }],
+      lead: MOBILE_DETAIL_COPY.parts.qa.lead,
+      sections: [{ id: "follow", title: MOBILE_DETAIL_COPY.sections["qa.follow"].title, body: <Faq items={p.followups} /> }],
     },
     {
       key: "more",
-      lead: "The cases that break naive solutions, how the same design looks on iOS, and what to practise next.",
+      lead: MOBILE_DETAIL_COPY.parts.more.lead,
       sections: [
         {
           id: "edges",
-          title: "Edge cases",
-          intro: "Say these before the interviewer does.",
+          title: MOBILE_DETAIL_COPY.sections["more.edges"].title,
+          intro: MOBILE_DETAIL_COPY.sections["more.edges"].intro,
           body: (
             <ul className="traps">
               {p.edgeCases.map((e) => (
@@ -147,12 +149,12 @@ export default async function MobileProblemPage({ params }: { params: Promise<{ 
             </ul>
           ),
         },
-        { id: "ios", title: "On iOS", intro: "The same design in Swift and Apple's frameworks.", body: <Table head={["Approach", "Swift / iOS"]} rows={p.ios} /> },
+        { id: "ios", title: MOBILE_DETAIL_COPY.sections["more.ios"].title, intro: MOBILE_DETAIL_COPY.sections["more.ios"].intro, body: <Table head={["Approach", "Swift / iOS"]} rows={p.ios} /> },
         ...(related.length
           ? [
               {
                 id: "related",
-                title: "Practise next",
+                title: MOBILE_DETAIL_COPY.sections["more.related"].title,
                 body: (
                   <div className="golinks">
                     {related.map((r) => (

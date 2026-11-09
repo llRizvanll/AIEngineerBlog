@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Footer } from "@/components/ui";
 import { KeepReading } from "@/components/KeepReading";
 import { Library } from "@/components/Library";
+import { LIBRARY_PAGE_META } from "@/content/pages/library";
 
-export const metadata: Metadata = { title: "Your progress", description: "Your saved pages, notes and reading progress, kept in this browser.", robots: { index: false, follow: true } };
+export const metadata: Metadata = LIBRARY_PAGE_META;
 
 export default function LibraryPage() {
   return (

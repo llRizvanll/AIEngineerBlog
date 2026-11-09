@@ -1,10 +1,6 @@
-import { SITE } from "@/lib/content";
 
-/**
- * The public address of the site. Set NEXT_PUBLIC_SITE_URL once you have a custom domain.
- * Until then, Render provides RENDER_EXTERNAL_URL during the build.
- */
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || process.env.RENDER_EXTERNAL_URL || "http://localhost:3000").replace(/\/+$/, "");
+import { SITE_URL } from "@/config/constants";
+import { SITE } from "@/content/site";
 
 const trailing = process.env.STATIC_EXPORT === "1";
 

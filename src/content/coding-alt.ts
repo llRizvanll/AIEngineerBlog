@@ -1,10 +1,14 @@
 /* The same pattern templates in Kotlin and Java, next to the TypeScript in coding.ts.
    Java is compiled and run by tests/modules/coding-alt.test.mts. Kotlin follows the same logic line for line. */
+import type { CodeVariant } from "@/config/languages";
 
 export interface Alt {
   kotlin: string;
   java: string;
 }
+
+/** The Kotlin and Java versions of a sample, as language-tab variants. */
+export const variantsOf = (alt?: Alt): CodeVariant[] => (alt ? [{ id: "kotlin", src: alt.kotlin }, { id: "java", src: alt.java }] : []);
 
 export const TEMPLATE_ALT: Record<string, Alt> = {
   "two-pointers": {

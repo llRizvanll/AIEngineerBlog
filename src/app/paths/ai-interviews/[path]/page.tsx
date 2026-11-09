@@ -6,8 +6,9 @@ import { Footer } from "@/components/ui";
 import { JsonLd } from "@/components/JsonLd";
 import { PathContinue, PathLessons, type LessonRow } from "@/components/ai-paths/Progress";
 import { AI_PATHS, getPath } from "@/content/ai-interviews";
-import { AI_BASICS_HREF, AI_PATHS_HREF, aiLessonHref, aiPathHref } from "@/lib/routes";
+import { aiLessonHref, aiPathHref } from "@/lib/routes";
 import { breadcrumbLd, courseLd } from "@/lib/site";
+import { AI_BASICS_HREF, AI_PATHS_HREF } from "@/config/constants";
 
 export const dynamicParams = false;
 export const generateStaticParams = () => AI_PATHS.map((p) => ({ path: p.id }));

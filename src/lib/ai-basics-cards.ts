@@ -1,4 +1,4 @@
-import type { ReviseCard } from "@/components/interview/Revise";
+import type { ReviseCard } from "@/types/revise";
 import { basicKey, BASICS } from "@/content/ai-interviews/basics";
 
 export const AI_BASICS_GROUP = "ai-basics";

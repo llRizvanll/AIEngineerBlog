@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { emptyLibrary, LIBRARY_KEY, useLocal, type LibraryState } from "@/lib/store";
+import { KEEP_READING_COPY } from "@/content/ui-copy";
 
 export function KeepReading() {
   const [lib, , hydrated] = useLocal<LibraryState>(LIBRARY_KEY, emptyLibrary);
@@ -15,8 +16,8 @@ export function KeepReading() {
     <>
       <div className="section-h">
         <div>
-          <span className="eyebrow">Continue</span>
-          <h2>Pick up where you left off</h2>
+          <span className="eyebrow">{KEEP_READING_COPY.eyebrow}</span>
+          <h2>{KEEP_READING_COPY.title}</h2>
         </div>
         <Link href="/library" className="mono" style={{ fontSize: 12, color: "var(--muted)" }}>
           My library →

@@ -1,18 +1,15 @@
 "use client";
 
+import type { BasicsMode } from "@/types/ui";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Revise, type ReviseCard } from "@/components/interview/Revise";
+import { Revise } from "@/components/interview/Revise";
+import type { ReviseCard } from "@/types/revise";
 import type { BasicSkill } from "@/content/ai-interviews/types";
 import { track } from "@/lib/track";
 import { AI_PATHS_KEY, emptyAiPaths, useLocal, type AiPathsState } from "@/lib/store";
+import { BASICS_MODES } from "@/content/ui-copy";
 
-type Mode = "read" | "memorise" | "practise";
-const MODES: [Mode, string][] = [
-  ["read", "Read"],
-  ["memorise", "Memorise"],
-  ["practise", "Practise"],
-];
 
 function Drill({ skill, featured }: { skill: BasicSkill; featured?: boolean }) {
   const [p, update] = useLocal<AiPathsState>(AI_PATHS_KEY, emptyAiPaths);
@@ -46,7 +43,7 @@ function Drill({ skill, featured }: { skill: BasicSkill; featured?: boolean }) {
 }
 
 export function BasicsStudy({ skills, cards }: { skills: BasicSkill[]; cards: ReviseCard[] }) {
-  const [mode, setMode] = useState<Mode>("read");
+  const [mode, setMode] = useState<BasicsMode>("read");
   const [featured, setFeatured] = useState<string | null>(null);
   useEffect(() => {
     const m = new URLSearchParams(window.location.search).get("mode");
@@ -61,7 +58,7 @@ export function BasicsStudy({ skills, cards }: { skills: BasicSkill[]; cards: Re
   return (
     <>
       <div className="bs-modes" role="tablist" aria-label="Study mode">
-        {MODES.map(([m, label]) => (
+        {BASICS_MODES.map(([m, label]) => (
           <button key={m} type="button" role="tab" aria-selected={mode === m} onClick={() => setMode(m)}>
             {label}
           </button>

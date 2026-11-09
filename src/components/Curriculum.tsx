@@ -1,11 +1,14 @@
 "use client";
 
+import { toneClass } from "@/config/tones";
 import Link from "next/link";
 import { useState } from "react";
 import type { Phase } from "@/lib/curriculum";
 import { Book, Title } from "./HubCards";
-import { AI_BASICS_HREF, AI_PATHS_HREF, dayHref, PROGRAMME_HREF } from "@/lib/routes";
+import { dayHref } from "@/lib/routes";
 import { emptyInterview, emptyLibrary, emptyProgramme, INTERVIEW_KEY, LIBRARY_KEY, PROGRAMME_KEY, useLocal, type InterviewState, type LibraryState, type ProgrammeState } from "@/lib/store";
+import { CURRICULUM_ICONS, AI_BASICS_HREF, AI_PATHS_HREF, PROGRAMME_HREF } from "@/config/constants";
+import { CURRICULUM_COPY } from "@/content/ui-copy";
 
 interface Props {
   phases: Phase[];
@@ -15,8 +18,6 @@ interface Props {
   caseIds: string[];
   totalCrit: number;
 }
-
-const ICONS = ["layers", "book", "network", "bolt", "spark", "chat", "code", "board", "cards", "target", "compass", "play", "grid"];
 
 export function Curriculum({ phases, paths, programme, glossary, caseIds, totalCrit }: Props) {
   const [q, setQ] = useState("");
@@ -33,7 +34,7 @@ export function Curriculum({ phases, paths, programme, glossary, caseIds, totalC
   return (
     <div className="wrap">
       <section className="iv-hero">
-        <div className="kicker">AIEngine</div>
+        <div className="kicker">{CURRICULUM_COPY.kicker}</div>
         <h1>
           Everything, in one <span className="serif grad-text">place.</span>
         </h1>
@@ -43,7 +44,7 @@ export function Curriculum({ phases, paths, programme, glossary, caseIds, totalC
         </p>
         <div className="btns">
           <Link className="btn" href={PROGRAMME_HREF}>
-            Start the two-week programme →
+            {CURRICULUM_COPY.start}
           </Link>
           <Link className="btn ghost" href="/revise">
             Revise
@@ -55,48 +56,48 @@ export function Curriculum({ phases, paths, programme, glossary, caseIds, totalC
           <b>
             {uniq.filter(seen).length}/{uniq.length}
           </b>
-          <span>lessons opened</span>
+          <span>{CURRICULUM_COPY.lessonsOpened}</span>
         </div>
         <div>
           <b>
             {done}/{caseIds.length}
           </b>
-          <span>rounds practised</span>
+          <span>{CURRICULUM_COPY.roundsPractised}</span>
         </div>
         <div>
           <b>
             {got}/{totalCrit}
           </b>
-          <span>critical Q&amp;A answered</span>
+          <span>{CURRICULUM_COPY.qaAnswered}</span>
         </div>
         <div>
           <b>{glossary.length}</b>
-          <span>glossary terms</span>
+          <span>{CURRICULUM_COPY.terms}</span>
         </div>
       </div>
 
       <div className="section-h">
-        <h2>Learning paths</h2>
-        <span>each step says why it comes next</span>
+        <h2>{CURRICULUM_COPY.pathsTitle}</h2>
+        <span>{CURRICULUM_COPY.pathsHint}</span>
       </div>
       <div className="aie-paths stagger">
         <div className="aie-feature">
-          <h3>Crack AI interviews</h3>
-          <p>Four connected paths: AI interview hacks, every new round, a study plan with a final stretch with AI off, and a mock interviewer you build yourself. Plus critical basics to memorise.</p>
+          <h3>{CURRICULUM_COPY.aiTitle}</h3>
+          <p>{CURRICULUM_COPY.aiBlurb}</p>
           <p>
             React Native too: <Link href="/paths/react-native">every React Native page in one place</Link>.
           </p>
           <div className="btns">
             <Link className="btn" href={AI_PATHS_HREF}>
-              Open the paths →
+              {CURRICULUM_COPY.openPaths}
             </Link>
             <Link className="btn ghost" href={AI_BASICS_HREF}>
-              Critical basics
+              {CURRICULUM_COPY.basics}
             </Link>
           </div>
         </div>
         <div className="aie-feature">
-          <h3>Mobile principal in two weeks</h3>
+          <h3>{CURRICULUM_COPY.programmeTitle}</h3>
           <p>{programme.blurb}</p>
           <ol className="aie-stops">
             {programme.days.map((d) => (
@@ -108,7 +109,7 @@ export function Curriculum({ phases, paths, programme, glossary, caseIds, totalC
             ))}
           </ol>
           <Link className="btn" href={PROGRAMME_HREF}>
-            Open the programme →
+            {CURRICULUM_COPY.openProgramme}
           </Link>
         </div>
         {paths.map((p) => (
@@ -119,8 +120,8 @@ export function Curriculum({ phases, paths, programme, glossary, caseIds, totalC
             <p>{p.blurb}</p>
             <div className="cb-grid">
               {p.items.map((it, i) => (
-                <Link key={it.href} href={it.href} className={`cb pc-${i % 8}`}>
-                  <Book icon={ICONS[i % ICONS.length]} label={`STEP ${String(i + 1).padStart(2, "0")}`} />
+                <Link key={it.href} href={it.href} className={`cb ${toneClass(i)}`}>
+                  <Book icon={CURRICULUM_ICONS[i % CURRICULUM_ICONS.length]} label={`STEP ${String(i + 1).padStart(2, "0")}`} />
                   <span className="cb-tx">
                     <small>Step {String(i + 1).padStart(2, "0")}</small>
                     <b>
@@ -147,9 +148,9 @@ export function Curriculum({ phases, paths, programme, glossary, caseIds, totalC
           const opened = p.lessons.filter((l) => seen(l.href)).length;
           const status = opened === 0 ? "Not started" : opened === p.lessons.length ? "Done" : "In progress";
           return (
-            <details className={`aie-ph pc-${idx % 8}`} key={p.num + (ql ? "q" : "")} open={!!ql}>
+            <details className={`aie-ph ${toneClass(idx)}`} key={p.num + (ql ? "q" : "")} open={!!ql}>
               <summary className="cb">
-                <Book icon={ICONS[idx % ICONS.length]} label={`PHASE ${p.num}`} />
+                <Book icon={CURRICULUM_ICONS[idx % CURRICULUM_ICONS.length]} label={`PHASE ${p.num}`} />
                 <span className="cb-tx">
                   <small>
                     Phase {p.num} · {opened}/{p.lessons.length}
@@ -194,30 +195,30 @@ export function Curriculum({ phases, paths, programme, glossary, caseIds, totalC
             </div>
           ))
         ) : (
-          <p>No terms match.</p>
+          <p>{CURRICULUM_COPY.noTerms}</p>
         )}
       </dl>
 
       <div className="section-h">
-        <h2>How each lesson works</h2>
-        <span>the loop</span>
+        <h2>{CURRICULUM_COPY.loopTitle}</h2>
+        <span>{CURRICULUM_COPY.loopHint}</span>
       </div>
       <div className="kit">
         <div>
-          <b>Read</b>
-          <p>The problem, the analogy and the mechanism, in plain words.</p>
+          <b>{CURRICULUM_COPY.readTitle}</b>
+          <p>{CURRICULUM_COPY.readText}</p>
         </div>
         <div>
-          <b>Draw</b>
-          <p>Diagrams for architecture and flow that you can redraw from memory.</p>
+          <b>{CURRICULUM_COPY.drawTitle}</b>
+          <p>{CURRICULUM_COPY.drawText}</p>
         </div>
         <div>
-          <b>Answer</b>
-          <p>Practice mode: write your answer, then compare with the model one.</p>
+          <b>{CURRICULUM_COPY.answerTitle}</b>
+          <p>{CURRICULUM_COPY.answerText}</p>
         </div>
         <div>
-          <b>Revise</b>
-          <p>Critical incident questions and flashcards, tracked in this browser.</p>
+          <b>{CURRICULUM_COPY.reviseTitle}</b>
+          <p>{CURRICULUM_COPY.reviseText}</p>
         </div>
       </div>
     </div>
